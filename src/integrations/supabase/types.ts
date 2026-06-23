@@ -14,7 +14,340 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agentes_status: {
+        Row: {
+          agente_nome: string
+          atualizado_em: string | null
+          estado_atual: string | null
+          ultima_acao: string | null
+        }
+        Insert: {
+          agente_nome: string
+          atualizado_em?: string | null
+          estado_atual?: string | null
+          ultima_acao?: string | null
+        }
+        Update: {
+          agente_nome?: string
+          atualizado_em?: string | null
+          estado_atual?: string | null
+          ultima_acao?: string | null
+        }
+        Relationships: []
+      }
+      artes: {
+        Row: {
+          briefing: Json | null
+          criado_em: string | null
+          id: string
+          pauta_id: string | null
+          status: string | null
+          versao: number | null
+        }
+        Insert: {
+          briefing?: Json | null
+          criado_em?: string | null
+          id?: string
+          pauta_id?: string | null
+          status?: string | null
+          versao?: number | null
+        }
+        Update: {
+          briefing?: Json | null
+          criado_em?: string | null
+          id?: string
+          pauta_id?: string | null
+          status?: string | null
+          versao?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artes_pauta_id_fkey"
+            columns: ["pauta_id"]
+            isOneToOne: false
+            referencedRelation: "pautas_geradas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conteudos_curados: {
+        Row: {
+          capturado_em: string | null
+          formato: string | null
+          gancho: string | null
+          id: string
+          perfil_referencia_id: string | null
+          score_curadoria: number | null
+          tema: string | null
+          texto_original: string | null
+          url: string | null
+        }
+        Insert: {
+          capturado_em?: string | null
+          formato?: string | null
+          gancho?: string | null
+          id?: string
+          perfil_referencia_id?: string | null
+          score_curadoria?: number | null
+          tema?: string | null
+          texto_original?: string | null
+          url?: string | null
+        }
+        Update: {
+          capturado_em?: string | null
+          formato?: string | null
+          gancho?: string | null
+          id?: string
+          perfil_referencia_id?: string | null
+          score_curadoria?: number | null
+          tema?: string | null
+          texto_original?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conteudos_curados_perfil_referencia_id_fkey"
+            columns: ["perfil_referencia_id"]
+            isOneToOne: false
+            referencedRelation: "perfis_referencia"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decisoes_aprovacao: {
+        Row: {
+          comentario_livre: string | null
+          criado_em: string | null
+          decisao: string | null
+          id: string
+          item_id: string
+          item_tipo: string | null
+          motivo_categoria: string | null
+          perfil_id: string | null
+        }
+        Insert: {
+          comentario_livre?: string | null
+          criado_em?: string | null
+          decisao?: string | null
+          id?: string
+          item_id: string
+          item_tipo?: string | null
+          motivo_categoria?: string | null
+          perfil_id?: string | null
+        }
+        Update: {
+          comentario_livre?: string | null
+          criado_em?: string | null
+          decisao?: string | null
+          id?: string
+          item_id?: string
+          item_tipo?: string | null
+          motivo_categoria?: string | null
+          perfil_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decisoes_aprovacao_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pautas_geradas: {
+        Row: {
+          angulo: string | null
+          criado_em: string | null
+          formato_sugerido: string | null
+          id: string
+          origem_curadoria_id: string | null
+          perfil_id: string | null
+          status: string | null
+          tema: string | null
+        }
+        Insert: {
+          angulo?: string | null
+          criado_em?: string | null
+          formato_sugerido?: string | null
+          id?: string
+          origem_curadoria_id?: string | null
+          perfil_id?: string | null
+          status?: string | null
+          tema?: string | null
+        }
+        Update: {
+          angulo?: string | null
+          criado_em?: string | null
+          formato_sugerido?: string | null
+          id?: string
+          origem_curadoria_id?: string | null
+          perfil_id?: string | null
+          status?: string | null
+          tema?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pautas_geradas_origem_curadoria_id_fkey"
+            columns: ["origem_curadoria_id"]
+            isOneToOne: false
+            referencedRelation: "conteudos_curados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pautas_geradas_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      perfis: {
+        Row: {
+          ativo: boolean | null
+          criado_em: string | null
+          diretrizes: Json | null
+          id: string
+          identidade_visual: Json | null
+          nome: string
+          tipo: string
+          tom_de_voz: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          criado_em?: string | null
+          diretrizes?: Json | null
+          id?: string
+          identidade_visual?: Json | null
+          nome: string
+          tipo: string
+          tom_de_voz?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          criado_em?: string | null
+          diretrizes?: Json | null
+          id?: string
+          identidade_visual?: Json | null
+          nome?: string
+          tipo?: string
+          tom_de_voz?: string | null
+        }
+        Relationships: []
+      }
+      perfis_referencia: {
+        Row: {
+          ativo: boolean | null
+          criado_em: string | null
+          handle: string
+          id: string
+          nicho: string | null
+          perfil_id_relacionado: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          criado_em?: string | null
+          handle: string
+          id?: string
+          nicho?: string | null
+          perfil_id_relacionado?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          criado_em?: string | null
+          handle?: string
+          id?: string
+          nicho?: string | null
+          perfil_id_relacionado?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perfis_referencia_perfil_id_relacionado_fkey"
+            columns: ["perfil_id_relacionado"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publicacoes: {
+        Row: {
+          criado_em: string | null
+          id: string
+          pauta_id: string | null
+          perfil_id: string | null
+          postado_em: string | null
+          status: string | null
+        }
+        Insert: {
+          criado_em?: string | null
+          id?: string
+          pauta_id?: string | null
+          perfil_id?: string | null
+          postado_em?: string | null
+          status?: string | null
+        }
+        Update: {
+          criado_em?: string | null
+          id?: string
+          pauta_id?: string | null
+          perfil_id?: string | null
+          postado_em?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publicacoes_pauta_id_fkey"
+            columns: ["pauta_id"]
+            isOneToOne: false
+            referencedRelation: "pautas_geradas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publicacoes_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roteiros: {
+        Row: {
+          conteudo: Json | null
+          criado_em: string | null
+          id: string
+          pauta_id: string | null
+          status: string | null
+          versao: number | null
+        }
+        Insert: {
+          conteudo?: Json | null
+          criado_em?: string | null
+          id?: string
+          pauta_id?: string | null
+          status?: string | null
+          versao?: number | null
+        }
+        Update: {
+          conteudo?: Json | null
+          criado_em?: string | null
+          id?: string
+          pauta_id?: string | null
+          status?: string | null
+          versao?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roteiros_pauta_id_fkey"
+            columns: ["pauta_id"]
+            isOneToOne: false
+            referencedRelation: "pautas_geradas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
