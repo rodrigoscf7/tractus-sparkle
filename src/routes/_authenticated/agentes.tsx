@@ -41,9 +41,9 @@ function AgentesPage() {
   const byName = new Map((data ?? []).map((a) => [a.agente_nome, a]));
 
   return (
-    <div className="p-8 max-w-[1200px]">
-      <header className="mb-8">
-        <h1 className="text-3xl font-display font-bold">Agentes</h1>
+    <div className="p-4 sm:p-8 max-w-[1200px]">
+      <header className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold">Agentes</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Status em tempo real dos 5 agentes do pipeline.
         </p>
@@ -54,15 +54,15 @@ function AgentesPage() {
           const a = byName.get(nome);
           const meta = STATE_META[a?.estado_atual ?? "idle"] ?? STATE_META.idle;
           return (
-            <Card key={nome} className="p-6 bg-surface border-border">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-display font-semibold capitalize text-lg">{nome}</h3>
+            <Card key={nome} className="p-5 sm:p-6 bg-surface border-border">
+              <div className="flex items-start justify-between gap-2 mb-4">
+                <div className="min-w-0">
+                  <h3 className="font-display font-semibold capitalize text-lg truncate">{nome}</h3>
                   <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
                     Agent
                   </p>
                 </div>
-                <Badge className={`${meta.tone} bg-transparent border-current`}>
+                <Badge className={`${meta.tone} bg-transparent border-current shrink-0 whitespace-nowrap`}>
                   <span className={`inline-block w-2 h-2 rounded-full mr-2 ${meta.dot}`} />
                   {meta.label}
                 </Badge>

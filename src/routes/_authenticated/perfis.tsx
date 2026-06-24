@@ -75,9 +75,9 @@ function PerfisPage() {
   }
 
   return (
-    <div className="p-8 max-w-[1400px]">
-      <header className="mb-8">
-        <h1 className="text-3xl font-display font-bold">Perfis</h1>
+    <div className="p-4 sm:p-8 max-w-[1400px]">
+      <header className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold">Perfis</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Volume e status de conteúdo por perfil. Selecione um para gerenciar referências.
         </p>
@@ -95,14 +95,14 @@ function PerfisPage() {
                 isActive ? "border-primary" : ""
               }`}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-display font-semibold">{perfil.nome}</h3>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="min-w-0">
+                  <h3 className="font-display font-semibold truncate">{perfil.nome}</h3>
                   <Badge variant="outline" className="mt-1 text-[10px] uppercase font-mono">
                     {perfil.tipo}
                   </Badge>
                 </div>
-                <div className="text-2xl font-display font-bold tractus-gradient-text">
+                <div className="text-2xl font-display font-bold tractus-gradient-text shrink-0">
                   {ps.length}
                 </div>
               </div>
