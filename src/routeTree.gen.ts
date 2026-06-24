@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
 import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
+import { Route as AuthenticatedAgentesIndexRouteImport } from './routes/_authenticated/agentes.index'
 import { Route as AuthenticatedAprovacaoPautaIdRouteImport } from './routes/_authenticated/aprovacao.$pautaId'
 import { Route as AuthenticatedAgentesAgenteRouteImport } from './routes/_authenticated/agentes.$agente'
 
@@ -47,6 +48,12 @@ const AuthenticatedAgentesRoute = AuthenticatedAgentesRouteImport.update({
   path: '/agentes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAgentesIndexRoute =
+  AuthenticatedAgentesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAgentesRoute,
+  } as any)
 const AuthenticatedAprovacaoPautaIdRoute =
   AuthenticatedAprovacaoPautaIdRouteImport.update({
     id: '/aprovacao/$pautaId',
@@ -68,15 +75,16 @@ export interface FileRoutesByFullPath {
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
+  '/agentes/': typeof AuthenticatedAgentesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
+  '/agentes': typeof AuthenticatedAgentesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/_authenticated/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/_authenticated/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
+  '/_authenticated/agentes/': typeof AuthenticatedAgentesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,15 +108,16 @@ export interface FileRouteTypes {
     | '/pipeline'
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
+    | '/agentes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
-    | '/agentes'
     | '/perfis'
     | '/pipeline'
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
+    | '/agentes'
   id:
     | '__root__'
     | '/'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pipeline'
     | '/_authenticated/agentes/$agente'
     | '/_authenticated/aprovacao/$pautaId'
+    | '/_authenticated/agentes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -170,6 +181,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAgentesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/agentes/': {
+      id: '/_authenticated/agentes/'
+      path: '/'
+      fullPath: '/agentes/'
+      preLoaderRoute: typeof AuthenticatedAgentesIndexRouteImport
+      parentRoute: typeof AuthenticatedAgentesRoute
+    }
     '/_authenticated/aprovacao/$pautaId': {
       id: '/_authenticated/aprovacao/$pautaId'
       path: '/aprovacao/$pautaId'
@@ -189,10 +207,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAgentesRouteChildren {
   AuthenticatedAgentesAgenteRoute: typeof AuthenticatedAgentesAgenteRoute
+  AuthenticatedAgentesIndexRoute: typeof AuthenticatedAgentesIndexRoute
 }
 
 const AuthenticatedAgentesRouteChildren: AuthenticatedAgentesRouteChildren = {
   AuthenticatedAgentesAgenteRoute: AuthenticatedAgentesAgenteRoute,
+  AuthenticatedAgentesIndexRoute: AuthenticatedAgentesIndexRoute,
 }
 
 const AuthenticatedAgentesRouteWithChildren =
