@@ -16,6 +16,7 @@ import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAprovacaoPautaIdRouteImport } from './routes/_authenticated/aprovacao.$pautaId'
+import { Route as AuthenticatedAgentesAgenteRouteImport } from './routes/_authenticated/agentes.$agente'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -52,21 +53,29 @@ const AuthenticatedAprovacaoPautaIdRoute =
     path: '/aprovacao/$pautaId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAgentesAgenteRoute =
+  AuthenticatedAgentesAgenteRouteImport.update({
+    id: '/$agente',
+    path: '/$agente',
+    getParentRoute: () => AuthenticatedAgentesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/agentes': typeof AuthenticatedAgentesRoute
+  '/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
+  '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/agentes': typeof AuthenticatedAgentesRoute
+  '/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
+  '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
 }
 export interface FileRoutesById {
@@ -74,9 +83,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
+  '/_authenticated/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/_authenticated/perfis': typeof AuthenticatedPerfisRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
+  '/_authenticated/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/_authenticated/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
 }
 export interface FileRouteTypes {
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/agentes'
     | '/perfis'
     | '/pipeline'
+    | '/agentes/$agente'
     | '/aprovacao/$pautaId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/agentes'
     | '/perfis'
     | '/pipeline'
+    | '/agentes/$agente'
     | '/aprovacao/$pautaId'
   id:
     | '__root__'
@@ -104,6 +116,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agentes'
     | '/_authenticated/perfis'
     | '/_authenticated/pipeline'
+    | '/_authenticated/agentes/$agente'
     | '/_authenticated/aprovacao/$pautaId'
   fileRoutesById: FileRoutesById
 }
@@ -164,18 +177,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAprovacaoPautaIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/agentes/$agente': {
+      id: '/_authenticated/agentes/$agente'
+      path: '/$agente'
+      fullPath: '/agentes/$agente'
+      preLoaderRoute: typeof AuthenticatedAgentesAgenteRouteImport
+      parentRoute: typeof AuthenticatedAgentesRoute
+    }
   }
 }
 
+interface AuthenticatedAgentesRouteChildren {
+  AuthenticatedAgentesAgenteRoute: typeof AuthenticatedAgentesAgenteRoute
+}
+
+const AuthenticatedAgentesRouteChildren: AuthenticatedAgentesRouteChildren = {
+  AuthenticatedAgentesAgenteRoute: AuthenticatedAgentesAgenteRoute,
+}
+
+const AuthenticatedAgentesRouteWithChildren =
+  AuthenticatedAgentesRoute._addFileChildren(AuthenticatedAgentesRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRoute
+  AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRouteWithChildren
   AuthenticatedPerfisRoute: typeof AuthenticatedPerfisRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedAprovacaoPautaIdRoute: typeof AuthenticatedAprovacaoPautaIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAgentesRoute: AuthenticatedAgentesRoute,
+  AuthenticatedAgentesRoute: AuthenticatedAgentesRouteWithChildren,
   AuthenticatedPerfisRoute: AuthenticatedPerfisRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedAprovacaoPautaIdRoute: AuthenticatedAprovacaoPautaIdRoute,
