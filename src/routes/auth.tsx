@@ -48,7 +48,7 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <Card className="w-full max-w-md p-6 sm:p-8 bg-surface border-border">
         <div className="mb-8 flex flex-col items-center text-center">
-          <img src={tractusLogo.url} alt="Tractus" className="h-32 w-auto max-w-full sm:h-40" />
+          <img src={tractusLogo.url} alt="Tractus" className="h-20 w-auto max-w-full sm:h-24" />
           <p className="text-xs text-muted-foreground mt-3 font-mono uppercase tracking-wider">
             Sistema de conteúdo
           </p>
