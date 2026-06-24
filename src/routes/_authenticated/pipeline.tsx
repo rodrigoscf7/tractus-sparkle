@@ -52,9 +52,9 @@ function PipelinePage() {
   }, [refetch]);
 
   return (
-    <div className="p-8 max-w-[1600px]">
-      <header className="mb-8">
-        <h1 className="text-3xl font-display font-bold">Pipeline</h1>
+    <div className="p-4 sm:p-8 max-w-[1600px]">
+      <header className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold">Pipeline</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Fluxo completo de produção. Único passo manual: aprovar ou rejeitar.
         </p>
