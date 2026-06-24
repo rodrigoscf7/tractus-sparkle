@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import tractusLogo from "@/assets/tractus-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -46,11 +47,9 @@ function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <Card className="w-full max-w-md p-8 bg-surface border-border">
-        <div className="mb-8">
-          <div className="tractus-gradient-text font-display text-3xl font-bold tracking-tight">
-            Tractus
-          </div>
-          <p className="text-sm text-muted-foreground mt-1 font-mono uppercase tracking-wider">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <img src={tractusLogo.url} alt="Tractus" className="h-16 w-auto" />
+          <p className="text-xs text-muted-foreground mt-3 font-mono uppercase tracking-wider">
             Sistema de conteúdo
           </p>
         </div>
