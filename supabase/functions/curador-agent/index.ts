@@ -3,12 +3,13 @@
 //   perfis_referencia ativos e dispara 1 invocação por ref (fire-and-forget)
 //   via fetch para esta mesma function com ?ref_id=...
 // - Modo worker (com ref_id): processa apenas 1 ref — busca via Apify, scoreia
-//   com Claude, insere em conteudos_curados, e ao final chama o ideador-agent
-//   uma única vez para o perfil correspondente.
+//   com Claude, insere em conteudos_curados, e tenta acionar o ideador apenas
+//   uma vez por rodada para evitar estouro de limite por paralelismo.
 import {
   callClaude,
   corsHeaders,
   extractJson,
+  formatAgentError,
   getServiceClient,
   setStatus,
 } from "../_shared/agent-utils.ts";
@@ -143,21 +144,49 @@ async function processRef(refId: string) {
 
   // Chama ideador 1x para o perfil, somente se houve conteúdo aproveitável >= 7
   if (temScoreAlto) {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    // fire-and-forget
-    fetch(`${supabaseUrl}/functions/v1/ideador-agent`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
-      },
-      body: JSON.stringify({ perfil_referencia_id: ref.id }),
-    }).catch((e) => console.error("ideador trigger failed", e));
+    await triggerIdeadorOnce(perfil.id, ref.id);
   }
 
   return { ref: ref.handle, curados };
+}
+
+async function triggerIdeadorOnce(perfilId: string, perfilReferenciaId: string) {
+  const supabase = getServiceClient();
+  const runStartedAt = new URLSearchParams(location.search).get("run_started_at") ?? new Date().toISOString();
+
+  const { data: lock, error } = await supabase
+    .from("agentes_status")
+    .update({
+      estado_atual: "waiting",
+      ultima_acao: "ideador em fila para a rodada atual",
+      atualizado_em: new Date().toISOString(),
+    })
+    .eq("agente_nome", "ideador")
+    .in("estado_atual", ["idle", "error"])
+    .lt("atualizado_em", runStartedAt)
+    .select("agente_nome")
+    .maybeSingle();
+
+  if (error || !lock) {
+    if (error) console.error("ideador lock failed", error);
+    return;
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const res = await fetch(`${supabaseUrl}/functions/v1/ideador-agent`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: anonKey,
+      Authorization: `Bearer ${anonKey}`,
+    },
+    body: JSON.stringify({ perfil_id: perfilId, perfil_referencia_id: perfilReferenciaId }),
+  });
+
+  if (!res.ok) {
+    console.error("ideador trigger failed", res.status, await res.text());
+  }
 }
 
 Deno.serve(async (req) => {
@@ -178,7 +207,7 @@ Deno.serve(async (req) => {
       });
     } catch (e) {
       console.error("worker error", e);
-      await setStatus("curador", "error", String(e).slice(0, 200));
+      await setStatus("curador", "error", formatAgentError(e));
       return new Response(JSON.stringify({ ok: false, error: String(e) }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -199,11 +228,12 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const fnUrl = `${supabaseUrl}/functions/v1/curador-agent`;
+    const runStartedAt = new Date().toISOString();
 
     let disparados = 0;
     for (const ref of refs ?? []) {
       // fire-and-forget; cada worker faz seu próprio setStatus e roda independente
-      fetch(`${fnUrl}?ref_id=${ref.id}`, {
+      fetch(`${fnUrl}?ref_id=${ref.id}&run_started_at=${encodeURIComponent(runStartedAt)}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -220,7 +250,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error(e);
-    await setStatus("curador", "error", String(e).slice(0, 200));
+    await setStatus("curador", "error", formatAgentError(e));
     return new Response(JSON.stringify({ ok: false, error: String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

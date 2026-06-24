@@ -5,6 +5,7 @@ import {
   callClaude,
   corsHeaders,
   extractJson,
+  formatAgentError,
   formatHistorico,
   getHistoricoDecisoes,
   getServiceClient,
@@ -28,16 +29,18 @@ Deno.serve(async (req) => {
 
   try {
     await setStatus("ideador", "working", "gerando pautas");
-    const { perfil_referencia_id } = await req.json();
+    const { perfil_referencia_id, perfil_id } = await req.json();
     const supabase = getServiceClient();
 
-    const { data: ref } = await supabase
-      .from("perfis_referencia")
-      .select("perfil_id_relacionado")
-      .eq("id", perfil_referencia_id)
-      .maybeSingle();
-
-    const perfilId = ref?.perfil_id_relacionado;
+    let perfilId = perfil_id as string | undefined;
+    if (!perfilId && perfil_referencia_id) {
+      const { data: ref } = await supabase
+        .from("perfis_referencia")
+        .select("perfil_id_relacionado")
+        .eq("id", perfil_referencia_id)
+        .maybeSingle();
+      perfilId = ref?.perfil_id_relacionado;
+    }
     if (!perfilId) throw new Error("perfil_id_relacionado não encontrado");
 
     const { data: perfil } = await supabase
@@ -46,12 +49,26 @@ Deno.serve(async (req) => {
       .eq("id", perfilId)
       .single();
 
-    const { data: curadoria } = await supabase
+    const { data: refsDoPerfil } = await supabase
+      .from("perfis_referencia")
+      .select("id")
+      .eq("perfil_id_relacionado", perfilId);
+
+    const refIds = (refsDoPerfil ?? []).map((r) => r.id);
+    const curadoriaIdsComPauta = await getCuradoriaIdsComPauta(supabase);
+    let curadoriaQuery = supabase
       .from("conteudos_curados")
       .select("id, tema, gancho, score_curadoria, formato")
       .gte("score_curadoria", 7)
       .order("capturado_em", { ascending: false })
-      .limit(15);
+      .limit(5);
+
+    if (refIds.length) curadoriaQuery = curadoriaQuery.in("perfil_referencia_id", refIds);
+    if (curadoriaIdsComPauta.length) {
+      curadoriaQuery = curadoriaQuery.not("id", "in", `(${curadoriaIdsComPauta.join(",")})`);
+    }
+
+    const { data: curadoria } = await curadoriaQuery;
 
     const historico = await getHistoricoDecisoes(perfilId);
 
@@ -62,7 +79,7 @@ Deno.serve(async (req) => {
       .replace("{{historico_decisoes_formatado}}", formatHistorico(historico))
       .replace("{{lista_curadoria_filtrada}}", JSON.stringify(curadoria ?? []));
 
-    const text = await callClaude(system, "Gere 3 pautas novas agora.", 3000);
+    const text = await callClaude(system, "Gere até 3 pautas novas agora.", 1200);
     const parsed = extractJson<{
       pautas: Array<{
         tema: string;
@@ -90,10 +107,19 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error(e);
-    await setStatus("ideador", "error", String(e).slice(0, 200));
+    await setStatus("ideador", "error", formatAgentError(e));
     return new Response(JSON.stringify({ ok: false, error: String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
+
+async function getCuradoriaIdsComPauta(supabase: ReturnType<typeof getServiceClient>) {
+  const { data } = await supabase
+    .from("pautas_geradas")
+    .select("origem_curadoria_id")
+    .not("origem_curadoria_id", "is", null)
+    .limit(100);
+  return (data ?? []).map((row) => row.origem_curadoria_id).filter(Boolean);
+}

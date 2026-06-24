@@ -57,10 +57,25 @@ export async function callClaude(
 
   if (!res.ok) {
     const t = await res.text();
-    throw new Error(`Anthropic error ${res.status}: ${t}`);
+    let message = t;
+    try {
+      const parsed = JSON.parse(t);
+      message = parsed?.error?.message ?? t;
+    } catch {
+      // keep raw response text
+    }
+    throw new Error(`Anthropic error ${res.status}: ${message}`);
   }
   const data = await res.json();
   return data.content?.[0]?.text ?? "";
+}
+
+export function formatAgentError(error: unknown): string {
+  const text = error instanceof Error ? error.message : String(error);
+  if (text.includes("rate limit") || text.includes("429")) {
+    return "Limite temporário do modelo atingido; execução será retomada no próximo ciclo.";
+  }
+  return text.slice(0, 180);
 }
 
 export function extractJson<T = unknown>(text: string): T {
