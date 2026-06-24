@@ -62,33 +62,43 @@ function AgentesPage() {
           const a = byName.get(nome);
           const meta = STATE_META[a?.estado_atual ?? "idle"] ?? STATE_META.idle;
           return (
-            <Card key={nome} className="p-5 sm:p-6 bg-surface border-border">
-              <div className="flex items-start justify-between gap-2 mb-4">
-                <div className="min-w-0">
-                  <h3 className="font-display font-semibold capitalize text-lg truncate">{nome}</h3>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
-                    Agent
-                  </p>
-                </div>
-                <Badge className={`${meta.tone} bg-transparent border-current shrink-0 whitespace-nowrap`}>
-                  <span className={`inline-block w-2 h-2 rounded-full mr-2 ${meta.dot}`} />
-                  {meta.label}
-                </Badge>
-              </div>
-              <div className="text-xs text-muted-foreground border-t border-border pt-3">
-                <div className="font-mono uppercase tracking-wider text-[10px] mb-1">
-                  Última ação
-                </div>
-                <div className="text-foreground/80 text-xs leading-relaxed break-words">
-                  {formatLastAction(a?.ultima_acao)}
-                </div>
-                {a?.atualizado_em && (
-                  <div className="mt-2 text-[10px] font-mono text-muted-foreground/60">
-                    {new Date(a.atualizado_em).toLocaleString("pt-BR")}
+            <Link
+              key={nome}
+              to="/agentes/$agente"
+              params={{ agente: nome }}
+              className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+            >
+              <Card className="p-5 sm:p-6 bg-surface border-border hover:border-primary/40 transition cursor-pointer h-full">
+                <div className="flex items-start justify-between gap-2 mb-4">
+                  <div className="min-w-0">
+                    <h3 className="font-display font-semibold capitalize text-lg truncate">{nome}</h3>
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
+                      Agent
+                    </p>
                   </div>
-                )}
-              </div>
-            </Card>
+                  <Badge className={`${meta.tone} bg-transparent border-current shrink-0 whitespace-nowrap`}>
+                    <span className={`inline-block w-2 h-2 rounded-full mr-2 ${meta.dot}`} />
+                    {meta.label}
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground border-t border-border pt-3">
+                  <div className="font-mono uppercase tracking-wider text-[10px] mb-1">
+                    Última ação
+                  </div>
+                  <div className="text-foreground/80 text-xs leading-relaxed break-words">
+                    {formatLastAction(a?.ultima_acao)}
+                  </div>
+                  {a?.atualizado_em && (
+                    <div className="mt-2 text-[10px] font-mono text-muted-foreground/60">
+                      {new Date(a.atualizado_em).toLocaleString("pt-BR")}
+                    </div>
+                  )}
+                  <div className="mt-3 text-[10px] font-mono uppercase tracking-wider text-primary/80">
+                    Ver produção →
+                  </div>
+                </div>
+              </Card>
+            </Link>
           );
         })}
       </div>
