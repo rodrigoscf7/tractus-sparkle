@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/re
 import { supabase } from "@/integrations/supabase/client";
 import { LayoutGrid, Activity, Users, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
+import tractusIcon from "@/assets/tractus-icon.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -29,12 +30,15 @@ function AuthenticatedLayout() {
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="w-60 border-r border-border bg-surface flex flex-col">
-        <div className="px-6 py-6 border-b border-border">
-          <div className="tractus-gradient-text font-display text-2xl font-bold leading-none">
-            Tractus
-          </div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
-            Content System
+        <div className="px-6 py-6 border-b border-border flex items-center gap-3">
+          <img src={tractusIcon.url} alt="Tractus" className="h-9 w-9" />
+          <div>
+            <div className="tractus-gradient-text font-display text-xl font-bold leading-none">
+              Tractus
+            </div>
+            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
+              Content System
+            </div>
           </div>
         </div>
 
