@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import tractusLogo from "@/assets/tractus-logo.png.asset.json";
+import tractusLogo from "@/assets/tractus-logo-cropped.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
