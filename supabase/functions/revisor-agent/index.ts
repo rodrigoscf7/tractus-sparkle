@@ -1,9 +1,10 @@
-// Revisor: dispara quando copy + visual terminam. Checa consistência e, se ok,
-// move a pauta para 'aguardando_aprovacao'.
+// Revisor: dispara quando copy + visual terminam. Checa consistência e sempre
+// move a pauta para 'aguardando_aprovacao' para a decisão humana final.
 import {
   callClaude,
   corsHeaders,
   extractJson,
+  formatAgentError,
   getServiceClient,
   setStatus,
 } from "../_shared/agent-utils.ts";
@@ -66,26 +67,27 @@ Deno.serve(async (req) => {
       sugestao_ajuste: string | null;
     }>(text);
 
-    if (parsed.aprovado_para_revisao_humana) {
-      await supabase
-        .from("pautas_geradas")
-        .update({ status: "aguardando_aprovacao" })
-        .eq("id", pauta_id);
-      await setStatus("revisor", "idle", `pauta ${pauta_id.slice(0, 8)} aprovada para humano`);
-    } else {
-      await setStatus(
-        "revisor",
-        "waiting",
-        `pauta ${pauta_id.slice(0, 8)} com inconsistências: ${parsed.inconsistencias.join("; ").slice(0, 120)}`,
-      );
-    }
+    await supabase
+      .from("pautas_geradas")
+      .update({ status: "aguardando_aprovacao" })
+      .eq("id", pauta_id);
+
+    const inconsistencias = parsed.inconsistencias?.filter(Boolean) ?? [];
+    const detalhes = inconsistencias.length
+      ? ` com observações: ${inconsistencias.join("; ").slice(0, 120)}`
+      : " sem inconsistências críticas";
+    await setStatus(
+      "revisor",
+      "idle",
+      `pauta ${pauta_id.slice(0, 8)} enviada para aprovação humana${detalhes}`,
+    );
 
     return new Response(JSON.stringify({ ok: true, ...parsed }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error(e);
-    await setStatus("revisor", "error", String(e).slice(0, 200));
+    await setStatus("revisor", "error", formatAgentError(e));
     return new Response(JSON.stringify({ ok: false, error: String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
