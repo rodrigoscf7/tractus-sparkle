@@ -1,21 +1,58 @@
+# Plano
 
-## Objetivo
+Duas frentes, ambas só de frontend (não mexer em agentes/edge functions).
 
-Criar o usuário `tractus.diretoria@gmail.com` no sistema para você acessar o dashboard.
+## 1. Saída final amigável na tela de aprovação
 
-## Como vou fazer
+Arquivo: `src/routes/_authenticated/aprovacao.$pautaId.tsx`
 
-Vou criar o usuário direto no backend (via Auth Admin), já confirmado, com a senha `Met@2026`. Assim você não precisa passar pelo fluxo de sign-up — abre `/auth`, faz login e entra direto.
+Trocar os dois `<pre>{JSON.stringify(...)}</pre>` por renderização estruturada.
 
-Passos:
-1. Criar o usuário `tractus.diretoria@gmail.com` com a senha informada, `email_confirmed: true`.
-2. Confirmar que o usuário foi criado consultando `auth.users`.
-3. Te avisar para acessar `/auth` e logar.
+**Roteiro** (`roteiros.conteudo` = `{ gancho, corpo, cta, legenda_sugerida }`):
+- Bloco "Gancho" — texto destacado, fonte maior.
+- Bloco "Corpo" — se `corpo` for string, parágrafo único; se array (carrossel), lista numerada "Slide 1, Slide 2…" cada um em card leve.
+- Bloco "CTA" — destacado com badge.
+- Bloco "Legenda sugerida" — caixa monoespaço pronta pra copiar, com botão **Copiar**.
 
-## Observação de segurança
+**Briefing visual** (`artes.briefing` = `{ estilo_geral, paleta_cores, estrutura_por_slide_ou_frame, tipografia, observacoes_producao }`):
+- "Estilo geral" — parágrafo.
+- "Paleta" — swatches coloridos com hex ao lado.
+- "Estrutura por slide/frame" — lista numerada.
+- "Tipografia" e "Observações de produção" — parágrafos rotulados.
+- Botão **Copiar briefing** que copia versão texto plano.
 
-Você compartilhou a senha em chat. Recomendo trocá-la depois do primeiro login (posso adicionar uma tela de "trocar senha" se quiser, em um próximo passo). Para uso interno da diretoria isso é aceitável, mas vale o aviso.
+Fallback defensivo: se a chave esperada não existir (LLM saiu fora do schema), mostrar o JSON cru num `<details>` recolhido em vez de quebrar a tela.
 
-## Sem mudanças de código
+Nenhuma mudança de lógica/decisão — só apresentação.
 
-Esse passo é só execução no backend — nenhum arquivo do projeto será alterado.
+## 2. Página de detalhe por agente com timeline
+
+**Rota nova:** `src/routes/_authenticated/agentes.$agente.tsx` (`/agentes/curador`, `/agentes/ideador`, etc.)
+
+**Ajuste em `agentes.tsx`:** envolver cada card num `<Link to="/agentes/$agente" params={{ agente: nome }}>` para virar clicável (manter visual atual; só adicionar hover sutil).
+
+**Página de detalhe** mostra:
+- Header com nome do agente, estado atual e última ação (mesmos dados de `agentes_status`).
+- Timeline cronológica decrescente (mais recente primeiro), paginada client-side (50 por página).
+- Cada item: data/hora, "perfil" relacionado quando aplicável, título curto e preview de 2 linhas do conteúdo produzido. Cards do copy/visual/revisor linkam para a página de aprovação da pauta.
+
+**Fonte de dados por agente:**
+
+| Agente | Tabela | Campos exibidos |
+|---|---|---|
+| curador | `conteudos_curados` (ordenar por `capturado_em`) | tema, gancho, score, perfil de referência |
+| ideador | `pautas_geradas` (ordenar por `criado_em`) | tema, ângulo, formato, perfil |
+| copy | `roteiros` join `pautas_geradas` | tema da pauta + gancho do roteiro |
+| visual | `artes` join `pautas_geradas` | tema da pauta + estilo_geral do briefing |
+| revisor | `pautas_geradas` filtrado por status in (`aguardando_aprovacao`, `aprovada`, `rejeitada`), ordenar por `criado_em` | tema, status final |
+
+Observação para o revisor: não existe timestamp da transição em si; usamos `criado_em` da pauta como aproximação e exibimos o status atual ao lado. Suficiente pra acompanhar produção; se depois quisermos timestamp exato, adicionamos uma coluna `revisado_em` numa migration separada.
+
+Realtime: subscribe na tabela do agente para atualizar a timeline sem refresh (mesma lógica de `agentes-realtime` já existente).
+
+## Itens técnicos
+
+- Sem mudança de schema, sem mudança em edge functions.
+- Reutilizar componentes `Card`, `Badge`, `Button` existentes.
+- Botão Copiar usa `navigator.clipboard.writeText` + `toast.success`.
+- Paleta de cores no briefing: `<div style={{ background: hex }}>` com label hex — única exceção tolerada a cor inline, por ser conteúdo de dado, não tema.

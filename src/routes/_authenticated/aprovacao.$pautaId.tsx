@@ -9,7 +9,205 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Check, X, Send } from "lucide-react";
+import { ArrowLeft, Check, X, Send, Copy } from "lucide-react";
+
+function copyToClipboard(text: string, label = "Copiado") {
+  navigator.clipboard.writeText(text).then(
+    () => toast.success(label),
+    () => toast.error("Não foi possível copiar"),
+  );
+}
+
+function RawFallback({ data }: { data: unknown }) {
+  return (
+    <details className="mt-4 text-xs">
+      <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+        Ver dados brutos
+      </summary>
+      <pre className="mt-2 p-3 bg-background/50 rounded border border-border whitespace-pre-wrap font-mono text-[11px] leading-relaxed">
+        {JSON.stringify(data, null, 2)}
+      </pre>
+    </details>
+  );
+}
+
+function RoteiroView({ conteudo }: { conteudo: any }) {
+  if (!conteudo || typeof conteudo !== "object") return <RawFallback data={conteudo} />;
+  const { gancho, corpo, cta, legenda_sugerida } = conteudo;
+  const hasShape = gancho || corpo || cta || legenda_sugerida;
+  if (!hasShape) return <RawFallback data={conteudo} />;
+
+  const corpoArray = Array.isArray(corpo) ? corpo : null;
+  const textoPlano = [
+    gancho && `${gancho}`,
+    corpoArray
+      ? corpoArray.map((s: any, i: number) => `Slide ${i + 1}: ${typeof s === "string" ? s : JSON.stringify(s)}`).join("\n\n")
+      : corpo,
+    cta && `CTA: ${cta}`,
+    legenda_sugerida && `\nLegenda:\n${legenda_sugerida}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  return (
+    <div className="space-y-5">
+      {gancho && (
+        <section>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">Gancho</div>
+          <p className="text-base leading-snug font-medium">{gancho}</p>
+        </section>
+      )}
+      {corpo && (
+        <section>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">Corpo</div>
+          {corpoArray ? (
+            <ol className="space-y-2">
+              {corpoArray.map((slide: any, i: number) => (
+                <li key={i} className="p-3 bg-background/40 rounded border border-border/60">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-primary mb-1">Slide {i + 1}</div>
+                  <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {typeof slide === "string" ? slide : JSON.stringify(slide, null, 2)}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{String(corpo)}</p>
+          )}
+        </section>
+      )}
+      {cta && (
+        <section>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">CTA</div>
+          <Badge className="bg-primary/20 text-primary border-0 text-sm py-1 px-3 font-normal whitespace-normal text-left">
+            {cta}
+          </Badge>
+        </section>
+      )}
+      {legenda_sugerida && (
+        <section>
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              Legenda sugerida
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              onClick={() => copyToClipboard(legenda_sugerida, "Legenda copiada")}
+            >
+              <Copy className="w-3 h-3 mr-1" /> Copiar
+            </Button>
+          </div>
+          <div className="p-3 bg-background/40 rounded border border-border/60 text-sm leading-relaxed whitespace-pre-wrap">
+            {legenda_sugerida}
+          </div>
+        </section>
+      )}
+      <div className="pt-2 border-t border-border/40">
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-xs"
+          onClick={() => copyToClipboard(textoPlano, "Roteiro copiado")}
+        >
+          <Copy className="w-3 h-3 mr-1.5" /> Copiar roteiro completo
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function BriefingView({ briefing }: { briefing: any }) {
+  if (!briefing || typeof briefing !== "object") return <RawFallback data={briefing} />;
+  const { estilo_geral, paleta_cores, estrutura_por_slide_ou_frame, tipografia, observacoes_producao } = briefing;
+  const hasShape = estilo_geral || paleta_cores || estrutura_por_slide_ou_frame || tipografia || observacoes_producao;
+  if (!hasShape) return <RawFallback data={briefing} />;
+
+  const paleta = Array.isArray(paleta_cores) ? paleta_cores : [];
+  const estrutura = Array.isArray(estrutura_por_slide_ou_frame) ? estrutura_por_slide_ou_frame : [];
+
+  const textoPlano = [
+    estilo_geral && `Estilo geral:\n${estilo_geral}`,
+    paleta.length && `Paleta: ${paleta.join(", ")}`,
+    estrutura.length && `Estrutura:\n${estrutura.map((s, i) => `  ${i + 1}. ${s}`).join("\n")}`,
+    tipografia && `Tipografia: ${tipografia}`,
+    observacoes_producao && `Observações:\n${observacoes_producao}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  return (
+    <div className="space-y-5">
+      {estilo_geral && (
+        <section>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">Estilo geral</div>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{estilo_geral}</p>
+        </section>
+      )}
+      {paleta.length > 0 && (
+        <section>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">Paleta</div>
+          <div className="flex flex-wrap gap-2">
+            {paleta.map((hex: string, i: number) => (
+              <div key={i} className="flex items-center gap-2 p-1.5 pr-3 bg-background/40 rounded border border-border/60">
+                <div
+                  className="w-7 h-7 rounded border border-border/60"
+                  style={{ background: hex }}
+                  aria-label={hex}
+                />
+                <span className="text-xs font-mono">{hex}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {estrutura.length > 0 && (
+        <section>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+            Estrutura por slide/frame
+          </div>
+          <ol className="space-y-2">
+            {estrutura.map((s: any, i: number) => (
+              <li key={i} className="p-3 bg-background/40 rounded border border-border/60">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-primary mb-1">
+                  {i + 1}
+                </div>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {typeof s === "string" ? s : JSON.stringify(s, null, 2)}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+      {tipografia && (
+        <section>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">Tipografia</div>
+          <p className="text-sm leading-relaxed">{tipografia}</p>
+        </section>
+      )}
+      {observacoes_producao && (
+        <section>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+            Observações de produção
+          </div>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{observacoes_producao}</p>
+        </section>
+      )}
+      <div className="pt-2 border-t border-border/40">
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-xs"
+          onClick={() => copyToClipboard(textoPlano, "Briefing copiado")}
+        >
+          <Copy className="w-3 h-3 mr-1.5" /> Copiar briefing completo
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/aprovacao/$pautaId")({
   component: AprovacaoPage,
@@ -152,9 +350,7 @@ function AprovacaoPage() {
             Roteiro
           </h2>
           {roteiro?.conteudo ? (
-            <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">
-              {JSON.stringify(roteiro.conteudo, null, 2)}
-            </pre>
+            <RoteiroView conteudo={roteiro.conteudo} />
           ) : (
             <p className="text-sm text-muted-foreground italic">Aguardando produção.</p>
           )}
@@ -165,9 +361,7 @@ function AprovacaoPage() {
             Briefing visual
           </h2>
           {arte?.briefing ? (
-            <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">
-              {JSON.stringify(arte.briefing, null, 2)}
-            </pre>
+            <BriefingView briefing={arte.briefing} />
           ) : (
             <p className="text-sm text-muted-foreground italic">Aguardando produção.</p>
           )}
