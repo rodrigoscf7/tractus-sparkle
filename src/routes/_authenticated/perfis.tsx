@@ -75,9 +75,9 @@ function PerfisPage() {
   }
 
   return (
-    <div className="p-8 max-w-[1400px]">
-      <header className="mb-8">
-        <h1 className="text-3xl font-display font-bold">Perfis</h1>
+    <div className="p-4 sm:p-8 max-w-[1400px]">
+      <header className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold">Perfis</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Volume e status de conteúdo por perfil. Selecione um para gerenciar referências.
         </p>
