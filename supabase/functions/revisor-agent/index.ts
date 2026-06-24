@@ -21,9 +21,12 @@ Retorne APENAS um JSON:
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let pautaId: string | null = null;
+
   try {
     await setStatus("revisor", "working", "revisando consistência");
     const { pauta_id } = await req.json();
+    pautaId = pauta_id;
     const supabase = getServiceClient();
 
     const { data: pauta } = await supabase
@@ -60,7 +63,11 @@ Deno.serve(async (req) => {
       .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
       .replace("{{conteudo_completo}}", JSON.stringify(conteudoCompleto));
 
-    const text = await callClaude(system, "Faça a revisão agora.", 1500);
+    const text = await callClaude(
+      `${system}\nLimite a resposta a no máximo 3 inconsistências curtas. Não use markdown nem bloco de código.`,
+      "Faça a revisão agora.",
+      900,
+    );
     const parsed = extractJson<{
       aprovado_para_revisao_humana: boolean;
       inconsistencias: string[];
@@ -87,6 +94,21 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error(e);
+    if (pautaId && String(e).includes("No JSON found")) {
+      const supabase = getServiceClient();
+      await supabase
+        .from("pautas_geradas")
+        .update({ status: "aguardando_aprovacao" })
+        .eq("id", pautaId);
+      await setStatus(
+        "revisor",
+        "idle",
+        `pauta ${pautaId.slice(0, 8)} enviada para aprovação humana; revisão automática veio sem formato válido`,
+      );
+      return new Response(JSON.stringify({ ok: true, fallback: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     await setStatus("revisor", "error", formatAgentError(e));
     return new Response(JSON.stringify({ ok: false, error: String(e) }), {
       status: 500,
