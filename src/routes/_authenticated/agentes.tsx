@@ -18,6 +18,14 @@ const STATE_META: Record<string, { label: string; tone: string; dot: string }> =
   error: { label: "Erro", tone: "text-destructive", dot: "bg-destructive" },
 };
 
+function formatLastAction(action?: string | null) {
+  if (!action) return "—";
+  if (action.includes("Anthropic error 429") || action.includes("rate limit")) {
+    return "Limite temporário do modelo atingido; o agente tentará novamente no próximo ciclo.";
+  }
+  return action.length > 180 ? `${action.slice(0, 180)}…` : action;
+}
+
 function AgentesPage() {
   const { data, refetch } = useQuery({
     queryKey: ["agentes-status"],
@@ -71,8 +79,8 @@ function AgentesPage() {
                 <div className="font-mono uppercase tracking-wider text-[10px] mb-1">
                   Última ação
                 </div>
-                <div className="text-foreground/80 text-xs leading-relaxed">
-                  {a?.ultima_acao ?? "—"}
+                <div className="text-foreground/80 text-xs leading-relaxed break-words">
+                  {formatLastAction(a?.ultima_acao)}
                 </div>
                 {a?.atualizado_em && (
                   <div className="mt-2 text-[10px] font-mono text-muted-foreground/60">

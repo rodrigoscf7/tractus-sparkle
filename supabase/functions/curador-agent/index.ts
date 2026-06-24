@@ -3,12 +3,13 @@
 //   perfis_referencia ativos e dispara 1 invocação por ref (fire-and-forget)
 //   via fetch para esta mesma function com ?ref_id=...
 // - Modo worker (com ref_id): processa apenas 1 ref — busca via Apify, scoreia
-//   com Claude, insere em conteudos_curados, e ao final chama o ideador-agent
-//   uma única vez para o perfil correspondente.
+//   com Claude e insere em conteudos_curados. O ideador roda em cron separado
+//   depois da curadoria para evitar estouro de limite por paralelismo.
 import {
   callClaude,
   corsHeaders,
   extractJson,
+  formatAgentError,
   getServiceClient,
   setStatus,
 } from "../_shared/agent-utils.ts";
@@ -66,7 +67,7 @@ async function processRef(refId: string) {
         body: JSON.stringify({
           directUrls: [`https://www.instagram.com/${ref.handle}/`],
           resultsType: "posts",
-          resultsLimit: 20,
+          resultsLimit: 2,
         }),
         signal: ctrl.signal,
       },
@@ -83,7 +84,6 @@ async function processRef(refId: string) {
   }
 
   let curados = 0;
-  let temScoreAlto = false;
 
   for (const post of posts) {
     if (post.url) {
@@ -111,7 +111,7 @@ async function processRef(refId: string) {
 
     try {
       const text = await withTimeout(
-        callClaude(system, userPrompt, 800),
+        callClaude(system, userPrompt, 220),
         CLAUDE_TIMEOUT_MS,
         `claude ${ref.handle}`,
       );
@@ -135,26 +135,9 @@ async function processRef(refId: string) {
         texto_original: post.caption ?? null,
       });
       curados++;
-      if (parsed.score_curadoria >= 7) temScoreAlto = true;
     } catch (e) {
       console.error("Curador item error", ref.handle, e);
     }
-  }
-
-  // Chama ideador 1x para o perfil, somente se houve conteúdo aproveitável >= 7
-  if (temScoreAlto) {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    // fire-and-forget
-    fetch(`${supabaseUrl}/functions/v1/ideador-agent`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
-      },
-      body: JSON.stringify({ perfil_referencia_id: ref.id }),
-    }).catch((e) => console.error("ideador trigger failed", e));
   }
 
   return { ref: ref.handle, curados };
@@ -178,7 +161,7 @@ Deno.serve(async (req) => {
       });
     } catch (e) {
       console.error("worker error", e);
-      await setStatus("curador", "error", String(e).slice(0, 200));
+      await setStatus("curador", "error", formatAgentError(e));
       return new Response(JSON.stringify({ ok: false, error: String(e) }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -220,7 +203,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error(e);
-    await setStatus("curador", "error", String(e).slice(0, 200));
+    await setStatus("curador", "error", formatAgentError(e));
     return new Response(JSON.stringify({ ok: false, error: String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
