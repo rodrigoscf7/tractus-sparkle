@@ -1,9 +1,10 @@
-// Revisor: dispara quando copy + visual terminam. Checa consistência e, se ok,
-// move a pauta para 'aguardando_aprovacao'.
+// Revisor: dispara quando copy + visual terminam. Checa consistência e sempre
+// move a pauta para 'aguardando_aprovacao' para a decisão humana final.
 import {
   callClaude,
   corsHeaders,
   extractJson,
+  formatAgentError,
   getServiceClient,
   setStatus,
 } from "../_shared/agent-utils.ts";
@@ -20,9 +21,12 @@ Retorne APENAS um JSON:
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let pautaId: string | null = null;
+
   try {
     await setStatus("revisor", "working", "revisando consistência");
     const { pauta_id } = await req.json();
+    pautaId = pauta_id;
     const supabase = getServiceClient();
 
     const { data: pauta } = await supabase
@@ -59,33 +63,53 @@ Deno.serve(async (req) => {
       .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
       .replace("{{conteudo_completo}}", JSON.stringify(conteudoCompleto));
 
-    const text = await callClaude(system, "Faça a revisão agora.", 1500);
+    const text = await callClaude(
+      `${system}\nLimite a resposta a no máximo 3 inconsistências curtas. Não use markdown nem bloco de código.`,
+      "Faça a revisão agora.",
+      900,
+    );
     const parsed = extractJson<{
       aprovado_para_revisao_humana: boolean;
       inconsistencias: string[];
       sugestao_ajuste: string | null;
     }>(text);
 
-    if (parsed.aprovado_para_revisao_humana) {
-      await supabase
-        .from("pautas_geradas")
-        .update({ status: "aguardando_aprovacao" })
-        .eq("id", pauta_id);
-      await setStatus("revisor", "idle", `pauta ${pauta_id.slice(0, 8)} aprovada para humano`);
-    } else {
-      await setStatus(
-        "revisor",
-        "waiting",
-        `pauta ${pauta_id.slice(0, 8)} com inconsistências: ${parsed.inconsistencias.join("; ").slice(0, 120)}`,
-      );
-    }
+    await supabase
+      .from("pautas_geradas")
+      .update({ status: "aguardando_aprovacao" })
+      .eq("id", pauta_id);
+
+    const inconsistencias = parsed.inconsistencias?.filter(Boolean) ?? [];
+    const detalhes = inconsistencias.length
+      ? ` com observações: ${inconsistencias.join("; ").slice(0, 120)}`
+      : " sem inconsistências críticas";
+    await setStatus(
+      "revisor",
+      "idle",
+      `pauta ${pauta_id.slice(0, 8)} enviada para aprovação humana${detalhes}`,
+    );
 
     return new Response(JSON.stringify({ ok: true, ...parsed }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error(e);
-    await setStatus("revisor", "error", String(e).slice(0, 200));
+    if (pautaId && String(e).includes("No JSON found")) {
+      const supabase = getServiceClient();
+      await supabase
+        .from("pautas_geradas")
+        .update({ status: "aguardando_aprovacao" })
+        .eq("id", pautaId);
+      await setStatus(
+        "revisor",
+        "idle",
+        `pauta ${pautaId.slice(0, 8)} enviada para aprovação humana; revisão automática veio sem formato válido`,
+      );
+      return new Response(JSON.stringify({ ok: true, fallback: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    await setStatus("revisor", "error", formatAgentError(e));
     return new Response(JSON.stringify({ ok: false, error: String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

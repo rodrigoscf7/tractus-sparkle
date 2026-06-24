@@ -354,6 +354,7 @@ export type Database = {
     }
     Functions: {
       promote_next_pauta: { Args: never; Returns: undefined }
+      revisar_next_pauta_pronta: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
