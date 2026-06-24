@@ -3,8 +3,8 @@
 //   perfis_referencia ativos e dispara 1 invocação por ref (fire-and-forget)
 //   via fetch para esta mesma function com ?ref_id=...
 // - Modo worker (com ref_id): processa apenas 1 ref — busca via Apify, scoreia
-//   com Claude, insere em conteudos_curados, e tenta acionar o ideador apenas
-//   uma vez por rodada para evitar estouro de limite por paralelismo.
+//   com Claude e insere em conteudos_curados. O ideador roda em cron separado
+//   depois da curadoria para evitar estouro de limite por paralelismo.
 import {
   callClaude,
   corsHeaders,
@@ -67,7 +67,7 @@ async function processRef(refId: string) {
         body: JSON.stringify({
           directUrls: [`https://www.instagram.com/${ref.handle}/`],
           resultsType: "posts",
-          resultsLimit: 20,
+          resultsLimit: 3,
         }),
         signal: ctrl.signal,
       },
@@ -84,7 +84,6 @@ async function processRef(refId: string) {
   }
 
   let curados = 0;
-  let temScoreAlto = false;
 
   for (const post of posts) {
     if (post.url) {
@@ -136,57 +135,12 @@ async function processRef(refId: string) {
         texto_original: post.caption ?? null,
       });
       curados++;
-      if (parsed.score_curadoria >= 7) temScoreAlto = true;
     } catch (e) {
       console.error("Curador item error", ref.handle, e);
     }
   }
 
-  // Chama ideador 1x para o perfil, somente se houve conteúdo aproveitável >= 7
-  if (temScoreAlto) {
-    await triggerIdeadorOnce(perfil.id, ref.id);
-  }
-
   return { ref: ref.handle, curados };
-}
-
-async function triggerIdeadorOnce(perfilId: string, perfilReferenciaId: string) {
-  const supabase = getServiceClient();
-  const runStartedAt = new URLSearchParams(location.search).get("run_started_at") ?? new Date().toISOString();
-
-  const { data: lock, error } = await supabase
-    .from("agentes_status")
-    .update({
-      estado_atual: "waiting",
-      ultima_acao: "ideador em fila para a rodada atual",
-      atualizado_em: new Date().toISOString(),
-    })
-    .eq("agente_nome", "ideador")
-    .in("estado_atual", ["idle", "error"])
-    .lt("atualizado_em", runStartedAt)
-    .select("agente_nome")
-    .maybeSingle();
-
-  if (error || !lock) {
-    if (error) console.error("ideador lock failed", error);
-    return;
-  }
-
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const res = await fetch(`${supabaseUrl}/functions/v1/ideador-agent`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: anonKey,
-      Authorization: `Bearer ${anonKey}`,
-    },
-    body: JSON.stringify({ perfil_id: perfilId, perfil_referencia_id: perfilReferenciaId }),
-  });
-
-  if (!res.ok) {
-    console.error("ideador trigger failed", res.status, await res.text());
-  }
 }
 
 Deno.serve(async (req) => {
@@ -228,12 +182,11 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const fnUrl = `${supabaseUrl}/functions/v1/curador-agent`;
-    const runStartedAt = new Date().toISOString();
 
     let disparados = 0;
     for (const ref of refs ?? []) {
       // fire-and-forget; cada worker faz seu próprio setStatus e roda independente
-      fetch(`${fnUrl}?ref_id=${ref.id}&run_started_at=${encodeURIComponent(runStartedAt)}`, {
+      fetch(`${fnUrl}?ref_id=${ref.id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
