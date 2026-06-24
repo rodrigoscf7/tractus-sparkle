@@ -111,7 +111,7 @@ async function processRef(refId: string) {
 
     try {
       const text = await withTimeout(
-        callClaude(system, userPrompt, 800),
+        callClaude(system, userPrompt, 300),
         CLAUDE_TIMEOUT_MS,
         `claude ${ref.handle}`,
       );
