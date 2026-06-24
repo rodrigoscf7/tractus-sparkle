@@ -147,7 +147,7 @@ const TABLE_BY_AGENT: Record<Agente, string> = {
 };
 
 function AgenteDetalhePage() {
-  const { agente } = Route.useParams();
+  const { agente } = Route.useParams() as { agente: Agente };
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
 
