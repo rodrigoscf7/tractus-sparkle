@@ -350,9 +350,7 @@ function AprovacaoPage() {
             Roteiro
           </h2>
           {roteiro?.conteudo ? (
-            <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">
-              {JSON.stringify(roteiro.conteudo, null, 2)}
-            </pre>
+            <RoteiroView conteudo={roteiro.conteudo} />
           ) : (
             <p className="text-sm text-muted-foreground italic">Aguardando produção.</p>
           )}
@@ -363,9 +361,7 @@ function AprovacaoPage() {
             Briefing visual
           </h2>
           {arte?.briefing ? (
-            <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">
-              {JSON.stringify(arte.briefing, null, 2)}
-            </pre>
+            <BriefingView briefing={arte.briefing} />
           ) : (
             <p className="text-sm text-muted-foreground italic">Aguardando produção.</p>
           )}
