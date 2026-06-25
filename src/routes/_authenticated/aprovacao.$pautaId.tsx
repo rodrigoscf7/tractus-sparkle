@@ -446,7 +446,7 @@ function AprovacaoPage() {
 
         <Card className="p-6 bg-surface border-border">
           <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
-            Briefing visual
+            Direção de gravação
           </h2>
           {arte?.briefing ? (
             <BriefingView briefing={arte.briefing} />
