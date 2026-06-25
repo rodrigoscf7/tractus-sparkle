@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       )
       .replace("{{historico_artes_rejeitadas}}", formatHistorico(historico));
 
-    const text = await callClaude(system, "Produza o briefing visual.", 2000);
+    const text = await callClaude(system, "Produza o briefing visual em JSON compacto, sem comentários extras.", 4000);
     const parsed = extractJson(text);
 
     await supabase.from("artes").insert({
