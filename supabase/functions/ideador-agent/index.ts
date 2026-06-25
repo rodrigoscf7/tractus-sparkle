@@ -167,7 +167,7 @@ async function gerarPautasDoPerfil(supabase: SupabaseClient, perfilId: string) {
       origem_curadoria_id: origemId,
       tema: p.tema,
       angulo: p.angulo,
-      formato_sugerido: p.formato_sugerido,
+      formato_sugerido: "Reel falado",
       status: "gerada",
     });
     if (!error) inserted++;
