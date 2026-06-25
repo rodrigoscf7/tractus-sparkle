@@ -1,4 +1,4 @@
-// Visual: gera briefing visual a partir da pauta + identidade visual do perfil.
+// Visual: direção de gravação enxuta para Reel falado.
 import {
   callClaude,
   corsHeaders,
@@ -9,21 +9,27 @@ import {
   setStatus,
 } from "../_shared/agent-utils.ts";
 
-const SYSTEM = `Você é o agente de direção visual da Tractus para: {{perfil_nome}}.
-Identidade visual vigente (extraída do brandbook): {{perfil_identidade_visual}}
-Roteiro/pauta de referência: {{roteiro_completo}}
-Histórico de artes rejeitadas (não repita): {{historico_artes_rejeitadas}}
-Seja específico em composição — evite termos vagos como "moderno" sem detalhar paleta,
-tipografia e hierarquia.
-Retorne APENAS um JSON:
-{ "estilo_geral": "string", "paleta_cores": ["hex"], "estrutura_por_slide_ou_frame": ["string"],
-  "tipografia": "string", "observacoes_producao": "string" }`;
+const SYSTEM = `Você dirige a GRAVAÇÃO de Reels falados para: {{perfil_nome}}.
+O conteúdo é uma pessoa falando à câmera (30-60s). NÃO é carrossel, NÃO é arte estática.
+Identidade visual do perfil (use como referência, não repita inteira): {{perfil_identidade_visual}}
+Pauta: {{pauta_resumo}}
+Histórico de direções rejeitadas: {{historico_artes_rejeitadas}}
+
+Seja MUITO enxuto. Cada campo abaixo é uma frase curta e prática, escrita para quem vai gravar amanhã. Nada de jargão técnico de produção, nada de parâmetros de câmera, nada de "moderno/clean/minimalista" sem dizer o que é.
+
+Retorne APENAS um JSON compacto:
+{ "cenario": "onde gravar, em 1 frase",
+  "enquadramento": "plano e altura da câmera, em 1 frase",
+  "figurino_e_postura": "como a pessoa deve aparecer, em 1 frase",
+  "texto_em_tela": "frase curta (até 8 palavras) que aparece sobreposta no início do vídeo",
+  "legenda_visual_de_apoio": "1 frase opcional que reforça o gancho no meio do vídeo, ou string vazia",
+  "clima": "uma palavra ou expressão curta que descreve a sensação (ex: confidencial, urgente, sereno)" }`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    await setStatus("visual", "working", "produzindo briefing visual");
+    await setStatus("visual", "working", "produzindo direção de gravação");
     const { pauta_id } = await req.json();
     const supabase = getServiceClient();
 
@@ -40,14 +46,14 @@ Deno.serve(async (req) => {
 
     const system = SYSTEM
       .replace("{{perfil_nome}}", perfil.nome)
-      .replace("{{perfil_identidade_visual}}", JSON.stringify(perfil.identidade_visual))
+      .replace("{{perfil_identidade_visual}}", JSON.stringify(perfil.identidade_visual).slice(0, 800))
       .replace(
-        "{{roteiro_completo}}",
-        `tema=${pauta!.tema}; ângulo=${pauta!.angulo}; formato=${pauta!.formato_sugerido}`,
+        "{{pauta_resumo}}",
+        `tema=${pauta!.tema}; ângulo=${pauta!.angulo}`,
       )
       .replace("{{historico_artes_rejeitadas}}", formatHistorico(historico));
 
-    const text = await callClaude(system, "Produza o briefing visual em JSON compacto, sem comentários extras.", 4000);
+    const text = await callClaude(system, "Direção de gravação em JSON compacto.", 600);
     const parsed = extractJson(text);
 
     await supabase.from("artes").insert({
@@ -56,7 +62,7 @@ Deno.serve(async (req) => {
       status: "pronto",
     });
 
-    await setStatus("visual", "idle", `arte pronta para pauta ${pauta_id.slice(0, 8)}`);
+    await setStatus("visual", "idle", `direção pronta para pauta ${pauta_id.slice(0, 8)}`);
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
