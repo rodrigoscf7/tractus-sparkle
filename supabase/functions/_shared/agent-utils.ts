@@ -84,11 +84,49 @@ export function extractJson<T = unknown>(text: string): T {
     return JSON.parse(text) as T;
   } catch {
     const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (fenced) return JSON.parse(fenced[1]) as T;
-    const m = text.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]) as T;
+    if (fenced) {
+      try { return JSON.parse(fenced[1]) as T; } catch { /* fall through */ }
+    }
+    // Look for the first { and try progressively balanced substrings
+    const start = text.indexOf("{");
+    if (start >= 0) {
+      const candidate = text.slice(start);
+      try { return JSON.parse(candidate) as T; } catch { /* try repair */ }
+      // Attempt to repair truncated JSON by closing open braces/brackets
+      const repaired = repairTruncatedJson(candidate);
+      if (repaired) {
+        try { return JSON.parse(repaired) as T; } catch { /* give up */ }
+      }
+    }
     throw new Error("No JSON found in model response: " + text.slice(0, 300));
   }
+}
+
+function repairTruncatedJson(s: string): string | null {
+  // Strip trailing incomplete token, then balance braces/brackets and close strings
+  let str = s;
+  // If we're inside a string, close it
+  let inStr = false;
+  let escape = false;
+  const stack: string[] = [];
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (escape) { escape = false; continue; }
+    if (c === "\\") { escape = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === "{" || c === "[") stack.push(c);
+    else if (c === "}" && stack[stack.length - 1] === "{") stack.pop();
+    else if (c === "]" && stack[stack.length - 1] === "[") stack.pop();
+  }
+  if (inStr) str += '"';
+  // remove trailing comma if any
+  str = str.replace(/,\s*$/, "");
+  while (stack.length) {
+    const open = stack.pop();
+    str += open === "{" ? "}" : "]";
+  }
+  return str;
 }
 
 export async function getHistoricoDecisoes(perfilId: string, limit = 20) {
