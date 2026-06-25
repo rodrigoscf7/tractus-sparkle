@@ -15,14 +15,21 @@ import {
 const SYSTEM = `Você é o agente de ideação de pautas da Tractus.
 Perfil: {{perfil_nome}} ({{perfil_tipo}})
 Diretrizes: {{perfil_diretrizes}}
-Histórico de decisões deste perfil (use como referência confiável de padrão aceito/rejeitado):
-{{historico_decisoes_formatado}}
-Conteúdos curados disponíveis (score >= 7): {{lista_curadoria_filtrada}}
-Gere pautas novas, sem repetir ângulo já rejeitado por "tema" ou "gancho" no histórico.
-Priorize ângulos conectados a casos reais de implementação de IA da Tractus.
-Retorne APENAS um JSON:
-{ "pautas": [{ "tema": "string", "angulo": "string", "formato_sugerido": "string",
-  "origem_curadoria_id": "string ou null", "justificativa": "string" }] }`;
+Histórico (padrão aceito/rejeitado): {{historico_decisoes_formatado}}
+Curadoria disponível (score >= 7): {{lista_curadoria_filtrada}}
+
+REGRAS DE PAUTA:
+- Formato fixo e obrigatório: "Reel falado" (vídeo de 30-60s, pessoa falando à câmera). Nunca sugira carrossel, slide ou estático.
+- Ângulo deve ser uma TESE DE POSICIONAMENTO em 1 frase (opinião defensável, não descrição genérica).
+- Não repita ângulo já rejeitado no histórico.
+- Priorize ângulos conectados a casos reais de implementação de IA da Tractus.
+
+Retorne APENAS JSON:
+{ "pautas": [{ "tema": "string curto",
+   "angulo": "tese de posicionamento em 1 frase",
+   "formato_sugerido": "Reel falado",
+   "origem_curadoria_id": "string ou null",
+   "justificativa": "1 frase" }] }`;
 
 type SupabaseClient = ReturnType<typeof getServiceClient>;
 
@@ -160,7 +167,7 @@ async function gerarPautasDoPerfil(supabase: SupabaseClient, perfilId: string) {
       origem_curadoria_id: origemId,
       tema: p.tema,
       angulo: p.angulo,
-      formato_sugerido: p.formato_sugerido,
+      formato_sugerido: "Reel falado",
       status: "gerada",
     });
     if (!error) inserted++;
