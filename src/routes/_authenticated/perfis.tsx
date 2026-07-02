@@ -19,7 +19,7 @@ function PerfisPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [novoHandle, setNovoHandle] = useState("");
 
-  const { data: perfis } = useQuery({
+  const { data: perfis, refetch: refetchPerfis } = useQuery({
     queryKey: ["perfis-all"],
     queryFn: async () => {
       const { data, error } = await supabase.from("perfis").select("*").order("tipo").order("nome");
