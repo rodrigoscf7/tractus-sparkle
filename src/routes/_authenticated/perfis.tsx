@@ -126,29 +126,12 @@ function PerfisPage() {
 
       {active && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="p-6 bg-surface border-border">
-            <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
-              Identidade · {active.nome}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-                  Diretrizes
-                </div>
-                <pre className="text-xs bg-background p-3 rounded border border-border overflow-auto max-h-80 whitespace-pre-wrap">
-                  {JSON.stringify(active.diretrizes, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-                  Identidade visual
-                </div>
-                <pre className="text-xs bg-background p-3 rounded border border-border overflow-auto max-h-80 whitespace-pre-wrap">
-                  {JSON.stringify(active.identidade_visual, null, 2)}
-                </pre>
-              </div>
-            </div>
-          </Card>
+          <IdentityEditor
+            key={active.id}
+            perfil={active}
+            onSaved={() => refetchPerfis()}
+          />
+
 
           <Card className="p-6 bg-surface border-border">
             <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
