@@ -173,3 +173,105 @@ function PerfisPage() {
     </div>
   );
 }
+
+type Perfil = {
+  id: string;
+  nome: string;
+  tom_de_voz: string | null;
+  diretrizes: unknown;
+  identidade_visual: unknown;
+};
+
+function IdentityEditor({ perfil, onSaved }: { perfil: Perfil; onSaved: () => void }) {
+  const [tom, setTom] = useState(perfil.tom_de_voz ?? "");
+  const [diretrizes, setDiretrizes] = useState(
+    JSON.stringify(perfil.diretrizes ?? {}, null, 2),
+  );
+  const [identidade, setIdentidade] = useState(
+    JSON.stringify(perfil.identidade_visual ?? {}, null, 2),
+  );
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setTom(perfil.tom_de_voz ?? "");
+    setDiretrizes(JSON.stringify(perfil.diretrizes ?? {}, null, 2));
+    setIdentidade(JSON.stringify(perfil.identidade_visual ?? {}, null, 2));
+  }, [perfil.id]);
+
+  async function save() {
+    let dirJson: unknown;
+    let idJson: unknown;
+    try {
+      dirJson = JSON.parse(diretrizes || "{}");
+    } catch {
+      toast.error("Diretrizes: JSON inválido.");
+      return;
+    }
+    try {
+      idJson = JSON.parse(identidade || "{}");
+    } catch {
+      toast.error("Identidade visual: JSON inválido.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("perfis")
+      .update({
+        tom_de_voz: tom.trim() || null,
+        diretrizes: dirJson as never,
+        identidade_visual: idJson as never,
+      })
+      .eq("id", perfil.id);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Perfil atualizado.");
+    onSaved();
+  }
+
+  return (
+    <Card className="p-6 bg-surface border-border">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+          Identidade · {perfil.nome}
+        </h2>
+        <Button size="sm" onClick={save} disabled={saving}>
+          {saving ? "Salvando..." : "Salvar"}
+        </Button>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+            Tom de voz
+          </div>
+          <Input value={tom} onChange={(e) => setTom(e.target.value)} placeholder="ex: direto, provocativo, empático" />
+        </div>
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+            Diretrizes (JSON)
+          </div>
+          <Textarea
+            value={diretrizes}
+            onChange={(e) => setDiretrizes(e.target.value)}
+            className="font-mono text-xs min-h-64"
+            spellCheck={false}
+          />
+        </div>
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+            Identidade visual (JSON)
+          </div>
+          <Textarea
+            value={identidade}
+            onChange={(e) => setIdentidade(e.target.value)}
+            className="font-mono text-xs min-h-64"
+            spellCheck={false}
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
