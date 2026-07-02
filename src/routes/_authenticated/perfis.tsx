@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/perfis")({
@@ -18,7 +19,7 @@ function PerfisPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [novoHandle, setNovoHandle] = useState("");
 
-  const { data: perfis } = useQuery({
+  const { data: perfis, refetch: refetchPerfis } = useQuery({
     queryKey: ["perfis-all"],
     queryFn: async () => {
       const { data, error } = await supabase.from("perfis").select("*").order("tipo").order("nome");
@@ -125,29 +126,12 @@ function PerfisPage() {
 
       {active && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="p-6 bg-surface border-border">
-            <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
-              Identidade · {active.nome}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-                  Diretrizes
-                </div>
-                <pre className="text-xs bg-background p-3 rounded border border-border overflow-auto max-h-80 whitespace-pre-wrap">
-                  {JSON.stringify(active.diretrizes, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-                  Identidade visual
-                </div>
-                <pre className="text-xs bg-background p-3 rounded border border-border overflow-auto max-h-80 whitespace-pre-wrap">
-                  {JSON.stringify(active.identidade_visual, null, 2)}
-                </pre>
-              </div>
-            </div>
-          </Card>
+          <IdentityEditor
+            key={active.id}
+            perfil={active}
+            onSaved={() => refetchPerfis()}
+          />
+
 
           <Card className="p-6 bg-surface border-border">
             <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
@@ -189,3 +173,105 @@ function PerfisPage() {
     </div>
   );
 }
+
+type Perfil = {
+  id: string;
+  nome: string;
+  tom_de_voz: string | null;
+  diretrizes: unknown;
+  identidade_visual: unknown;
+};
+
+function IdentityEditor({ perfil, onSaved }: { perfil: Perfil; onSaved: () => void }) {
+  const [tom, setTom] = useState(perfil.tom_de_voz ?? "");
+  const [diretrizes, setDiretrizes] = useState(
+    JSON.stringify(perfil.diretrizes ?? {}, null, 2),
+  );
+  const [identidade, setIdentidade] = useState(
+    JSON.stringify(perfil.identidade_visual ?? {}, null, 2),
+  );
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setTom(perfil.tom_de_voz ?? "");
+    setDiretrizes(JSON.stringify(perfil.diretrizes ?? {}, null, 2));
+    setIdentidade(JSON.stringify(perfil.identidade_visual ?? {}, null, 2));
+  }, [perfil.id]);
+
+  async function save() {
+    let dirJson: unknown;
+    let idJson: unknown;
+    try {
+      dirJson = JSON.parse(diretrizes || "{}");
+    } catch {
+      toast.error("Diretrizes: JSON inválido.");
+      return;
+    }
+    try {
+      idJson = JSON.parse(identidade || "{}");
+    } catch {
+      toast.error("Identidade visual: JSON inválido.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("perfis")
+      .update({
+        tom_de_voz: tom.trim() || null,
+        diretrizes: dirJson as never,
+        identidade_visual: idJson as never,
+      })
+      .eq("id", perfil.id);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Perfil atualizado.");
+    onSaved();
+  }
+
+  return (
+    <Card className="p-6 bg-surface border-border">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+          Identidade · {perfil.nome}
+        </h2>
+        <Button size="sm" onClick={save} disabled={saving}>
+          {saving ? "Salvando..." : "Salvar"}
+        </Button>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+            Tom de voz
+          </div>
+          <Input value={tom} onChange={(e) => setTom(e.target.value)} placeholder="ex: direto, provocativo, empático" />
+        </div>
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+            Diretrizes (JSON)
+          </div>
+          <Textarea
+            value={diretrizes}
+            onChange={(e) => setDiretrizes(e.target.value)}
+            className="font-mono text-xs min-h-64"
+            spellCheck={false}
+          />
+        </div>
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+            Identidade visual (JSON)
+          </div>
+          <Textarea
+            value={identidade}
+            onChange={(e) => setIdentidade(e.target.value)}
+            className="font-mono text-xs min-h-64"
+            spellCheck={false}
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
