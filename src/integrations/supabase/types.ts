@@ -73,36 +73,48 @@ export type Database = {
       conteudos_curados: {
         Row: {
           capturado_em: string | null
+          comentarios: number | null
           formato: string | null
           gancho: string | null
           id: string
+          likes: number | null
           perfil_referencia_id: string | null
+          postado_em: string | null
           score_curadoria: number | null
           tema: string | null
           texto_original: string | null
           url: string | null
+          views: number | null
         }
         Insert: {
           capturado_em?: string | null
+          comentarios?: number | null
           formato?: string | null
           gancho?: string | null
           id?: string
+          likes?: number | null
           perfil_referencia_id?: string | null
+          postado_em?: string | null
           score_curadoria?: number | null
           tema?: string | null
           texto_original?: string | null
           url?: string | null
+          views?: number | null
         }
         Update: {
           capturado_em?: string | null
+          comentarios?: number | null
           formato?: string | null
           gancho?: string | null
           id?: string
+          likes?: number | null
           perfil_referencia_id?: string | null
+          postado_em?: string | null
           score_curadoria?: number | null
           tema?: string | null
           texto_original?: string | null
           url?: string | null
+          views?: number | null
         }
         Relationships: [
           {
