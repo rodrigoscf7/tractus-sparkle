@@ -1,77 +1,60 @@
-## Objetivo
+# Página de agentes: visão de processo, não só resultado
 
-Cadastrar a nova cliente **Márcia Canuto** como um perfil ativo no dashboard, com identidade e diretrizes ricas o suficiente para que curador → ideador → copy → visual gerem Reels falados alinhados ao raio-x fornecido.
+Hoje `/agentes/:agente` lista os itens produzidos e cada clique leva pra tela de aprovação. Vou transformar essa página no "raio-x" do agente: como ele decide, com o que trabalhou e o que entregou — mantendo o pipeline atual intocado.
 
-## O que será feito
+## O que muda em cada página de agente
 
-Uma única migração de dados (INSERT no `perfis`), sem mudança de schema, sem mudança de código, sem mudança de UI. O perfil aparecerá automaticamente em `/perfis`, `/agentes/*` e no pipeline assim que inserido.
+**Topo (fixo, por agente)** — bloco humanizado "Como este agente decide":
+- Explicação em português do papel, dos critérios e dos gatilhos.
+- Fontes de dados que consulta (perfis de referência, curadoria, pauta etc.).
+- Regras concretas (ex.: curador só grava se `score ≥ 7`; ideador gera fallback evergreen quando não há curadoria nova).
+- Estatísticas do dia: nº de execuções, aproveitados vs descartados, última rodada.
 
-Depois de criado, o próximo passo natural (que **não** faz parte desta migração — fica pra você fazer pela tela `/perfis` ou pedir num próximo turno) é adicionar os handles do Instagram que servirão de referência pra curadoria dela.
+**Timeline de execuções** — cada item vira um card expansível (accordion), não mais um link direto pra aprovação:
 
-## Estrutura do registro
+- **Curador** — por conteúdo curado:
+  - Post original: handle, formato, link pro Instagram, data, likes, views, comentários.
+  - Análise do agente: `tema`, `gancho`, `score`, `motivo do score`.
+  - Trecho da caption original (colapsável).
+  - Se virou pauta, link "→ ver pauta gerada".
+- **Ideador** — por pauta:
+  - Origem: card do conteúdo curado que inspirou (ou marca "evergreen / posicionamento" quando é fallback).
+  - Pauta: tema, ângulo, formato.
+  - Perfil-alvo e diretrizes que pesaram.
+  - Link "→ ver roteiro/arte" quando existirem.
+- **Copy** — por roteiro:
+  - Pauta de entrada (tema/ângulo).
+  - Saída humanizada: gancho falado, desenvolvimento, CTA, legenda.
+  - Roteiros rejeitados do mesmo perfil que ele evitou repetir (contagem + amostra).
+- **Visual** — por briefing:
+  - Pauta + roteiro que serviram de base.
+  - Direções de gravação em texto corrido.
+- **Revisor** — por decisão:
+  - Pauta + roteiro + visual revisados.
+  - Status final (aprovada / aguardando / rejeitada) e, quando houver, comentário do usuário na aprovação.
 
-Campos da tabela `perfis` que serão preenchidos:
+O link para `/aprovacao/:pautaId` continua existindo, mas como botão explícito ("Ver na aprovação"), não como o clique inteiro do card.
 
-- **nome**: `Márcia Canuto`
-- **tipo**: `cliente` (novo valor — segue o padrão livre já usado: `institucional`, `socio`)
-- **tom_de_voz**: resumo em 1 linha para o cabeçalho dos prompts
-- **diretrizes** (JSON): posicionamento, mantra, motor psicológico (medo de perda / prova de ganho oculto / inimigo nomeado), pilares de conteúdo, regras práticas, temas a evitar
-- **identidade_visual** (JSON): direção enxuta para gravação de Reel falado — cenário sugerido, figurino, clima, texto em tela padrão. Sem paleta/tipografia inventada (você não passou identidade visual; melhor deixar como direção de gravação do que fabricar cores).
+## Pequeno ajuste de dados (necessário pra "ver métricas do post")
 
-## Conteúdo proposto para `diretrizes`
+Hoje o curador **analisa** likes/views/comentários mas só persiste `score`, `tema`, `gancho`, `url`, `formato`, `texto_original`. Pra você ver as métricas do reel de referência sem depender de rebuscar no Apify, adiciono 4 colunas em `conteudos_curados`:
 
-```json
-{
-  "posicionamento": "Advogada previdenciária que defende o beneficiário contra o INSS — avisa antes que o sistema prejudique.",
-  "publico": "Aposentados, pensionistas e famílias que dependem de benefício do INSS e têm medo de perder direito ou de cair em armadilha administrativa.",
-  "tom_de_voz": "Proximidade regional, humor leve, zero juridiquês. Frases curtas. Alerta antes de didatismo.",
-  "mantras": [
-    "Na luta dos direitos contra o INSS"
-  ],
-  "motor_psicologico": {
-    "medo_de_perda": "corte de benefício, perícia negada, prazo perdido",
-    "prova_de_ganho_oculto": "valor em R$, benefício desconhecido, revisão possível",
-    "inimigo_nomeado": "INSS, perito, CRAS"
-  },
-  "pilares_conteudo": [
-    "Alerta de armadilha do INSS",
-    "Direito oculto com valor concreto",
-    "Bastidor humanizado do escritório"
-  ],
-  "regras_de_gancho": [
-    "Título sempre com alerta, pergunta retórica ou urgência de notícia — nunca afirmação neutra",
-    "Sempre que possível incluir número concreto (prazo, valor, quantidade)",
-    "Nomear o antagonista institucional (INSS/perito/CRAS) na maior parte dos ganchos",
-    "Vocabulário cotidiano, frases curtas, zero jargão técnico-jurídico"
-  ],
-  "temas_evitar": [
-    "juridiquês e citação de artigo de lei no gancho",
-    "tom institucional/formal de escritório tradicional",
-    "promessa de ganhar causa"
-  ]
-}
-```
+- `likes int`, `comentarios int`, `views int`, `postado_em timestamptz`
 
-## Conteúdo proposto para `identidade_visual`
-
-```json
-{
-  "formato_padrao": "Reel falado 30-60s, câmera na altura dos olhos, ambiente do escritório ou fundo neutro claro",
-  "figurino_padrao": "Traje profissional discreto, sem toga, sem paletó pesado — proximidade regional",
-  "clima_padrao": "confidencial e protetor, como quem avisa alguém antes que aconteça",
-  "texto_em_tela_padrao": "frase-alerta curta (até 8 palavras) reforçando o gancho no primeiro segundo",
-  "observacao": "Identidade visual gráfica ainda não definida pela cliente — visual-agent deve focar em direção de gravação, não em paleta/tipografia."
-}
-```
-
-## Fora de escopo (deixado para depois)
-
-- Cadastrar handles do Instagram de referência (você adiciona em `/perfis` clicando no card dela).
-- Ajustes de agenda de cron (o perfil entra automaticamente nas próximas rodadas de 08:00 e 08:45 BRT assim que houver curadoria).
-- Qualquer mudança de UI ou de prompts dos agentes.
+E passo o curador a gravá-las junto no `insert`. É a única mudança fora da UI, e é aditiva (não quebra nada existente).
 
 ## Detalhes técnicos
 
-- Ferramenta: `supabase--insert` com um único `INSERT INTO public.perfis (...)` — nenhuma mudança de schema, portanto não é migração.
-- `ativo` fica `true` (default).
-- Nenhuma alteração em arquivos do projeto.
+- Arquivo principal: reescrever `src/routes/_authenticated/agentes.$agente.tsx` — trocar `fetchTimeline` por consultas com joins mais ricos e trocar o card-link por card-accordion (`Collapsible` do shadcn, já disponível).
+- Novo componente `AgenteCriterios` (um por agente) com o texto humanizado no topo — conteúdo estático em `src/lib/agente-criterios.ts` (fácil de editar depois).
+- Novo componente `ExecucaoCard` (accordion) com variantes por agente para renderizar input / processo / output.
+- Estatísticas do topo: `count` por status em cada tabela (uma query só, agregada).
+- Migração: `ALTER TABLE public.conteudos_curados ADD COLUMN likes int, ADD COLUMN comentarios int, ADD COLUMN views int, ADD COLUMN postado_em timestamptz;` (todas nulláveis, sem default, sem quebrar RLS/grants existentes).
+- Edge function `curador-agent`: incluir `likes: post.likesCount`, `comentarios: post.commentsCount`, `views: post.videoPlayCount`, `postado_em: post.timestamp` no `insert`. Deploy da função.
+- Sem mudanças em ideador, copy, visual, revisor, cron, triggers ou schema além do descrito.
+- Nada muda em `/pipeline` nem em `/aprovacao/:pautaId`.
+
+## Fora de escopo (posso fazer depois se quiser)
+
+- Persistir o raciocínio bruto do modelo (prompt efetivo, resposta completa, tokens, duração) numa tabela `execucoes_agentes` — é a opção "rastro de raciocínio" que você preferiu deixar de fora agora.
+- Métricas históricas antigas: pautas/curadorias já gravadas não terão likes/views/comentários preenchidos retroativamente; só valem daqui pra frente.

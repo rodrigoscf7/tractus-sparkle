@@ -144,6 +144,10 @@ async function processRef(refId: string) {
         gancho: parsed.gancho_identificado,
         score_curadoria: parsed.score_curadoria,
         texto_original: post.caption ?? null,
+        likes: typeof post.likesCount === "number" ? post.likesCount : null,
+        comentarios: typeof post.commentsCount === "number" ? post.commentsCount : null,
+        views: typeof post.videoPlayCount === "number" ? post.videoPlayCount : null,
+        postado_em: post.timestamp ?? post.taken_at_timestamp ?? null,
       });
       curados++;
     } catch (e) {
