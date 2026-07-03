@@ -47,6 +47,18 @@ Deno.serve(async (req) => {
       (h) => h.item_tipo === "arte" && h.decisao === "rejeitado",
     );
 
+    // Best-effort: se o roteiro já estiver pronto, usa como contexto.
+    const { data: roteiro } = await supabase
+      .from("roteiros")
+      .select("conteudo")
+      .eq("pauta_id", pauta_id)
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const roteiroTexto = roteiro?.conteudo
+      ? JSON.stringify(roteiro.conteudo).slice(0, 1200)
+      : "(roteiro ainda não disponível — trabalhe a partir da pauta)";
+
     const system = SYSTEM
       .replace("{{perfil_nome}}", perfil.nome)
       .replace("{{perfil_identidade_visual}}", JSON.stringify(perfil.identidade_visual).slice(0, 800))
@@ -54,6 +66,7 @@ Deno.serve(async (req) => {
         "{{pauta_resumo}}",
         `tema=${pauta!.tema}; ângulo=${pauta!.angulo}`,
       )
+      .replace("{{roteiro_texto}}", roteiroTexto)
       .replace("{{historico_artes_rejeitadas}}", formatHistorico(historico));
 
     const text = await callClaude(system, "Direção de gravação em JSON compacto.", 600);
