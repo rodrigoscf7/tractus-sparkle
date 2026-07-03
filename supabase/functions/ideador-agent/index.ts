@@ -58,6 +58,7 @@ type SupabaseClient = ReturnType<typeof getServiceClient>;
 type IdeadorPayload = {
   perfil_id?: string;
   perfil_referencia_id?: string;
+  conteudo_id?: string;
 };
 
 type PautaGerada = {
@@ -68,6 +69,31 @@ type PautaGerada = {
   justificativa: string;
 };
 
+const FOCO_SYSTEM = `Você é o agente de ideação de pautas da Tractus.
+Perfil: {{perfil_nome}} ({{perfil_tipo}})
+Diretrizes: {{perfil_diretrizes}}
+Histórico (padrão aceito/rejeitado): {{historico_decisoes_formatado}}
+Pautas recentes que NÃO devem ser repetidas: {{pautas_recentes}}
+
+CURADORIA-ALVO (transformar em pauta):
+{{curadoria_alvo}}
+
+Sua tarefa: transformar essa curadoria específica em UMA pauta acionável para o perfil.
+Adapte o tom, a profundidade e o contexto ao perfil — não é para copiar o post original.
+Se o ângulo já foi coberto por uma pauta recente, gere uma variação com ângulo distinto (não retorne vazio).
+
+REGRAS:
+- Formato fixo: "Reel falado" (30-60s, pessoa à câmera).
+- Ângulo = TESE DE POSICIONAMENTO em 1 frase (opinião defensável, não descrição).
+- origem_curadoria_id DEVE ser o id da curadoria-alvo.
+
+Retorne APENAS JSON:
+{ "pautas": [{ "tema": "string curto",
+   "angulo": "tese de posicionamento em 1 frase",
+   "formato_sugerido": "Reel falado",
+   "origem_curadoria_id": "id da curadoria-alvo",
+   "justificativa": "1 frase" }] }`;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -75,6 +101,16 @@ Deno.serve(async (req) => {
     await setStatus("ideador", "working", "gerando pautas");
     const payload = (await req.json().catch(() => ({}))) as IdeadorPayload;
     const supabase = getServiceClient();
+
+    // Modo foco: veio do trigger com uma curadoria específica → 1 pauta pra ela.
+    if (payload.conteudo_id) {
+      const inserted = await gerarPautaFocada(supabase, payload.conteudo_id);
+      await setStatus("ideador", "idle", `foco: ${inserted} pauta(s) para curadoria ${payload.conteudo_id.slice(0, 8)}`);
+      return new Response(JSON.stringify({ ok: true, count: inserted, mode: "foco" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const perfilIds = await resolvePerfilIds(supabase, payload);
 
     let total = 0;
@@ -95,6 +131,75 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+async function gerarPautaFocada(supabase: SupabaseClient, conteudoId: string) {
+  // Se já tem pauta pra essa curadoria, não gera de novo.
+  const { data: existente } = await supabase
+    .from("pautas_geradas")
+    .select("id")
+    .eq("origem_curadoria_id", conteudoId)
+    .limit(1)
+    .maybeSingle();
+  if (existente) return 0;
+
+  const { data: curadoria } = await supabase
+    .from("conteudos_curados")
+    .select("id, tema, gancho, score_curadoria, formato, texto_original, likes, comentarios, views, perfil_referencia_id")
+    .eq("id", conteudoId)
+    .maybeSingle();
+  if (!curadoria) return 0;
+
+  const { data: ref } = await supabase
+    .from("perfis_referencia")
+    .select("perfil_id_relacionado")
+    .eq("id", curadoria.perfil_referencia_id)
+    .maybeSingle();
+  const perfilId = ref?.perfil_id_relacionado;
+  if (!perfilId) return 0;
+
+  const { data: perfil } = await supabase
+    .from("perfis")
+    .select("id, nome, tipo, diretrizes")
+    .eq("id", perfilId)
+    .single();
+  if (!perfil) return 0;
+
+  const historico = await getHistoricoDecisoes(perfilId);
+  const pautasRecentes = await getPautasRecentes(supabase, perfilId);
+
+  const system = FOCO_SYSTEM
+    .replace("{{perfil_nome}}", perfil.nome)
+    .replace("{{perfil_tipo}}", perfil.tipo)
+    .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
+    .replace("{{historico_decisoes_formatado}}", formatHistorico(historico))
+    .replace("{{pautas_recentes}}", JSON.stringify(pautasRecentes))
+    .replace("{{curadoria_alvo}}", JSON.stringify({
+      id: curadoria.id,
+      tema: curadoria.tema,
+      gancho: curadoria.gancho,
+      score: curadoria.score_curadoria,
+      formato: curadoria.formato,
+      metricas: { likes: curadoria.likes, comentarios: curadoria.comentarios, views: curadoria.views },
+      trecho: (curadoria.texto_original ?? "").slice(0, 400),
+    }));
+
+  const text = await callClaude(system, "Gere 1 pauta focada na curadoria-alvo agora.", 500);
+  const parsed = extractJson<{ pautas: PautaGerada[] }>(text);
+  const p = parsed.pautas?.[0];
+  if (!p) return 0;
+
+  const { error } = await supabase.from("pautas_geradas").insert({
+    perfil_id: perfilId,
+    origem_curadoria_id: conteudoId,
+    tema: p.tema,
+    angulo: p.angulo,
+    formato_sugerido: "Reel falado",
+    status: "gerada",
+  });
+  return error ? 0 : 1;
+}
+
+
 
 async function resolvePerfilIds(supabase: SupabaseClient, payload: IdeadorPayload) {
   if (payload.perfil_id) return [payload.perfil_id];
