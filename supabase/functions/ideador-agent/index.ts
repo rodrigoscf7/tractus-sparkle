@@ -17,6 +17,7 @@ Perfil: {{perfil_nome}} ({{perfil_tipo}})
 Diretrizes: {{perfil_diretrizes}}
 Histórico (padrão aceito/rejeitado): {{historico_decisoes_formatado}}
 Curadoria disponível (score >= 7): {{lista_curadoria_filtrada}}
+Pautas recentes que NÃO devem ser repetidas: {{pautas_recentes}}
 
 REGRAS DE PAUTA:
 - Formato fixo e obrigatório: "Reel falado" (vídeo de 30-60s, pessoa falando à câmera). Nunca sugira carrossel, slide ou estático.
@@ -30,6 +31,27 @@ Retorne APENAS JSON:
    "formato_sugerido": "Reel falado",
    "origem_curadoria_id": "string ou null",
    "justificativa": "1 frase" }] }`;
+
+const FALLBACK_SYSTEM = `Você é o agente de ideação de pautas da Tractus.
+Perfil: {{perfil_nome}} ({{perfil_tipo}})
+Diretrizes: {{perfil_diretrizes}}
+Histórico (padrão aceito/rejeitado): {{historico_decisoes_formatado}}
+Pautas recentes que NÃO devem ser repetidas: {{pautas_recentes}}
+
+Não há curadoria nova aproveitável hoje. Gere 1 pauta evergreen de posicionamento, baseada nas dores, crenças e autoridade do perfil.
+
+REGRAS:
+- Formato fixo e obrigatório: "Reel falado" (vídeo de 30-60s, pessoa falando à câmera).
+- Ângulo deve ser uma TESE DE POSICIONAMENTO em 1 frase, não uma dica genérica.
+- Não repita tema, gancho ou estrutura de pautas recentes.
+- Para perfis de advogados, priorize autoridade, segurança, decisão e clareza para o cliente final.
+
+Retorne APENAS JSON:
+{ "pautas": [{ "tema": "string curto",
+   "angulo": "tese de posicionamento em 1 frase",
+   "formato_sugerido": "Reel falado",
+   "origem_curadoria_id": null,
+   "justificativa": "pauta evergreen por falta de curadoria nova" }] }`;
 
 type SupabaseClient = ReturnType<typeof getServiceClient>;
 
@@ -101,7 +123,7 @@ async function resolvePerfilIds(supabase: SupabaseClient, payload: IdeadorPayloa
 
   const { data: curadoria } = await curadoriaQuery;
   const refIds = Array.from(new Set((curadoria ?? []).map((row) => row.perfil_referencia_id).filter(Boolean)));
-  if (!refIds.length) return [];
+  if (!refIds.length) return getPerfisComReferenciaAtiva(supabase);
 
   const { data: refs } = await supabase
     .from("perfis_referencia")
@@ -142,19 +164,26 @@ async function gerarPautasDoPerfil(supabase: SupabaseClient, perfilId: string) {
   }
 
   const { data: curadoria } = await curadoriaQuery;
-  if (!curadoria?.length) return 0;
 
   const historico = await getHistoricoDecisoes(perfilId);
-  const system = SYSTEM
+  const pautasRecentes = await getPautasRecentes(supabase, perfilId);
+  const hasCuradoria = Boolean(curadoria?.length);
+  const systemTemplate = hasCuradoria ? SYSTEM : FALLBACK_SYSTEM;
+  const system = systemTemplate
     .replace("{{perfil_nome}}", perfil.nome)
     .replace("{{perfil_tipo}}", perfil.tipo)
     .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
     .replace("{{historico_decisoes_formatado}}", formatHistorico(historico))
-    .replace("{{lista_curadoria_filtrada}}", JSON.stringify(curadoria));
+    .replace("{{lista_curadoria_filtrada}}", JSON.stringify(curadoria ?? []))
+    .replace("{{pautas_recentes}}", JSON.stringify(pautasRecentes));
 
-  const text = await callClaude(system, "Gere até 3 pautas novas agora.", 1200);
+  const text = await callClaude(
+    system,
+    hasCuradoria ? "Gere até 3 pautas novas agora." : "Gere 1 pauta evergreen nova agora.",
+    hasCuradoria ? 1200 : 700,
+  );
   const parsed = extractJson<{ pautas: PautaGerada[] }>(text);
-  const curadoriaIdsPermitidos = new Set(curadoria.map((item) => item.id));
+  const curadoriaIdsPermitidos = new Set((curadoria ?? []).map((item) => item.id));
 
   let inserted = 0;
   for (const p of parsed.pautas ?? []) {
@@ -174,6 +203,27 @@ async function gerarPautasDoPerfil(supabase: SupabaseClient, perfilId: string) {
   }
 
   return inserted;
+}
+
+async function getPerfisComReferenciaAtiva(supabase: SupabaseClient) {
+  const { data: refs } = await supabase
+    .from("perfis_referencia")
+    .select("perfil_id_relacionado")
+    .eq("ativo", true)
+    .not("perfil_id_relacionado", "is", null);
+
+  return Array.from(new Set((refs ?? []).map((ref) => ref.perfil_id_relacionado).filter(Boolean)));
+}
+
+async function getPautasRecentes(supabase: SupabaseClient, perfilId: string) {
+  const { data } = await supabase
+    .from("pautas_geradas")
+    .select("tema, angulo, criado_em")
+    .eq("perfil_id", perfilId)
+    .order("criado_em", { ascending: false })
+    .limit(12);
+
+  return (data ?? []).map((p) => ({ tema: p.tema, angulo: p.angulo }));
 }
 
 async function getCuradoriaIdsComPauta(supabase: SupabaseClient) {
