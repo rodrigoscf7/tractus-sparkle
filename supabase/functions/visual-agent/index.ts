@@ -9,21 +9,24 @@ import {
   setStatus,
 } from "../_shared/agent-utils.ts";
 
-const SYSTEM = `Você dirige a GRAVAÇÃO de Reels falados para: {{perfil_nome}}.
-O conteúdo é uma pessoa falando à câmera (30-60s). NÃO é carrossel, NÃO é arte estática.
-Identidade visual do perfil (use como referência, não repita inteira): {{perfil_identidade_visual}}
+const SYSTEM = `Você dirige a LINGUAGEM VISUAL de um Reel falado para: {{perfil_nome}}.
+É uma pessoa à câmera (30-60s). Cenário é secundário — o que importa é COMO o conteúdo aparece: formato, tom, expressão e o elemento visual que ancora o gancho.
+
+Identidade visual do perfil (referência de estilo, não repetir literal): {{perfil_identidade_visual}}
 Pauta: {{pauta_resumo}}
+Roteiro: {{roteiro_texto}}
 Histórico de direções rejeitadas: {{historico_artes_rejeitadas}}
 
-Seja MUITO enxuto. Cada campo abaixo é uma frase curta e prática, escrita para quem vai gravar amanhã. Nada de jargão técnico de produção, nada de parâmetros de câmera, nada de "moderno/clean/minimalista" sem dizer o que é.
+Analise o gancho e a tese do roteiro. Sua direção deve traduzir a MENSAGEM em decisões visuais concretas — não descrever set. Nada de "cenário clean, luz natural, roupa neutra" genérico. Se o cenário for irrelevante, escreva "qualquer ambiente controlado" e passe adiante.
 
 Retorne APENAS um JSON compacto:
-{ "cenario": "onde gravar, em 1 frase",
-  "enquadramento": "plano e altura da câmera, em 1 frase",
-  "figurino_e_postura": "como a pessoa deve aparecer, em 1 frase",
-  "texto_em_tela": "frase curta (até 8 palavras) que aparece sobreposta no início do vídeo",
-  "legenda_visual_de_apoio": "1 frase opcional que reforça o gancho no meio do vídeo, ou string vazia",
-  "clima": "uma palavra ou expressão curta que descreve a sensação (ex: confidencial, urgente, sereno)" }`;
+{ "formato": "estrutura visual do vídeo — corte seco, plano-sequência, jump cuts, POV, talking head puro etc — o que serve à mensagem, em 1 frase",
+  "tom_visual": "sensação que a imagem precisa transmitir, coerente com o gancho (ex: tensão contida, provocação leve, autoridade calma), em 1 frase",
+  "expressao_e_linguagem_corporal": "como a pessoa se posiciona e reage nos momentos-chave do roteiro, em 1-2 frases práticas",
+  "elemento_visual_do_gancho": "o recurso que ANCORA o gancho nos primeiros 3s (texto na tela, objeto na mão, gesto específico, close inesperado, corte abrupto), em 1 frase concreta ligada ao gancho do roteiro",
+  "texto_em_tela": "frase curta (até 8 palavras) sobreposta reforçando o gancho",
+  "reforco_no_meio": "1 apoio visual no meio do vídeo que sustenta a tese (corte, texto, gesto), ou string vazia",
+  "cenario_minimo": "só o essencial: onde faz sentido gravar isso, em 1 frase curta" }`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -44,6 +47,18 @@ Deno.serve(async (req) => {
       (h) => h.item_tipo === "arte" && h.decisao === "rejeitado",
     );
 
+    // Best-effort: se o roteiro já estiver pronto, usa como contexto.
+    const { data: roteiro } = await supabase
+      .from("roteiros")
+      .select("conteudo")
+      .eq("pauta_id", pauta_id)
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const roteiroTexto = roteiro?.conteudo
+      ? JSON.stringify(roteiro.conteudo).slice(0, 1200)
+      : "(roteiro ainda não disponível — trabalhe a partir da pauta)";
+
     const system = SYSTEM
       .replace("{{perfil_nome}}", perfil.nome)
       .replace("{{perfil_identidade_visual}}", JSON.stringify(perfil.identidade_visual).slice(0, 800))
@@ -51,6 +66,7 @@ Deno.serve(async (req) => {
         "{{pauta_resumo}}",
         `tema=${pauta!.tema}; ângulo=${pauta!.angulo}`,
       )
+      .replace("{{roteiro_texto}}", roteiroTexto)
       .replace("{{historico_artes_rejeitadas}}", formatHistorico(historico));
 
     const text = await callClaude(system, "Direção de gravação em JSON compacto.", 600);

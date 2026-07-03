@@ -180,28 +180,44 @@ function Field({ label, value }: { label: string; value: string }) {
 function BriefingView({ briefing }: { briefing: any }) {
   if (!briefing || typeof briefing !== "object") return <RawFallback data={briefing} />;
 
-  // Novo formato: direção de gravação de reel
+  // Novo formato v2: linguagem visual do reel
+  const formato = briefing.formato;
+  const tomVisual = briefing.tom_visual;
+  const expressao = briefing.expressao_e_linguagem_corporal;
+  const elementoGancho = briefing.elemento_visual_do_gancho;
+  const textoTela = briefing.texto_em_tela;
+  const reforcoMeio = briefing.reforco_no_meio;
+  const cenarioMin = briefing.cenario_minimo;
+
+  // Formato v1 (direção de gravação)
   const cenario = briefing.cenario;
   const enquadramento = briefing.enquadramento;
   const figurino = briefing.figurino_e_postura;
-  const textoTela = briefing.texto_em_tela;
   const legendaVisual = briefing.legenda_visual_de_apoio;
   const clima = briefing.clima;
 
-  // Fallback p/ formato antigo
+  // Fallback p/ formato antigo (carrossel)
   const { estilo_geral, paleta_cores, estrutura_por_slide_ou_frame, tipografia, observacoes_producao } = briefing;
   const paleta = Array.isArray(paleta_cores) ? paleta_cores : [];
   const estrutura = Array.isArray(estrutura_por_slide_ou_frame) ? estrutura_por_slide_ou_frame : [];
 
-  const hasNovo = cenario || enquadramento || figurino || textoTela || legendaVisual || clima;
+  const hasV2 = formato || tomVisual || expressao || elementoGancho || reforcoMeio || cenarioMin;
+  const hasV1 = cenario || enquadramento || figurino || legendaVisual || clima;
+  const hasNovo = hasV2 || hasV1 || textoTela;
   const hasAntigo = estilo_geral || paleta.length || estrutura.length || tipografia || observacoes_producao;
   if (!hasNovo && !hasAntigo) return <RawFallback data={briefing} />;
 
   const textoPlano = [
+    formato && `Formato: ${formato}`,
+    tomVisual && `Tom visual: ${tomVisual}`,
+    expressao && `Expressão/corpo: ${expressao}`,
+    elementoGancho && `Elemento do gancho: ${elementoGancho}`,
+    textoTela && `Texto em tela: ${textoTela}`,
+    reforcoMeio && `Reforço no meio: ${reforcoMeio}`,
+    cenarioMin && `Cenário: ${cenarioMin}`,
     cenario && `Cenário: ${cenario}`,
     enquadramento && `Enquadramento: ${enquadramento}`,
     figurino && `Figurino/postura: ${figurino}`,
-    textoTela && `Texto em tela: ${textoTela}`,
     legendaVisual && `Apoio no meio: ${legendaVisual}`,
     clima && `Clima: ${clima}`,
     estilo_geral && `Estilo: ${estilo_geral}`,
@@ -215,12 +231,42 @@ function BriefingView({ briefing }: { briefing: any }) {
 
   return (
     <div className="space-y-5">
-      {hasNovo && (
+      {hasV2 && (
+        <div className="space-y-4">
+          <Field label="Formato" value={formato} />
+          <Field label="Tom visual" value={tomVisual} />
+          <Field label="Expressão e linguagem corporal" value={expressao} />
+          {elementoGancho && (
+            <section>
+              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+                Elemento visual do gancho (primeiros 3s)
+              </div>
+              <div className="p-3 rounded border border-primary/40 bg-primary/5 text-sm leading-relaxed">
+                {elementoGancho}
+              </div>
+            </section>
+          )}
+          {textoTela && (
+            <section>
+              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+                Texto em tela (abertura)
+              </div>
+              <div className="inline-block px-3 py-2 rounded border border-primary/40 bg-primary/5 text-sm font-medium">
+                {textoTela}
+              </div>
+            </section>
+          )}
+          {reforcoMeio && <Field label="Reforço no meio do vídeo" value={reforcoMeio} />}
+          {cenarioMin && <Field label="Cenário mínimo" value={cenarioMin} />}
+        </div>
+      )}
+
+      {hasV1 && (
         <div className="space-y-4">
           <Field label="Cenário" value={cenario} />
           <Field label="Enquadramento" value={enquadramento} />
           <Field label="Figurino e postura" value={figurino} />
-          {textoTela && (
+          {textoTela && !hasV2 && (
             <section>
               <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
                 Texto em tela (abertura)
