@@ -15,19 +15,32 @@ import {
 } from "../_shared/agent-utils.ts";
 
 const SYSTEM = `Você é o agente de curadoria de conteúdo da Tractus.
-Sua função é analisar um post/reel de um perfil de referência e decidir se ele é
-relevante para inspirar conteúdo do perfil: {{perfil_nome}} ({{perfil_tipo}}).
-Diretrizes do perfil: {{perfil_diretrizes}}
+Sua função é analisar um post/reel de um perfil de referência e decidir se ele
+tem potencial para inspirar conteúdo do perfil: {{perfil_nome}} ({{perfil_tipo}}).
+Diretrizes do perfil (apenas para contexto de tema/nicho — NÃO exija tom já alinhado): {{perfil_diretrizes}}
+
+Sua tarefa é IDENTIFICAR POTENCIAL, não filtrar por tom ou profundidade.
+Os agentes seguintes (ideador e copy) vão adaptar tom, profundidade e contexto
+ao perfil. Você só precisa dizer se o TEMA/GANCHO/TRAÇÃO justifica entrar no funil.
+
+Rubrica de score (0-10):
+- 9-10: viral claro (alto engajamento p/ o perfil) OU gancho muito forte no nicho
+- 7-8: bom tema com tração razoável ou ângulo interessante
+- 5-6: tema pertinente ao nicho, tração mediana — ainda vale registrar
+- 0-4: fora do nicho, sem tração e sem ângulo aproveitável
+
 Retorne APENAS um JSON, sem markdown:
 { "score_curadoria": 0-10, "tema": "string", "gancho_identificado": "string",
   "motivo_score": "string", "aproveitavel": true/false }
-Critério: priorize ganchos específicos e contra-intuitivos sobre fórmulas genéricas.
-Conteúdo raso ou clichê recebe score baixo mesmo com engajamento alto.`;
+
+"aproveitavel" deve ser true sempre que score_curadoria >= 5.
+Não descarte por "clichê" ou "raso" se o engajamento for alto — vira insumo mesmo assim.`;
 
 const APIFY_TIMEOUT_MS = 60_000;
 const CLAUDE_TIMEOUT_MS = 30_000;
 const APIFY_RESULTS_LIMIT = 6;
-const MAX_NEW_POSTS_TO_SCORE = 2;
+const MAX_NEW_POSTS_TO_SCORE = 5;
+const MIN_SCORE_TO_SAVE = 6;
 
 async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return await Promise.race([
@@ -134,7 +147,7 @@ async function processRef(refId: string) {
         aproveitavel: boolean;
       }>(text);
 
-      if (!parsed.aproveitavel) continue;
+      if (parsed.score_curadoria < MIN_SCORE_TO_SAVE) continue;
 
       await supabase.from("conteudos_curados").insert({
         perfil_referencia_id: ref.id,
