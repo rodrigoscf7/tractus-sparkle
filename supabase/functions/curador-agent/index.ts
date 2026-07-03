@@ -147,7 +147,7 @@ async function processRef(refId: string) {
         aproveitavel: boolean;
       }>(text);
 
-      if (!parsed.aproveitavel) continue;
+      if (parsed.score_curadoria < MIN_SCORE_TO_SAVE) continue;
 
       await supabase.from("conteudos_curados").insert({
         perfil_referencia_id: ref.id,
