@@ -26,6 +26,8 @@ Conteúdo raso ou clichê recebe score baixo mesmo com engajamento alto.`;
 
 const APIFY_TIMEOUT_MS = 60_000;
 const CLAUDE_TIMEOUT_MS = 30_000;
+const APIFY_RESULTS_LIMIT = 6;
+const MAX_NEW_POSTS_TO_SCORE = 2;
 
 async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return await Promise.race([
@@ -67,7 +69,7 @@ async function processRef(refId: string) {
         body: JSON.stringify({
           directUrls: [`https://www.instagram.com/${ref.handle}/`],
           resultsType: "posts",
-          resultsLimit: 2,
+          resultsLimit: APIFY_RESULTS_LIMIT,
         }),
         signal: ctrl.signal,
       },
@@ -84,8 +86,12 @@ async function processRef(refId: string) {
   }
 
   let curados = 0;
+  let duplicados = 0;
+  let avaliados = 0;
 
   for (const post of posts) {
+    if (avaliados >= MAX_NEW_POSTS_TO_SCORE) break;
+
     if (post.url) {
       const { data: existing } = await supabase
         .from("conteudos_curados")
@@ -93,8 +99,13 @@ async function processRef(refId: string) {
         .eq("url", post.url)
         .limit(1)
         .maybeSingle();
-      if (existing) continue;
+      if (existing) {
+        duplicados++;
+        continue;
+      }
     }
+
+    avaliados++;
 
     const userPrompt = `Post para análise:
 - caption: ${post.caption ?? ""}
@@ -140,7 +151,7 @@ async function processRef(refId: string) {
     }
   }
 
-  return { ref: ref.handle, curados };
+  return { ref: ref.handle, curados, avaliados, duplicados, encontrados: posts.length };
 }
 
 Deno.serve(async (req) => {
@@ -183,9 +194,7 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const fnUrl = `${supabaseUrl}/functions/v1/curador-agent`;
 
-    let disparados = 0;
-    for (const ref of refs ?? []) {
-      // fire-and-forget; cada worker faz seu próprio setStatus e roda independente
+    const workerPromises = (refs ?? []).map((ref) =>
       fetch(`${fnUrl}?ref_id=${ref.id}`, {
         method: "POST",
         headers: {
@@ -193,12 +202,43 @@ Deno.serve(async (req) => {
           apikey: anonKey,
           Authorization: `Bearer ${anonKey}`,
         },
-      }).catch((e) => console.error("fanout failed", ref.handle, e));
-      disparados++;
-    }
+        body: "{}",
+      }).then(async (res) => ({
+        handle: ref.handle,
+        ok: res.ok,
+        status: res.status,
+        body: await res.text().catch(() => ""),
+      })).catch((e) => ({
+        handle: ref.handle,
+        ok: false,
+        status: 0,
+        body: String(e),
+      })),
+    );
 
-    await setStatus("curador", "working", `${disparados} workers disparados`);
-    return new Response(JSON.stringify({ ok: true, disparados }), {
+    const summarizeWorkers = async () => {
+      const results = await Promise.allSettled(workerPromises);
+      const ok = results.filter((r) => r.status === "fulfilled" && r.value.ok).length;
+      const fail = results.length - ok;
+      const firstFail = results.find((r) => r.status === "fulfilled" && !r.value.ok);
+      if (fail) {
+        console.error("curador fanout failures", results);
+        await setStatus(
+          "curador",
+          "error",
+          `${ok}/${results.length} refs concluídas; falha em ${fail}${firstFail?.status === "fulfilled" ? ` (@${firstFail.value.handle} ${firstFail.value.status})` : ""}`,
+        );
+        return;
+      }
+      await setStatus("curador", "idle", `${ok}/${results.length} referências verificadas`);
+    };
+
+    const edgeRuntime = (globalThis as any).EdgeRuntime;
+    if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(summarizeWorkers());
+    else await summarizeWorkers();
+
+    await setStatus("curador", "working", `${workerPromises.length} workers disparados`);
+    return new Response(JSON.stringify({ ok: true, disparados: workerPromises.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
