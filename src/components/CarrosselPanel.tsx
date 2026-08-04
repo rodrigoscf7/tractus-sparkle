@@ -69,7 +69,7 @@ export function CarrosselPanel({
     try {
       const dataUrl = await toPng(node, {
         width: 1080,
-        height: 1080,
+        height: 1350,
         pixelRatio: 1,
         style: { transform: "none" },
       });
@@ -169,7 +169,7 @@ export function CarrosselPanel({
                   fotoDataUrl={fotoDataUrl}
                   index={i}
                   total={slides.length}
-                  scale={0.3}
+                  scale={0.24}
                 />
               </div>
             ))}

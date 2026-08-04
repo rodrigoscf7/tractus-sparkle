@@ -1,7 +1,8 @@
 import { forwardRef } from "react";
 import type { CarrosselSlideData, TemplateCarrossel } from "@/lib/carrossel-template";
 
-const SIZE = 1080;
+const WIDTH = 1080;
+const HEIGHT = 1350;
 
 /** Quebra o texto em partes, marcando o trecho de destaque em negrito. */
 function renderTexto(texto: string, destaque?: string) {
@@ -35,19 +36,21 @@ type Props = {
   scale?: number;
 };
 
-/** Slide 1080x1080 no estilo "post de rede social": fundo sólido, avatar, arroba, selo e texto. */
+/** Slide 1080×1350 (4:5) no estilo "post de rede social": fundo sólido, avatar, arroba, selo e texto. */
 export const CarrosselSlide = forwardRef<HTMLDivElement, Props>(function CarrosselSlide(
   { slide, template, fotoDataUrl, index, total, scale = 1 },
   ref,
 ) {
   const len = slide.texto.length;
-  const fontSize = len < 70 ? 84 : len < 130 ? 68 : len < 190 ? 56 : 48;
+  const fontSize = len < 70 ? 92 : len < 130 ? 74 : len < 190 ? 60 : 52;
+  const paddingX = 88;
+  const paddingY = 96;
 
   return (
     <div
       style={{
-        width: SIZE * scale,
-        height: SIZE * scale,
+        width: WIDTH * scale,
+        height: HEIGHT * scale,
         overflow: "hidden",
         borderRadius: 16 * scale,
         flexShrink: 0,
@@ -56,8 +59,8 @@ export const CarrosselSlide = forwardRef<HTMLDivElement, Props>(function Carross
       <div
         ref={ref}
         style={{
-          width: SIZE,
-          height: SIZE,
+          width: WIDTH,
+          height: HEIGHT,
           transform: `scale(${scale})`,
           transformOrigin: "top left",
           background: template.cor_fundo,
@@ -65,7 +68,7 @@ export const CarrosselSlide = forwardRef<HTMLDivElement, Props>(function Carross
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          padding: 88,
+          padding: `${paddingY}px ${paddingX}px`,
           fontFamily:
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
           boxSizing: "border-box",
@@ -112,8 +115,8 @@ export const CarrosselSlide = forwardRef<HTMLDivElement, Props>(function Carross
             flex: 1,
             display: "flex",
             alignItems: "center",
-            paddingTop: 56,
-            paddingBottom: 56,
+            paddingTop: 72,
+            paddingBottom: 72,
             whiteSpace: "pre-wrap",
           }}
         >
