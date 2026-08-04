@@ -115,8 +115,8 @@ export const CarrosselSlide = forwardRef<HTMLDivElement, Props>(function Carross
             flex: 1,
             display: "flex",
             alignItems: "center",
-            paddingTop: 56,
-            paddingBottom: 56,
+            paddingTop: 72,
+            paddingBottom: 72,
             whiteSpace: "pre-wrap",
           }}
         >
