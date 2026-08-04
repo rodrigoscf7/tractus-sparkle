@@ -217,10 +217,11 @@ async function resolvePerfilIds(supabase: SupabaseClient, payload: IdeadorPayloa
   let curadoriaQuery = supabase
     .from("conteudos_curados")
     .select("id, perfil_referencia_id")
-    .gte("score_curadoria", 7)
+    .eq("aprovacao_humana", "aprovado")
     .not("perfil_referencia_id", "is", null)
     .order("capturado_em", { ascending: false })
     .limit(100);
+
 
   if (curadoriaIdsComPauta.length) {
     curadoriaQuery = curadoriaQuery.not("id", "in", `(${curadoriaIdsComPauta.join(",")})`);
