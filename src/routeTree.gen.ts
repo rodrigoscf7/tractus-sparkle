@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
 import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
+import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAgentesIndexRouteImport } from './routes/_authenticated/agentes.index'
 import { Route as AuthenticatedAprovacaoPautaIdRouteImport } from './routes/_authenticated/aprovacao.$pautaId'
@@ -41,6 +42,11 @@ const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
 const AuthenticatedPerfisRoute = AuthenticatedPerfisRouteImport.update({
   id: '/perfis',
   path: '/perfis',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCuradoriaRoute = AuthenticatedCuradoriaRouteImport.update({
+  id: '/curadoria',
+  path: '/curadoria',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAgentesRoute = AuthenticatedAgentesRouteImport.update({
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/agentes': typeof AuthenticatedAgentesRouteWithChildren
+  '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/agentes': typeof AuthenticatedAgentesRouteWithChildren
+  '/_authenticated/curadoria': typeof AuthenticatedCuradoriaRoute
   '/_authenticated/perfis': typeof AuthenticatedPerfisRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/_authenticated/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/agentes'
+    | '/curadoria'
     | '/perfis'
     | '/pipeline'
     | '/agentes/$agente'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/curadoria'
     | '/perfis'
     | '/pipeline'
     | '/agentes/$agente'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/agentes'
+    | '/_authenticated/curadoria'
     | '/_authenticated/perfis'
     | '/_authenticated/pipeline'
     | '/_authenticated/agentes/$agente'
@@ -174,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerfisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/curadoria': {
+      id: '/_authenticated/curadoria'
+      path: '/curadoria'
+      fullPath: '/curadoria'
+      preLoaderRoute: typeof AuthenticatedCuradoriaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/agentes': {
       id: '/_authenticated/agentes'
       path: '/agentes'
@@ -220,6 +239,7 @@ const AuthenticatedAgentesRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRouteWithChildren
+  AuthenticatedCuradoriaRoute: typeof AuthenticatedCuradoriaRoute
   AuthenticatedPerfisRoute: typeof AuthenticatedPerfisRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedAprovacaoPautaIdRoute: typeof AuthenticatedAprovacaoPautaIdRoute
@@ -227,6 +247,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgentesRoute: AuthenticatedAgentesRouteWithChildren,
+  AuthenticatedCuradoriaRoute: AuthenticatedCuradoriaRoute,
   AuthenticatedPerfisRoute: AuthenticatedPerfisRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedAprovacaoPautaIdRoute: AuthenticatedAprovacaoPautaIdRoute,
@@ -243,13 +264,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

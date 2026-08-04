@@ -217,10 +217,11 @@ async function resolvePerfilIds(supabase: SupabaseClient, payload: IdeadorPayloa
   let curadoriaQuery = supabase
     .from("conteudos_curados")
     .select("id, perfil_referencia_id")
-    .gte("score_curadoria", 7)
+    .eq("aprovacao_humana", "aprovado")
     .not("perfil_referencia_id", "is", null)
     .order("capturado_em", { ascending: false })
     .limit(100);
+
 
   if (curadoriaIdsComPauta.length) {
     curadoriaQuery = curadoriaQuery.not("id", "in", `(${curadoriaIdsComPauta.join(",")})`);
@@ -259,7 +260,7 @@ async function gerarPautasDoPerfil(supabase: SupabaseClient, perfilId: string) {
   let curadoriaQuery = supabase
     .from("conteudos_curados")
     .select("id, tema, gancho, score_curadoria, formato")
-    .gte("score_curadoria", 7)
+    .eq("aprovacao_humana", "aprovado")
     .in("perfil_referencia_id", refIds)
     .order("capturado_em", { ascending: false })
     .limit(5);
@@ -273,6 +274,9 @@ async function gerarPautasDoPerfil(supabase: SupabaseClient, perfilId: string) {
   const historico = await getHistoricoDecisoes(perfilId);
   const pautasRecentes = await getPautasRecentes(supabase, perfilId);
   const hasCuradoria = Boolean(curadoria?.length);
+  // Nada avança sem aprovação humana: sem curadoria aprovada, o ideador não gera nada.
+  if (!hasCuradoria) return 0;
+
   const systemTemplate = hasCuradoria ? SYSTEM : FALLBACK_SYSTEM;
   const system = systemTemplate
     .replace("{{perfil_nome}}", perfil.nome)

@@ -72,8 +72,10 @@ export type Database = {
       }
       conteudos_curados: {
         Row: {
+          aprovacao_humana: string
           capturado_em: string | null
           comentarios: number | null
+          decidido_em: string | null
           formato: string | null
           gancho: string | null
           id: string
@@ -87,8 +89,10 @@ export type Database = {
           views: number | null
         }
         Insert: {
+          aprovacao_humana?: string
           capturado_em?: string | null
           comentarios?: number | null
+          decidido_em?: string | null
           formato?: string | null
           gancho?: string | null
           id?: string
@@ -102,8 +106,10 @@ export type Database = {
           views?: number | null
         }
         Update: {
+          aprovacao_humana?: string
           capturado_em?: string | null
           comentarios?: number | null
+          decidido_em?: string | null
           formato?: string | null
           gancho?: string | null
           id?: string

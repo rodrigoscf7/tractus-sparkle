@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutGrid, Activity, Users, LogOut, Menu, X } from "lucide-react";
+import { LayoutGrid, Activity, Users, LogOut, Menu, X, CheckCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import tractusIcon from "@/assets/tractus-icon.png.asset.json";
 
@@ -60,6 +60,10 @@ function AuthenticatedLayout() {
         <NavLink to="/pipeline" icon={<LayoutGrid className="w-4 h-4" />}>
           Pipeline
         </NavLink>
+        <NavLink to="/curadoria" icon={<CheckCheck className="w-4 h-4" />}>
+          Curadoria
+        </NavLink>
+
         <NavLink to="/agentes" icon={<Activity className="w-4 h-4" />}>
           Agentes
         </NavLink>
