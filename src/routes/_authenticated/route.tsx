@@ -60,6 +60,10 @@ function AuthenticatedLayout() {
         <NavLink to="/pipeline" icon={<LayoutGrid className="w-4 h-4" />}>
           Pipeline
         </NavLink>
+        <NavLink to="/curadoria" icon={<CheckCheck className="w-4 h-4" />}>
+          Curadoria
+        </NavLink>
+
         <NavLink to="/agentes" icon={<Activity className="w-4 h-4" />}>
           Agentes
         </NavLink>
