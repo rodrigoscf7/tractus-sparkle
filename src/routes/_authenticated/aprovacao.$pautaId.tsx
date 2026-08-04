@@ -364,7 +364,7 @@ function AprovacaoPage() {
       const [pautaRes, roteiroRes, arteRes, pubRes] = await Promise.all([
         supabase
           .from("pautas_geradas")
-          .select("*, perfis:perfis(nome,tipo,diretrizes,identidade_visual)")
+          .select("*, perfis:perfis(nome,tipo,diretrizes,identidade_visual,template_carrossel)")
           .eq("id", pautaId)
           .single(),
         supabase
