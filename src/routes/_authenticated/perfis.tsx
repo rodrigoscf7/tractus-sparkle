@@ -132,6 +132,16 @@ function PerfisPage() {
             onSaved={() => refetchPerfis()}
           />
 
+          <TemplateCarrosselEditor
+            key={`tpl-${active.id}`}
+            perfilId={active.id}
+            perfilNome={active.nome}
+            templateRaw={(active as { template_carrossel?: unknown }).template_carrossel}
+            onSaved={() => refetchPerfis()}
+          />
+
+
+
 
           <Card className="p-6 bg-surface border-border">
             <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">

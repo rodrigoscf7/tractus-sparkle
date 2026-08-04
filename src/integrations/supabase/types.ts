@@ -70,6 +70,57 @@ export type Database = {
           },
         ]
       }
+      carrosseis: {
+        Row: {
+          atualizado_em: string
+          copy: Json | null
+          criado_em: string
+          erro: string | null
+          id: string
+          pauta_id: string | null
+          perfil_id: string | null
+          status: string
+          visual: Json | null
+        }
+        Insert: {
+          atualizado_em?: string
+          copy?: Json | null
+          criado_em?: string
+          erro?: string | null
+          id?: string
+          pauta_id?: string | null
+          perfil_id?: string | null
+          status?: string
+          visual?: Json | null
+        }
+        Update: {
+          atualizado_em?: string
+          copy?: Json | null
+          criado_em?: string
+          erro?: string | null
+          id?: string
+          pauta_id?: string | null
+          perfil_id?: string | null
+          status?: string
+          visual?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carrosseis_pauta_id_fkey"
+            columns: ["pauta_id"]
+            isOneToOne: false
+            referencedRelation: "pautas_geradas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carrosseis_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conteudos_curados: {
         Row: {
           aprovacao_humana: string
@@ -229,6 +280,7 @@ export type Database = {
           id: string
           identidade_visual: Json | null
           nome: string
+          template_carrossel: Json
           tipo: string
           tom_de_voz: string | null
         }
@@ -239,6 +291,7 @@ export type Database = {
           id?: string
           identidade_visual?: Json | null
           nome: string
+          template_carrossel?: Json
           tipo: string
           tom_de_voz?: string | null
         }
@@ -249,6 +302,7 @@ export type Database = {
           id?: string
           identidade_visual?: Json | null
           nome?: string
+          template_carrossel?: Json
           tipo?: string
           tom_de_voz?: string | null
         }
