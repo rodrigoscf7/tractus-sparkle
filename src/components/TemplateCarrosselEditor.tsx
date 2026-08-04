@@ -165,7 +165,7 @@ export function TemplateCarrosselEditor({
           fotoDataUrl={fotoDataUrl}
           index={0}
           total={6}
-          scale={0.28}
+          scale={0.22}
         />
       </div>
     </Card>
