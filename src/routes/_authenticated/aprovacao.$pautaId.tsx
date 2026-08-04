@@ -590,6 +590,14 @@ function AprovacaoPage() {
           )}
         </Card>
       )}
+
+      {isAprovada && (
+        <CarrosselPanel
+          pautaId={pauta.id}
+          perfilTemplateRaw={(pauta as any).perfis?.template_carrossel}
+        />
+      )}
+
     </div>
   );
 }
