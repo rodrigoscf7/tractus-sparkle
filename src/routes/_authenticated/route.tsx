@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutGrid, Activity, Users, LogOut, Menu, X } from "lucide-react";
+import { LayoutGrid, Activity, Users, LogOut, Menu, X, CheckCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import tractusIcon from "@/assets/tractus-icon.png.asset.json";
 
