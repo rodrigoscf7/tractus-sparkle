@@ -69,7 +69,7 @@ export function CarrosselPanel({
     try {
       const dataUrl = await toPng(node, {
         width: 1080,
-        height: 1080,
+        height: 1350,
         pixelRatio: 1,
         style: { transform: "none" },
       });
