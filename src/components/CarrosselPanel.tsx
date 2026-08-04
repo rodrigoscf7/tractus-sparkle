@@ -169,7 +169,7 @@ export function CarrosselPanel({
                   fotoDataUrl={fotoDataUrl}
                   index={i}
                   total={slides.length}
-                  scale={0.3}
+                  scale={0.24}
                 />
               </div>
             ))}
