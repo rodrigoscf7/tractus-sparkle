@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { CarrosselPanel } from "@/components/CarrosselPanel";
 import { ArrowLeft, Check, X, Send, Copy } from "lucide-react";
 
 function copyToClipboard(text: string, label = "Copiado") {
@@ -364,7 +365,7 @@ function AprovacaoPage() {
       const [pautaRes, roteiroRes, arteRes, pubRes] = await Promise.all([
         supabase
           .from("pautas_geradas")
-          .select("*, perfis:perfis(nome,tipo,diretrizes,identidade_visual)")
+          .select("*, perfis:perfis(nome,tipo,diretrizes,identidade_visual,template_carrossel)")
           .eq("id", pautaId)
           .single(),
         supabase
@@ -590,6 +591,14 @@ function AprovacaoPage() {
           )}
         </Card>
       )}
+
+      {isAprovada && (
+        <CarrosselPanel
+          pautaId={pauta.id}
+          perfilTemplateRaw={(pauta as any).perfis?.template_carrossel}
+        />
+      )}
+
     </div>
   );
 }

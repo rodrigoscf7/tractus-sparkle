@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { TemplateCarrosselEditor } from "@/components/TemplateCarrosselEditor";
+
 
 export const Route = createFileRoute("/_authenticated/perfis")({
   component: PerfisPage,
@@ -131,6 +133,16 @@ function PerfisPage() {
             perfil={active}
             onSaved={() => refetchPerfis()}
           />
+
+          <TemplateCarrosselEditor
+            key={`tpl-${active.id}`}
+            perfilId={active.id}
+            perfilNome={active.nome}
+            templateRaw={(active as { template_carrossel?: unknown }).template_carrossel}
+            onSaved={() => refetchPerfis()}
+          />
+
+
 
 
           <Card className="p-6 bg-surface border-border">
