@@ -104,7 +104,7 @@ function CuradoriaPage() {
         <h1 className="text-2xl sm:text-3xl font-display font-bold">Curadoria</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Nada avança sem você. O curador captura e pontua as referências; o ideador só gera pauta
-          das que você aprovar aqui.
+          das que você aprovar aqui. Ordenado por alcance (views) — os de maior tração primeiro.
         </p>
       </header>
 
