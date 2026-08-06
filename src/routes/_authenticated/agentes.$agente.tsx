@@ -338,7 +338,12 @@ function renderDetalhe(agente: AgenteNome, item: any) {
     return (
       <>
         <Section label="Post original no Instagram">
+          <KV
+            k="Perfil destino"
+            v={item.perfis_referencia?.perfis?.nome ?? "—"}
+          />
           <KV k="Perfil" v={item.perfis_referencia?.handle ? `@${item.perfis_referencia.handle}` : "—"} />
+          <KV k="Nicho" v={item.perfis_referencia?.nicho ?? "—"} />
           <KV k="Formato" v={item.formato ?? "—"} />
           <KV k="Publicado em" v={fmtDate(item.postado_em)} />
           <KV k="Likes" v={fmtNum(item.likes)} />
