@@ -1,0 +1,1 @@
+update public.agentes_status set estado_atual='idle', ultima_acao='15/16 referências verificadas; 1 indisponível na fonte — será tentada no próximo ciclo', atualizado_em=now() where agente_nome='curador';
