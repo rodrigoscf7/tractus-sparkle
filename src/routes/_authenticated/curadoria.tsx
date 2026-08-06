@@ -138,8 +138,11 @@ function CuradoriaPage() {
         {(itens ?? []).map((item) => (
           <Card key={item.id} className="p-4 sm:p-5 bg-surface border-border">
             <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Badge className="border-0 bg-accent/15 text-accent text-[10px] font-mono uppercase tracking-wider">
+                para {item.perfis_referencia?.perfis?.nome ?? "perfil não vinculado"}
+              </Badge>
               <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                @{item.perfis_referencia?.handle ?? "—"}
+                ref @{item.perfis_referencia?.handle ?? "—"}
               </span>
               {item.formato && (
                 <Badge variant="outline" className="text-[10px] font-mono uppercase">
