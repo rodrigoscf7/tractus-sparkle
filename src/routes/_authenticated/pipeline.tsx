@@ -31,6 +31,8 @@ const COLUMNS: { id: string; label: string; tone: string }[] = [
 ];
 
 function PipelinePage() {
+  const [perfilFiltro, setPerfilFiltro] = useState<string>("todos");
+
   const { data: pautas, refetch } = useQuery({
     queryKey: ["pautas-pipeline"],
     queryFn: async () => {
@@ -40,6 +42,18 @@ function PipelinePage() {
         .order("criado_em", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Pauta[];
+    },
+  });
+
+  const { data: perfis } = useQuery({
+    queryKey: ["perfis-filtro-pipeline"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("perfis")
+        .select("id, nome")
+        .order("nome");
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
@@ -53,19 +67,44 @@ function PipelinePage() {
     };
   }, [refetch]);
 
+  const filtradas = (pautas ?? []).filter(
+    (p) => perfilFiltro === "todos" || p.perfil_id === perfilFiltro,
+  );
+
   return (
     <div className="p-4 sm:p-8 max-w-[1600px]">
-      <header className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-display font-bold">Pipeline</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Fluxo completo de produção. Único passo manual: aprovar ou rejeitar.
-        </p>
+      <header className="mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold">Pipeline</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Fluxo completo de produção. Único passo manual: aprovar ou rejeitar.
+          </p>
+        </div>
+        <div className="w-full sm:w-64">
+          <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            Perfil
+          </label>
+          <Select value={perfilFiltro} onValueChange={setPerfilFiltro}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Todos os perfis" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os perfis</SelectItem>
+              {(perfis ?? []).map((perfil) => (
+                <SelectItem key={perfil.id} value={perfil.id}>
+                  {perfil.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         {COLUMNS.map((col) => {
-          const items = (pautas ?? []).filter((p) => p.status === col.id);
+          const items = filtradas.filter((p) => p.status === col.id);
           return (
+
             <div key={col.id} className="flex flex-col min-w-0">
               <div className="flex items-center justify-between mb-3 px-1">
                 <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
