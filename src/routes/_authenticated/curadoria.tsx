@@ -67,9 +67,10 @@ function CuradoriaPage() {
       const { data, error } = await supabase
         .from("conteudos_curados")
         .select(
-          "id, url, formato, tema, gancho, score_curadoria, texto_original, capturado_em, likes, comentarios, views, postado_em, aprovacao_humana, decidido_em, perfis_referencia:perfis_referencia(handle,nicho)",
+          "id, url, formato, tema, gancho, score_curadoria, texto_original, capturado_em, likes, comentarios, views, postado_em, aprovacao_humana, decidido_em, perfis_referencia:perfis_referencia(handle,nicho,perfis:perfis(nome))",
         )
         .eq("aprovacao_humana", tab)
+        .order("views", { ascending: false, nullsFirst: false })
         .order("capturado_em", { ascending: false })
         .limit(120);
       if (error) throw error;
