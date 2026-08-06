@@ -111,17 +111,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    const perfilIds = await resolvePerfilIds(supabase, payload);
-
+    // Modo agendado: só ideia a partir de curadorias APROVADAS POR HUMANO que
+    // ainda não têm pauta. Sem aprovação, nada é gerado (economia de tokens).
+    const pendentes = await getCuradoriasAprovadasSemPauta(supabase, 5);
     let total = 0;
-    for (const perfilId of perfilIds) {
-      total += await gerarPautasDoPerfil(supabase, perfilId);
+    for (const id of pendentes) {
+      total += await gerarPautaFocada(supabase, id);
     }
 
-    await setStatus("ideador", "idle", `${total} pautas geradas`);
-    return new Response(JSON.stringify({ ok: true, count: total, profiles: perfilIds.length }), {
+    await setStatus(
+      "ideador",
+      "idle",
+      pendentes.length
+        ? `${total} pauta(s) geradas de ${pendentes.length} curadoria(s) aprovada(s)`
+        : "nenhuma curadoria aprovada pendente — nada gerado",
+    );
+    return new Response(JSON.stringify({ ok: true, count: total, curadorias: pendentes.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error(e);
     await setStatus("ideador", "error", formatAgentError(e));
