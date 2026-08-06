@@ -177,9 +177,15 @@ function pautaIdFromItem(agente: AgenteNome, item: any): string | null {
 function renderHeader(agente: AgenteNome, item: any) {
   if (agente === "curador") {
     const ref = item.perfis_referencia;
+    const perfilDestino = ref?.perfis?.nome as string | undefined;
     return (
       <div>
         <div className="flex items-center gap-2 mb-1 flex-wrap">
+          {perfilDestino && (
+            <Badge className="text-[10px] font-mono border-transparent bg-primary/15 text-primary">
+              {perfilDestino}
+            </Badge>
+          )}
           {ref?.handle && (
             <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
               @{ref.handle}
