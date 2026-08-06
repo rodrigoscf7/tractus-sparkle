@@ -89,10 +89,37 @@ async function processRef(refId: string) {
     );
     clearTimeout(t);
     if (!apifyRes.ok) {
-      console.error("Apify failed", ref.handle, apifyRes.status);
-      return { ref: ref.handle, curados: 0, error: `apify ${apifyRes.status}` };
+      // 5xx/429 do Apify são transitórios: uma nova tentativa antes de desistir.
+      if (apifyRes.status >= 500 || apifyRes.status === 429) {
+        await new Promise((r) => setTimeout(r, 4000));
+        const retryCtrl = new AbortController();
+        const t2 = setTimeout(() => retryCtrl.abort(), APIFY_TIMEOUT_MS);
+        const retryRes = await fetch(
+          `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${apifyToken}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              directUrls: [`https://www.instagram.com/${ref.handle}/`],
+              resultsType: "posts",
+              resultsLimit: APIFY_RESULTS_LIMIT,
+            }),
+            signal: retryCtrl.signal,
+          },
+        );
+        clearTimeout(t2);
+        if (!retryRes.ok) {
+          console.error("Apify failed (retry)", ref.handle, retryRes.status);
+          return { ref: ref.handle, curados: 0, error: `apify ${retryRes.status}` };
+        }
+        posts = await retryRes.json();
+      } else {
+        console.error("Apify failed", ref.handle, apifyRes.status);
+        return { ref: ref.handle, curados: 0, error: `apify ${apifyRes.status}` };
+      }
+    } else {
+      posts = await apifyRes.json();
     }
-    posts = await apifyRes.json();
   } catch (e) {
     console.error("Apify error", ref.handle, e);
     return { ref: ref.handle, curados: 0, error: String(e).slice(0, 200) };
@@ -240,10 +267,17 @@ Deno.serve(async (req) => {
       const firstFail = results.find((r) => r.status === "fulfilled" && !r.value.ok);
       if (fail) {
         console.error("curador fanout failures", results);
+        // Falha parcial (perfil indisponível na fonte) não é erro do agente:
+        // o ciclo concluiu e as demais referências foram curadas normalmente.
+        const parcial = ok > 0;
         await setStatus(
           "curador",
-          "error",
-          `${ok}/${results.length} refs concluídas; falha em ${fail}${firstFail?.status === "fulfilled" ? ` (@${firstFail.value.handle} ${firstFail.value.status})` : ""}`,
+          parcial ? "idle" : "error",
+          `${ok}/${results.length} referências verificadas${
+            fail
+              ? `; ${fail} indisponível(is) na fonte${firstFail?.status === "fulfilled" ? ` (@${firstFail.value.handle})` : ""} — serão tentadas no próximo ciclo`
+              : ""
+          }`,
         );
         return;
       }

@@ -1,6 +1,7 @@
-// Ideador: roda de forma serializada por perfil para evitar estouro de limite.
-// Pode receber perfil_id/perfil_referencia_id ou rodar sem payload e encontrar
-// perfis com curadoria recente ainda sem pauta.
+// Ideador: só gera pauta a partir de curadoria APROVADA POR HUMANO.
+// - Com conteudo_id (trigger de aprovação): 1 pauta focada naquela curadoria.
+// - Sem payload (cron): varre curadorias aprovadas que ainda não têm pauta.
+// Não existe geração "evergreen" nem por perfil ativo — sem aprovação, nada roda.
 import {
   callClaude,
   corsHeaders,
