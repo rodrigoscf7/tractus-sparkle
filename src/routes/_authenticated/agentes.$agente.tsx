@@ -49,6 +49,7 @@ async function fetchExecucoes(agente: AgenteNome): Promise<any[]> {
       .select(
         "id, tema, gancho, score_curadoria, capturado_em, formato, url, texto_original, likes, comentarios, views, postado_em, perfil_referencia_id, perfis_referencia:perfis_referencia(handle, nicho, perfil_id_relacionado, perfis:perfis(nome))",
       )
+      .order("views", { ascending: false, nullsFirst: false })
       .order("capturado_em", { ascending: false })
       .limit(200);
     if (error) throw error;
