@@ -44,7 +44,11 @@ type Curado = {
   postado_em: string | null;
   aprovacao_humana: string;
   decidido_em: string | null;
-  perfis_referencia: { handle: string; nicho: string | null } | null;
+  perfis_referencia: {
+    handle: string;
+    nicho: string | null;
+    perfis: { nome: string } | null;
+  } | null;
 };
 
 const TABS = [
