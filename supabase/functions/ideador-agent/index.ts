@@ -209,128 +209,20 @@ async function gerarPautaFocada(supabase: SupabaseClient, conteudoId: string) {
 
 
 
-async function resolvePerfilIds(supabase: SupabaseClient, payload: IdeadorPayload) {
-  if (payload.perfil_id) return [payload.perfil_id];
-
-  if (payload.perfil_referencia_id) {
-    const { data: ref } = await supabase
-      .from("perfis_referencia")
-      .select("perfil_id_relacionado")
-      .eq("id", payload.perfil_referencia_id)
-      .maybeSingle();
-    return ref?.perfil_id_relacionado ? [ref.perfil_id_relacionado] : [];
-  }
-
-  const curadoriaIdsComPauta = await getCuradoriaIdsComPauta(supabase);
-  let curadoriaQuery = supabase
+async function getCuradoriasAprovadasSemPauta(supabase: SupabaseClient, limite: number) {
+  const comPauta = await getCuradoriaIdsComPauta(supabase);
+  let q = supabase
     .from("conteudos_curados")
-    .select("id, perfil_referencia_id")
+    .select("id")
     .eq("aprovacao_humana", "aprovado")
     .not("perfil_referencia_id", "is", null)
-    .order("capturado_em", { ascending: false })
-    .limit(100);
-
-
-  if (curadoriaIdsComPauta.length) {
-    curadoriaQuery = curadoriaQuery.not("id", "in", `(${curadoriaIdsComPauta.join(",")})`);
-  }
-
-  const { data: curadoria } = await curadoriaQuery;
-  const refIds = Array.from(new Set((curadoria ?? []).map((row) => row.perfil_referencia_id).filter(Boolean)));
-  if (!refIds.length) return getPerfisComReferenciaAtiva(supabase);
-
-  const { data: refs } = await supabase
-    .from("perfis_referencia")
-    .select("perfil_id_relacionado")
-    .in("id", refIds);
-
-  return Array.from(new Set((refs ?? []).map((ref) => ref.perfil_id_relacionado).filter(Boolean)));
+    .order("decidido_em", { ascending: true })
+    .limit(limite);
+  if (comPauta.length) q = q.not("id", "in", `(${comPauta.join(",")})`);
+  const { data } = await q;
+  return (data ?? []).map((row) => row.id as string);
 }
 
-async function gerarPautasDoPerfil(supabase: SupabaseClient, perfilId: string) {
-  const { data: perfil } = await supabase
-    .from("perfis")
-    .select("id, nome, tipo, diretrizes")
-    .eq("id", perfilId)
-    .single();
-
-  if (!perfil) return 0;
-
-  const { data: refsDoPerfil } = await supabase
-    .from("perfis_referencia")
-    .select("id")
-    .eq("perfil_id_relacionado", perfilId);
-
-  const refIds = (refsDoPerfil ?? []).map((r) => r.id);
-  if (!refIds.length) return 0;
-
-  const curadoriaIdsComPauta = await getCuradoriaIdsComPauta(supabase);
-  let curadoriaQuery = supabase
-    .from("conteudos_curados")
-    .select("id, tema, gancho, score_curadoria, formato")
-    .eq("aprovacao_humana", "aprovado")
-    .in("perfil_referencia_id", refIds)
-    .order("capturado_em", { ascending: false })
-    .limit(5);
-
-  if (curadoriaIdsComPauta.length) {
-    curadoriaQuery = curadoriaQuery.not("id", "in", `(${curadoriaIdsComPauta.join(",")})`);
-  }
-
-  const { data: curadoria } = await curadoriaQuery;
-
-  const historico = await getHistoricoDecisoes(perfilId);
-  const pautasRecentes = await getPautasRecentes(supabase, perfilId);
-  const hasCuradoria = Boolean(curadoria?.length);
-  // Nada avança sem aprovação humana: sem curadoria aprovada, o ideador não gera nada.
-  if (!hasCuradoria) return 0;
-
-  const systemTemplate = hasCuradoria ? SYSTEM : FALLBACK_SYSTEM;
-  const system = systemTemplate
-    .replace("{{perfil_nome}}", perfil.nome)
-    .replace("{{perfil_tipo}}", perfil.tipo)
-    .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
-    .replace("{{historico_decisoes_formatado}}", formatHistorico(historico))
-    .replace("{{lista_curadoria_filtrada}}", JSON.stringify(curadoria ?? []))
-    .replace("{{pautas_recentes}}", JSON.stringify(pautasRecentes));
-
-  const text = await callClaude(
-    system,
-    hasCuradoria ? "Gere até 3 pautas novas agora." : "Gere 1 pauta evergreen nova agora.",
-    hasCuradoria ? 1200 : 700,
-  );
-  const parsed = extractJson<{ pautas: PautaGerada[] }>(text);
-  const curadoriaIdsPermitidos = new Set((curadoria ?? []).map((item) => item.id));
-
-  let inserted = 0;
-  for (const p of parsed.pautas ?? []) {
-    const origemId = p.origem_curadoria_id && curadoriaIdsPermitidos.has(p.origem_curadoria_id)
-      ? p.origem_curadoria_id
-      : null;
-
-    const { error } = await supabase.from("pautas_geradas").insert({
-      perfil_id: perfilId,
-      origem_curadoria_id: origemId,
-      tema: p.tema,
-      angulo: p.angulo,
-      formato_sugerido: "Reel falado",
-      status: "gerada",
-    });
-    if (!error) inserted++;
-  }
-
-  return inserted;
-}
-
-async function getPerfisComReferenciaAtiva(supabase: SupabaseClient) {
-  const { data: refs } = await supabase
-    .from("perfis_referencia")
-    .select("perfil_id_relacionado")
-    .eq("ativo", true)
-    .not("perfil_id_relacionado", "is", null);
-
-  return Array.from(new Set((refs ?? []).map((ref) => ref.perfil_id_relacionado).filter(Boolean)));
-}
 
 async function getPautasRecentes(supabase: SupabaseClient, perfilId: string) {
   const { data } = await supabase
