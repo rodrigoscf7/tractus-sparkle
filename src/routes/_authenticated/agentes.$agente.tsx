@@ -49,6 +49,7 @@ async function fetchExecucoes(agente: AgenteNome): Promise<any[]> {
       .select(
         "id, tema, gancho, score_curadoria, capturado_em, formato, url, texto_original, likes, comentarios, views, postado_em, perfil_referencia_id, perfis_referencia:perfis_referencia(handle, nicho, perfil_id_relacionado, perfis:perfis(nome))",
       )
+      .order("views", { ascending: false, nullsFirst: false })
       .order("capturado_em", { ascending: false })
       .limit(200);
     if (error) throw error;
@@ -176,9 +177,15 @@ function pautaIdFromItem(agente: AgenteNome, item: any): string | null {
 function renderHeader(agente: AgenteNome, item: any) {
   if (agente === "curador") {
     const ref = item.perfis_referencia;
+    const perfilDestino = ref?.perfis?.nome as string | undefined;
     return (
       <div>
         <div className="flex items-center gap-2 mb-1 flex-wrap">
+          {perfilDestino && (
+            <Badge className="text-[10px] font-mono border-transparent bg-primary/15 text-primary">
+              {perfilDestino}
+            </Badge>
+          )}
           {ref?.handle && (
             <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
               @{ref.handle}
@@ -331,7 +338,12 @@ function renderDetalhe(agente: AgenteNome, item: any) {
     return (
       <>
         <Section label="Post original no Instagram">
+          <KV
+            k="Perfil destino"
+            v={item.perfis_referencia?.perfis?.nome ?? "—"}
+          />
           <KV k="Perfil" v={item.perfis_referencia?.handle ? `@${item.perfis_referencia.handle}` : "—"} />
+          <KV k="Nicho" v={item.perfis_referencia?.nicho ?? "—"} />
           <KV k="Formato" v={item.formato ?? "—"} />
           <KV k="Publicado em" v={fmtDate(item.postado_em)} />
           <KV k="Likes" v={fmtNum(item.likes)} />

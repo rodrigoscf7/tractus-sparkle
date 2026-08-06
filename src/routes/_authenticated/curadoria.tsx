@@ -44,7 +44,11 @@ type Curado = {
   postado_em: string | null;
   aprovacao_humana: string;
   decidido_em: string | null;
-  perfis_referencia: { handle: string; nicho: string | null } | null;
+  perfis_referencia: {
+    handle: string;
+    nicho: string | null;
+    perfis: { nome: string } | null;
+  } | null;
 };
 
 const TABS = [
@@ -63,9 +67,10 @@ function CuradoriaPage() {
       const { data, error } = await supabase
         .from("conteudos_curados")
         .select(
-          "id, url, formato, tema, gancho, score_curadoria, texto_original, capturado_em, likes, comentarios, views, postado_em, aprovacao_humana, decidido_em, perfis_referencia:perfis_referencia(handle,nicho)",
+          "id, url, formato, tema, gancho, score_curadoria, texto_original, capturado_em, likes, comentarios, views, postado_em, aprovacao_humana, decidido_em, perfis_referencia:perfis_referencia(handle,nicho,perfis:perfis(nome))",
         )
         .eq("aprovacao_humana", tab)
+        .order("views", { ascending: false, nullsFirst: false })
         .order("capturado_em", { ascending: false })
         .limit(120);
       if (error) throw error;
@@ -99,7 +104,7 @@ function CuradoriaPage() {
         <h1 className="text-2xl sm:text-3xl font-display font-bold">Curadoria</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Nada avança sem você. O curador captura e pontua as referências; o ideador só gera pauta
-          das que você aprovar aqui.
+          das que você aprovar aqui. Ordenado por alcance (views) — os de maior tração primeiro.
         </p>
       </header>
 
@@ -133,8 +138,11 @@ function CuradoriaPage() {
         {(itens ?? []).map((item) => (
           <Card key={item.id} className="p-4 sm:p-5 bg-surface border-border">
             <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Badge className="border-0 bg-accent/15 text-accent text-[10px] font-mono uppercase tracking-wider">
+                para {item.perfis_referencia?.perfis?.nome ?? "perfil não vinculado"}
+              </Badge>
               <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                @{item.perfis_referencia?.handle ?? "—"}
+                ref @{item.perfis_referencia?.handle ?? "—"}
               </span>
               {item.formato && (
                 <Badge variant="outline" className="text-[10px] font-mono uppercase">
