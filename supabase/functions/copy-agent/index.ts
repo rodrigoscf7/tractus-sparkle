@@ -6,6 +6,7 @@ import {
   formatHistorico,
   getHistoricoDecisoes,
   getServiceClient,
+  requireAgentAuth,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
