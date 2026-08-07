@@ -15,6 +15,56 @@ export function getServiceClient() {
   );
 }
 
+/**
+ * Todas as functions de agente rodam com service-role. Elas só podem ser
+ * invocadas por:
+ *  - chamadas internas (pg_cron, triggers, fan-out do curador) que enviam o
+ *    header x-agent-secret com AGENT_INTERNAL_SECRET;
+ *  - um usuário logado com papel 'admin' (JWT no header Authorization).
+ * Qualquer outra chamada é rejeitada com 401/403.
+ */
+export async function requireAgentAuth(req: Request): Promise<Response | null> {
+  const unauthorized = (status: number, error: string) =>
+    new Response(JSON.stringify({ ok: false, error }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  const internalSecret = Deno.env.get("AGENT_INTERNAL_SECRET");
+  const provided = req.headers.get("x-agent-secret");
+  if (internalSecret && provided && provided === internalSecret) return null;
+
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.toLowerCase().startsWith("bearer ")
+    ? authHeader.slice(7).trim()
+    : "";
+  if (!token) return unauthorized(401, "Autenticação obrigatória");
+
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  // A anon key sozinha não autentica ninguém.
+  if (token === anonKey) return unauthorized(401, "Autenticação obrigatória");
+
+  const userClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    anonKey,
+    {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    },
+  );
+
+  const { data: userData, error } = await userClient.auth.getUser();
+  if (error || !userData?.user) return unauthorized(401, "Sessão inválida");
+
+  const { data: isAdmin, error: roleError } = await userClient.rpc("has_role", {
+    _user_id: userData.user.id,
+    _role: "admin",
+  });
+  if (roleError || !isAdmin) return unauthorized(403, "Acesso restrito a administradores");
+
+  return null;
+}
+
 export async function setStatus(
   agente: string,
   estado: "idle" | "working" | "waiting" | "error",
