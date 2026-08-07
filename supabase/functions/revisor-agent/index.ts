@@ -6,6 +6,7 @@ import {
   extractJson,
   formatAgentError,
   getServiceClient,
+  requireAgentAuth,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
