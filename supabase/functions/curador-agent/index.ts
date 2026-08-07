@@ -206,7 +206,36 @@ Deno.serve(async (req) => {
   if (authError) return authError;
 
   const url = new URL(req.url);
-...
+  const refId = url.searchParams.get("ref_id");
+
+  // ============ MODO WORKER (1 ref) ============
+  if (refId) {
+    try {
+      const result = await processRef(refId);
+      await setStatus("curador", "idle", `worker ok: @${result.ref} (${result.curados})`);
+      return new Response(JSON.stringify({ ok: true, result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (e) {
+      console.error("worker error", e);
+      await setStatus("curador", "error", formatAgentError(e));
+      return new Response(JSON.stringify({ ok: false, error: String(e) }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // ============ MODO ORQUESTRADOR ============
+  try {
+    await setStatus("curador", "working", "orquestrando curadoria diária");
+    const supabase = getServiceClient();
+
+    const { data: refs } = await supabase
+      .from("perfis_referencia")
+      .select("id, handle")
+      .eq("ativo", true);
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const internalSecret = Deno.env.get("AGENT_INTERNAL_SECRET") ?? "";
