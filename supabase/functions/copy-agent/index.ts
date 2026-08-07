@@ -31,6 +31,9 @@ Retorne APENAS um JSON compacto:
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const authError = await requireAgentAuth(req);
+  if (authError) return authError;
+
   try {
     await setStatus("copy", "working", "produzindo roteiro");
     const { pauta_id } = await req.json();
