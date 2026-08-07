@@ -6,6 +6,7 @@ import {
   corsHeaders,
   extractJson,
   getServiceClient,
+  requireAgentAuth,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
