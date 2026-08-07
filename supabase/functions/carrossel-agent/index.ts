@@ -6,6 +6,7 @@ import {
   corsHeaders,
   extractJson,
   getServiceClient,
+  requireAgentAuth,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
@@ -41,6 +42,9 @@ Retorne APENAS um JSON compacto:
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const authError = await requireAgentAuth(req);
+  if (authError) return authError;
 
   let carrosselId: string | null = null;
   const supabase = getServiceClient();

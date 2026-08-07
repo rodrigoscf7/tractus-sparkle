@@ -6,6 +6,7 @@ import {
   extractJson,
   formatAgentError,
   getServiceClient,
+  requireAgentAuth,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
@@ -20,6 +21,9 @@ Retorne APENAS um JSON:
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const authError = await requireAgentAuth(req);
+  if (authError) return authError;
 
   let pautaId: string | null = null;
 

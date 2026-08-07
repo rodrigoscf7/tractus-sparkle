@@ -6,6 +6,7 @@ import {
   formatHistorico,
   getHistoricoDecisoes,
   getServiceClient,
+  requireAgentAuth,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
@@ -29,6 +30,9 @@ Retorne APENAS um JSON compacto:
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const authError = await requireAgentAuth(req);
+  if (authError) return authError;
 
   try {
     await setStatus("copy", "working", "produzindo roteiro");
