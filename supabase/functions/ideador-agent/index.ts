@@ -58,6 +58,9 @@ Retorne APENAS JSON:
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const authError = await requireAgentAuth(req);
+  if (authError) return authError;
+
   try {
     await setStatus("ideador", "working", "gerando pautas");
     const payload = (await req.json().catch(() => ({}))) as IdeadorPayload;
