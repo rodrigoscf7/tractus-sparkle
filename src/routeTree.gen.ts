@@ -9,39 +9,34 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
-import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
-import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
+import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
+import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
+import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
 import { Route as AuthenticatedAgentesIndexRouteImport } from './routes/_authenticated/agentes.index'
-import { Route as AuthenticatedAprovacaoPautaIdRouteImport } from './routes/_authenticated/aprovacao.$pautaId'
 import { Route as AuthenticatedAgentesAgenteRouteImport } from './routes/_authenticated/agentes.$agente'
+import { Route as AuthenticatedAprovacaoPautaIdRouteImport } from './routes/_authenticated/aprovacao.$pautaId'
 
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
-  id: '/pipeline',
-  path: '/pipeline',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPerfisRoute = AuthenticatedPerfisRouteImport.update({
-  id: '/perfis',
-  path: '/perfis',
+const AuthenticatedAgentesRoute = AuthenticatedAgentesRouteImport.update({
+  id: '/agentes',
+  path: '/agentes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCuradoriaRoute = AuthenticatedCuradoriaRouteImport.update({
@@ -49,9 +44,14 @@ const AuthenticatedCuradoriaRoute = AuthenticatedCuradoriaRouteImport.update({
   path: '/curadoria',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAgentesRoute = AuthenticatedAgentesRouteImport.update({
-  id: '/agentes',
-  path: '/agentes',
+const AuthenticatedPerfisRoute = AuthenticatedPerfisRouteImport.update({
+  id: '/perfis',
+  path: '/perfis',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
+  id: '/pipeline',
+  path: '/pipeline',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAgentesIndexRoute =
@@ -60,17 +60,17 @@ const AuthenticatedAgentesIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedAgentesRoute,
   } as any)
-const AuthenticatedAprovacaoPautaIdRoute =
-  AuthenticatedAprovacaoPautaIdRouteImport.update({
-    id: '/aprovacao/$pautaId',
-    path: '/aprovacao/$pautaId',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAgentesAgenteRoute =
   AuthenticatedAgentesAgenteRouteImport.update({
     id: '/$agente',
     path: '/$agente',
     getParentRoute: () => AuthenticatedAgentesRoute,
+  } as any)
+const AuthenticatedAprovacaoPautaIdRoute =
+  AuthenticatedAprovacaoPautaIdRouteImport.update({
+    id: '/aprovacao/$pautaId',
+    path: '/aprovacao/$pautaId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -151,11 +151,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -165,25 +165,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/pipeline': {
-      id: '/_authenticated/pipeline'
-      path: '/pipeline'
-      fullPath: '/pipeline'
-      preLoaderRoute: typeof AuthenticatedPipelineRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/perfis': {
-      id: '/_authenticated/perfis'
-      path: '/perfis'
-      fullPath: '/perfis'
-      preLoaderRoute: typeof AuthenticatedPerfisRouteImport
+    '/_authenticated/agentes': {
+      id: '/_authenticated/agentes'
+      path: '/agentes'
+      fullPath: '/agentes'
+      preLoaderRoute: typeof AuthenticatedAgentesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/curadoria': {
@@ -193,11 +186,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCuradoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/agentes': {
-      id: '/_authenticated/agentes'
-      path: '/agentes'
-      fullPath: '/agentes'
-      preLoaderRoute: typeof AuthenticatedAgentesRouteImport
+    '/_authenticated/perfis': {
+      id: '/_authenticated/perfis'
+      path: '/perfis'
+      fullPath: '/perfis'
+      preLoaderRoute: typeof AuthenticatedPerfisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pipeline': {
+      id: '/_authenticated/pipeline'
+      path: '/pipeline'
+      fullPath: '/pipeline'
+      preLoaderRoute: typeof AuthenticatedPipelineRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/agentes/': {
@@ -207,19 +207,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAgentesIndexRouteImport
       parentRoute: typeof AuthenticatedAgentesRoute
     }
-    '/_authenticated/aprovacao/$pautaId': {
-      id: '/_authenticated/aprovacao/$pautaId'
-      path: '/aprovacao/$pautaId'
-      fullPath: '/aprovacao/$pautaId'
-      preLoaderRoute: typeof AuthenticatedAprovacaoPautaIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/agentes/$agente': {
       id: '/_authenticated/agentes/$agente'
       path: '/$agente'
       fullPath: '/agentes/$agente'
       preLoaderRoute: typeof AuthenticatedAgentesAgenteRouteImport
       parentRoute: typeof AuthenticatedAgentesRoute
+    }
+    '/_authenticated/aprovacao/$pautaId': {
+      id: '/_authenticated/aprovacao/$pautaId'
+      path: '/aprovacao/$pautaId'
+      fullPath: '/aprovacao/$pautaId'
+      preLoaderRoute: typeof AuthenticatedAprovacaoPautaIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
@@ -264,3 +264,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
