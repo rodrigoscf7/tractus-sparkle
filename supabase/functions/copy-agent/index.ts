@@ -78,6 +78,12 @@ Deno.serve(async (req) => {
       .replace("{{pauta_angulo}}", pauta!.angulo ?? "")
       .replace("{{historico_roteiros_rejeitados}}", formatHistorico(historico));
 
+    setCustoContexto({
+      contaId: (pauta as any)?.conta_id ?? perfil?.conta_id ?? null,
+      perfilId: pauta!.perfil_id,
+      agente: "copy",
+      tipo: "roteiro",
+    });
     const text = await callClaude(system, "Escreva o roteiro falado agora. JSON apenas.", 900);
     const parsed = extractJson(text);
 
