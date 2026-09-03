@@ -12,7 +12,9 @@ import {
   formatAgentError,
   getServiceClient,
   limiteDisponivel,
+  registrarCustoScraping,
   requireAgentAuth,
+  setCustoContexto,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
@@ -177,6 +179,15 @@ async function processRef(refId: string) {
     console.error("Apify error", ref.handle, e);
     return { ref: ref.handle, curados: 0, error: String(e).slice(0, 200) };
   }
+
+  // Custo da coleta (Apify) desta referência.
+  await registrarCustoScraping(contaId, perfil.id, posts.length);
+  setCustoContexto({
+    contaId,
+    perfilId: perfil.id,
+    agente: "curador",
+    tipo: "curadoria",
+  });
 
   let curados = 0;
   let duplicados = 0;

@@ -7,6 +7,7 @@ import {
   formatAgentError,
   getServiceClient,
   requireAgentAuth,
+  setCustoContexto,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
@@ -35,7 +36,7 @@ Deno.serve(async (req) => {
 
     const { data: pauta } = await supabase
       .from("pautas_geradas")
-      .select("id, perfil_id, tema, angulo, perfis:perfis(nome,diretrizes)")
+      .select("id, perfil_id, tema, angulo, conta_id, perfis:perfis(nome,diretrizes)")
       .eq("id", pauta_id)
       .single();
 
@@ -67,6 +68,12 @@ Deno.serve(async (req) => {
       .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
       .replace("{{conteudo_completo}}", JSON.stringify(conteudoCompleto));
 
+    setCustoContexto({
+      contaId: (pauta as any)?.conta_id ?? null,
+      perfilId: pauta!.perfil_id,
+      agente: "revisor",
+      tipo: "revisao",
+    });
     const text = await callClaude(
       `${system}\nLimite a resposta a no máximo 3 inconsistências curtas. Não use markdown nem bloco de código.`,
       "Faça a revisão agora.",

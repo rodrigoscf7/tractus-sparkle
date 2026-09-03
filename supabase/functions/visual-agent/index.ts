@@ -7,6 +7,7 @@ import {
   getHistoricoDecisoes,
   getServiceClient,
   requireAgentAuth,
+  setCustoContexto,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
@@ -42,7 +43,9 @@ Deno.serve(async (req) => {
 
     const { data: pauta } = await supabase
       .from("pautas_geradas")
-      .select("id, perfil_id, tema, angulo, formato_sugerido, perfis:perfis(nome,identidade_visual)")
+      .select(
+        "id, perfil_id, tema, angulo, formato_sugerido, conta_id, perfis:perfis(nome,identidade_visual)",
+      )
       .eq("id", pauta_id)
       .single();
 
@@ -73,6 +76,12 @@ Deno.serve(async (req) => {
       .replace("{{roteiro_texto}}", roteiroTexto)
       .replace("{{historico_artes_rejeitadas}}", formatHistorico(historico));
 
+    setCustoContexto({
+      contaId: (pauta as any)?.conta_id ?? null,
+      perfilId: pauta!.perfil_id,
+      agente: "visual",
+      tipo: "visual",
+    });
     const text = await callClaude(system, "Direção de gravação em JSON compacto.", 600);
     const parsed = extractJson(text);
 
