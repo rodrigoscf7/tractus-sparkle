@@ -82,6 +82,69 @@ export async function setStatus(
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-5-20250929"; // closest available; was "claude-sonnet-4-6" in prompt
 
+export type CustoContexto = {
+  contaId?: string | null;
+  perfilId?: string | null;
+  agente: string;
+  tipo: string;
+};
+
+let custoContexto: CustoContexto | null = null;
+
+/**
+ * Define a qual conta/perfil os próximos custos de modelo pertencem.
+ * Chame antes de callClaude para que o consumo apareça no painel financeiro.
+ */
+export function setCustoContexto(ctx: CustoContexto | null) {
+  custoContexto = ctx;
+}
+
+async function registrarCustoModelo(
+  tokensEntrada: number,
+  tokensSaida: number,
+) {
+  const ctx = custoContexto;
+  if (!ctx) return;
+  try {
+    const supabase = getServiceClient();
+    await supabase.from("custo_eventos").insert({
+      conta_id: ctx.contaId ?? null,
+      perfil_id: ctx.perfilId ?? null,
+      agente: ctx.agente,
+      tipo: ctx.tipo,
+      modelo: MODEL,
+      tokens_entrada: tokensEntrada,
+      tokens_saida: tokensSaida,
+      itens: 1,
+    });
+  } catch (e) {
+    console.error("registrarCustoModelo falhou", e);
+  }
+}
+
+/** Registra o custo de uma execução de coleta (Apify). */
+export async function registrarCustoScraping(
+  contaId: string | null | undefined,
+  perfilId: string | null | undefined,
+  itens = 1,
+) {
+  try {
+    const supabase = getServiceClient();
+    await supabase.from("custo_eventos").insert({
+      conta_id: contaId ?? null,
+      perfil_id: perfilId ?? null,
+      agente: "curador",
+      tipo: "scraping",
+      modelo: "apify",
+      tokens_entrada: 0,
+      tokens_saida: 0,
+      itens,
+    });
+  } catch (e) {
+    console.error("registrarCustoScraping falhou", e);
+  }
+}
+
 export async function callClaude(
   systemPrompt: string,
   userPrompt: string,
@@ -117,8 +180,13 @@ export async function callClaude(
     throw new Error(`Anthropic error ${res.status}: ${message}`);
   }
   const data = await res.json();
+  await registrarCustoModelo(
+    Number(data?.usage?.input_tokens ?? 0),
+    Number(data?.usage?.output_tokens ?? 0),
+  );
   return data.content?.[0]?.text ?? "";
 }
+
 
 export function formatAgentError(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error);
