@@ -43,7 +43,15 @@ export const getMinhaAssinatura = createServerFn({ method: "GET" })
       .order("criado_em")
       .limit(1)
       .maybeSingle();
-    if (!membro) return { assinatura: null, planos: [], custo: null, email: null };
+    if (!membro)
+      return {
+        assinatura: null as any,
+        planos: [] as any[],
+        custo: null as any,
+        contaId: null as string | null,
+        papel: null as string | null,
+        email: null as string | null,
+      };
 
     const [assinatura, planos, custo] = await Promise.all([
       context.supabase.from("assinaturas").select("*").eq("conta_id", membro.conta_id).maybeSingle(),
