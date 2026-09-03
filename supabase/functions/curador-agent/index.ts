@@ -180,6 +180,15 @@ async function processRef(refId: string) {
     return { ref: ref.handle, curados: 0, error: String(e).slice(0, 200) };
   }
 
+  // Custo da coleta (Apify) desta referência.
+  await registrarCustoScraping(contaId, perfil.id, posts.length);
+  setCustoContexto({
+    contaId,
+    perfilId: perfil.id,
+    agente: "curador",
+    tipo: "curadoria",
+  });
+
   let curados = 0;
   let duplicados = 0;
   let avaliados = 0;
