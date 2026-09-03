@@ -8,6 +8,7 @@ import {
   getServiceClient,
   limiteDisponivel,
   requireAgentAuth,
+  setCustoContexto,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
