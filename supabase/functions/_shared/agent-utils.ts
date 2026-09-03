@@ -203,14 +203,14 @@ export function formatHistorico(rows: any[]): string {
 }
 
 /**
- * Cota do plano: retorna true quando a conta ainda pode gerar `tipo` neste ciclo.
- * Contas suspensas ou sem vínculo bloqueiam a geração.
+ * Cota do plano: valida no servidor se a conta ainda pode gerar `tipo` neste ciclo.
+ * Contas suspensas, sem plano ou sem vínculo bloqueiam a geração.
  */
 export async function limiteDisponivel(
   contaId: string | null | undefined,
   tipo: "curadoria" | "roteiro" | "carrossel",
-): Promise<boolean> {
-  if (!contaId) return false;
+): Promise<{ permitido: boolean; motivo: string }> {
+  if (!contaId) return { permitido: false, motivo: "conta_ausente" };
   const supabase = getServiceClient();
   const { data, error } = await supabase.rpc("limite_disponivel", {
     _conta_id: contaId,
@@ -218,7 +218,8 @@ export async function limiteDisponivel(
   });
   if (error) {
     console.error("limite_disponivel erro", error);
-    return false;
+    return { permitido: false, motivo: "erro_limite" };
   }
-  return data === true;
+  const r = (data ?? {}) as { permitido?: boolean; motivo?: string };
+  return { permitido: r.permitido === true, motivo: r.motivo ?? "desconhecido" };
 }
