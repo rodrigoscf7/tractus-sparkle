@@ -156,6 +156,12 @@ async function gerarPautaFocada(supabase: SupabaseClient, conteudoId: string) {
       trecho: (curadoria.texto_original ?? "").slice(0, 400),
     }));
 
+  setCustoContexto({
+    contaId: (perfil as any)?.conta_id ?? null,
+    perfilId,
+    agente: "ideador",
+    tipo: "pauta",
+  });
   const text = await callClaude(system, "Gere 1 pauta focada na curadoria-alvo agora.", 500);
   const parsed = extractJson<{ pautas: PautaGerada[] }>(text);
   const p = parsed.pautas?.[0];
