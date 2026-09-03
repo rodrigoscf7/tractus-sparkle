@@ -45,12 +45,25 @@ Deno.serve(async (req) => {
     const { data: pauta } = await supabase
       .from("pautas_geradas")
       .select(
-        "id, perfil_id, tema, angulo, formato_sugerido, perfis:perfis(nome,diretrizes,cta_padrao)",
+        "id, perfil_id, tema, angulo, formato_sugerido, conta_id, perfis:perfis(nome,diretrizes,cta_padrao,conta_id)",
       )
       .eq("id", pauta_id)
       .single();
 
     const perfil = (pauta as any).perfis;
+
+    // Cota do plano validada no servidor antes de gastar tokens.
+    const cota = await limiteDisponivel(
+      (pauta as any)?.conta_id ?? perfil?.conta_id,
+      "roteiro",
+    );
+    if (!cota.permitido) {
+      await setStatus("copy", "idle", `limite de roteiros: ${cota.motivo}`);
+      return new Response(JSON.stringify({ ok: false, limite: cota.motivo }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const historico = (await getHistoricoDecisoes(pauta!.perfil_id)).filter(
       (h) => h.item_tipo === "roteiro" && h.decisao === "rejeitado",
     );
