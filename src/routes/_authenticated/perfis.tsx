@@ -19,6 +19,20 @@ import { TemplateCarrosselEditor } from "@/components/TemplateCarrosselEditor";
 
 
 export const Route = createFileRoute("/_authenticated/perfis")({
+  head: () => ({
+    meta: [
+      { title: "Perfis e diretrizes | prevIA - CONTENT" },
+      {
+        name: "description",
+        content:
+          "Configure tom de voz, CTA padrão, foco de curadoria e identidade visual de cada perfil.",
+      },
+      { property: "og:title", content: "Perfis e diretrizes | prevIA - CONTENT" },
+      { property: "og:description", content: "Parâmetros que orientam os agentes de conteúdo." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: PerfisPage,
 });
 
@@ -67,9 +81,11 @@ function PerfisPage() {
   async function addReferencia() {
     if (!activeId || !novoHandle.trim()) return;
     const handle = novoHandle.replace(/^@/, "").trim();
-    const { error } = await supabase
-      .from("perfis_referencia")
-      .insert({ handle, perfil_id_relacionado: activeId });
+    const { error } = await supabase.from("perfis_referencia").insert({
+      handle,
+      perfil_id_relacionado: activeId,
+      conta_id: perfis?.find((p) => p.id === activeId)?.conta_id ?? null,
+    });
     if (error) {
       toast.error(error.message);
       return;
@@ -112,7 +128,7 @@ function PerfisPage() {
                     {perfil.tipo}
                   </Badge>
                 </div>
-                <div className="text-2xl font-display font-bold tractus-gradient-text shrink-0">
+                <div className="text-2xl font-display font-semibold num shrink-0">
                   {ps.length}
                 </div>
               </div>

@@ -38,6 +38,7 @@ export type Database = {
       artes: {
         Row: {
           briefing: Json | null
+          conta_id: string | null
           criado_em: string | null
           id: string
           pauta_id: string | null
@@ -46,6 +47,7 @@ export type Database = {
         }
         Insert: {
           briefing?: Json | null
+          conta_id?: string | null
           criado_em?: string | null
           id?: string
           pauta_id?: string | null
@@ -54,6 +56,7 @@ export type Database = {
         }
         Update: {
           briefing?: Json | null
+          conta_id?: string | null
           criado_em?: string | null
           id?: string
           pauta_id?: string | null
@@ -61,6 +64,13 @@ export type Database = {
           versao?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "artes_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "artes_pauta_id_fkey"
             columns: ["pauta_id"]
@@ -73,6 +83,7 @@ export type Database = {
       carrosseis: {
         Row: {
           atualizado_em: string
+          conta_id: string | null
           copy: Json | null
           criado_em: string
           erro: string | null
@@ -84,6 +95,7 @@ export type Database = {
         }
         Insert: {
           atualizado_em?: string
+          conta_id?: string | null
           copy?: Json | null
           criado_em?: string
           erro?: string | null
@@ -95,6 +107,7 @@ export type Database = {
         }
         Update: {
           atualizado_em?: string
+          conta_id?: string | null
           copy?: Json | null
           criado_em?: string
           erro?: string | null
@@ -105,6 +118,13 @@ export type Database = {
           visual?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "carrosseis_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "carrosseis_pauta_id_fkey"
             columns: ["pauta_id"]
@@ -121,11 +141,79 @@ export type Database = {
           },
         ]
       }
+      conta_membros: {
+        Row: {
+          conta_id: string
+          criado_em: string
+          id: string
+          papel: string
+          user_id: string
+        }
+        Insert: {
+          conta_id: string
+          criado_em?: string
+          id?: string
+          papel?: string
+          user_id: string
+        }
+        Update: {
+          conta_id?: string
+          criado_em?: string
+          id?: string
+          papel?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conta_membros_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contas: {
+        Row: {
+          ciclo_inicio: string
+          criado_em: string
+          id: string
+          nome: string
+          plano_codigo: string
+          status: string
+        }
+        Insert: {
+          ciclo_inicio?: string
+          criado_em?: string
+          id?: string
+          nome: string
+          plano_codigo?: string
+          status?: string
+        }
+        Update: {
+          ciclo_inicio?: string
+          criado_em?: string
+          id?: string
+          nome?: string
+          plano_codigo?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_plano_codigo_fkey"
+            columns: ["plano_codigo"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["codigo"]
+          },
+        ]
+      }
       conteudos_curados: {
         Row: {
           aprovacao_humana: string
           capturado_em: string | null
           comentarios: number | null
+          conta_id: string | null
           decidido_em: string | null
           formato: string | null
           gancho: string | null
@@ -143,6 +231,7 @@ export type Database = {
           aprovacao_humana?: string
           capturado_em?: string | null
           comentarios?: number | null
+          conta_id?: string | null
           decidido_em?: string | null
           formato?: string | null
           gancho?: string | null
@@ -160,6 +249,7 @@ export type Database = {
           aprovacao_humana?: string
           capturado_em?: string | null
           comentarios?: number | null
+          conta_id?: string | null
           decidido_em?: string | null
           formato?: string | null
           gancho?: string | null
@@ -175,6 +265,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "conteudos_curados_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conteudos_curados_perfil_referencia_id_fkey"
             columns: ["perfil_referencia_id"]
             isOneToOne: false
@@ -186,6 +283,7 @@ export type Database = {
       decisoes_aprovacao: {
         Row: {
           comentario_livre: string | null
+          conta_id: string | null
           criado_em: string | null
           decisao: string | null
           id: string
@@ -196,6 +294,7 @@ export type Database = {
         }
         Insert: {
           comentario_livre?: string | null
+          conta_id?: string | null
           criado_em?: string | null
           decisao?: string | null
           id?: string
@@ -206,6 +305,7 @@ export type Database = {
         }
         Update: {
           comentario_livre?: string | null
+          conta_id?: string | null
           criado_em?: string | null
           decisao?: string | null
           id?: string
@@ -215,6 +315,13 @@ export type Database = {
           perfil_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "decisoes_aprovacao_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "decisoes_aprovacao_perfil_id_fkey"
             columns: ["perfil_id"]
@@ -227,6 +334,7 @@ export type Database = {
       pautas_geradas: {
         Row: {
           angulo: string | null
+          conta_id: string | null
           criado_em: string | null
           formato_sugerido: string | null
           id: string
@@ -237,6 +345,7 @@ export type Database = {
         }
         Insert: {
           angulo?: string | null
+          conta_id?: string | null
           criado_em?: string | null
           formato_sugerido?: string | null
           id?: string
@@ -247,6 +356,7 @@ export type Database = {
         }
         Update: {
           angulo?: string | null
+          conta_id?: string | null
           criado_em?: string | null
           formato_sugerido?: string | null
           id?: string
@@ -256,6 +366,13 @@ export type Database = {
           tema?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pautas_geradas_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pautas_geradas_origem_curadoria_id_fkey"
             columns: ["origem_curadoria_id"]
@@ -275,6 +392,7 @@ export type Database = {
       perfis: {
         Row: {
           ativo: boolean | null
+          conta_id: string | null
           criado_em: string | null
           cta_padrao: string | null
           diretrizes: Json | null
@@ -288,6 +406,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean | null
+          conta_id?: string | null
           criado_em?: string | null
           cta_padrao?: string | null
           diretrizes?: Json | null
@@ -301,6 +420,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean | null
+          conta_id?: string | null
           criado_em?: string | null
           cta_padrao?: string | null
           diretrizes?: Json | null
@@ -312,11 +432,20 @@ export type Database = {
           tipo?: string
           tom_de_voz?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "perfis_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       perfis_referencia: {
         Row: {
           ativo: boolean | null
+          conta_id: string | null
           criado_em: string | null
           foco_curadoria: string | null
           handle: string
@@ -326,6 +455,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean | null
+          conta_id?: string | null
           criado_em?: string | null
           foco_curadoria?: string | null
           handle: string
@@ -335,6 +465,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean | null
+          conta_id?: string | null
           criado_em?: string | null
           foco_curadoria?: string | null
           handle?: string
@@ -344,6 +475,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "perfis_referencia_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "perfis_referencia_perfil_id_relacionado_fkey"
             columns: ["perfil_id_relacionado"]
             isOneToOne: false
@@ -352,8 +490,51 @@ export type Database = {
           },
         ]
       }
+      planos: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          criado_em: string
+          limite_carrosseis_mes: number
+          limite_curadorias_mes: number
+          limite_perfis: number
+          limite_referencias: number
+          limite_roteiros_mes: number
+          nome: string
+          ordem: number
+          preco_mensal_centavos: number
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          criado_em?: string
+          limite_carrosseis_mes?: number
+          limite_curadorias_mes?: number
+          limite_perfis?: number
+          limite_referencias?: number
+          limite_roteiros_mes?: number
+          nome: string
+          ordem?: number
+          preco_mensal_centavos?: number
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          criado_em?: string
+          limite_carrosseis_mes?: number
+          limite_curadorias_mes?: number
+          limite_perfis?: number
+          limite_referencias?: number
+          limite_roteiros_mes?: number
+          nome?: string
+          ordem?: number
+          preco_mensal_centavos?: number
+        }
+        Relationships: []
+      }
       publicacoes: {
         Row: {
+          conta_id: string | null
           criado_em: string | null
           id: string
           pauta_id: string | null
@@ -362,6 +543,7 @@ export type Database = {
           status: string | null
         }
         Insert: {
+          conta_id?: string | null
           criado_em?: string | null
           id?: string
           pauta_id?: string | null
@@ -370,6 +552,7 @@ export type Database = {
           status?: string | null
         }
         Update: {
+          conta_id?: string | null
           criado_em?: string | null
           id?: string
           pauta_id?: string | null
@@ -378,6 +561,13 @@ export type Database = {
           status?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "publicacoes_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "publicacoes_pauta_id_fkey"
             columns: ["pauta_id"]
@@ -396,6 +586,7 @@ export type Database = {
       }
       roteiros: {
         Row: {
+          conta_id: string | null
           conteudo: Json | null
           criado_em: string | null
           id: string
@@ -404,6 +595,7 @@ export type Database = {
           versao: number | null
         }
         Insert: {
+          conta_id?: string | null
           conteudo?: Json | null
           criado_em?: string | null
           id?: string
@@ -412,6 +604,7 @@ export type Database = {
           versao?: number | null
         }
         Update: {
+          conta_id?: string | null
           conteudo?: Json | null
           criado_em?: string | null
           id?: string
@@ -420,6 +613,13 @@ export type Database = {
           versao?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "roteiros_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "roteiros_pauta_id_fkey"
             columns: ["pauta_id"]
@@ -450,12 +650,48 @@ export type Database = {
         }
         Relationships: []
       }
+      uso_mensal: {
+        Row: {
+          atualizado_em: string
+          ciclo: string
+          conta_id: string
+          id: string
+          quantidade: number
+          tipo: string
+        }
+        Insert: {
+          atualizado_em?: string
+          ciclo: string
+          conta_id: string
+          id?: string
+          quantidade?: number
+          tipo: string
+        }
+        Update: {
+          atualizado_em?: string
+          ciclo?: string
+          conta_id?: string
+          id?: string
+          quantidade?: number
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uso_mensal_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       agent_internal_headers: { Args: never; Returns: Json }
+      contas_do_usuario: { Args: { _user_id: string }; Returns: string[] }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -463,7 +699,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_conta_membro: { Args: { _conta_id: string }; Returns: boolean }
+      is_conta_owner: { Args: { _conta_id: string }; Returns: boolean }
+      limite_disponivel: {
+        Args: { _conta_id: string; _tipo: string }
+        Returns: Json
+      }
+      minha_conta: { Args: never; Returns: string }
       promote_next_pauta: { Args: never; Returns: undefined }
+      registrar_uso: {
+        Args: { _conta_id: string; _qtd?: number; _tipo: string }
+        Returns: undefined
+      }
       revisar_next_pauta_pronta: { Args: never; Returns: undefined }
     }
     Enums: {

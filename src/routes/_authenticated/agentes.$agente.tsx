@@ -16,6 +16,19 @@ export const Route = createFileRoute("/_authenticated/agentes/$agente")({
     if (!AGENTES.includes(params.agente as AgenteNome)) throw notFound();
     return { agente: params.agente as AgenteNome };
   },
+  head: ({ params }) => ({
+    meta: [
+      { title: `Agente ${params.agente} | prevIA - CONTENT` },
+      {
+        name: "description",
+        content: `Processo, critérios e produção do agente ${params.agente} em ordem cronológica.`,
+      },
+      { property: "og:title", content: `Agente ${params.agente} | prevIA - CONTENT` },
+      { property: "og:description", content: "Raciocínio e decisões do agente." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AgenteDetalhePage,
   notFoundComponent: () => <div className="p-8 text-muted-foreground">Agente não encontrado.</div>,
   errorComponent: ({ error }) => (
