@@ -43,7 +43,9 @@ Deno.serve(async (req) => {
 
     const { data: pauta } = await supabase
       .from("pautas_geradas")
-      .select("id, perfil_id, tema, angulo, formato_sugerido, perfis:perfis(nome,identidade_visual)")
+      .select(
+        "id, perfil_id, tema, angulo, formato_sugerido, conta_id, perfis:perfis(nome,identidade_visual)",
+      )
       .eq("id", pauta_id)
       .single();
 
