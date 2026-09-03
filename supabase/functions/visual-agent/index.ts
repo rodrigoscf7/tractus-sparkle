@@ -76,6 +76,12 @@ Deno.serve(async (req) => {
       .replace("{{roteiro_texto}}", roteiroTexto)
       .replace("{{historico_artes_rejeitadas}}", formatHistorico(historico));
 
+    setCustoContexto({
+      contaId: (pauta as any)?.conta_id ?? null,
+      perfilId: pauta!.perfil_id,
+      agente: "visual",
+      tipo: "visual",
+    });
     const text = await callClaude(system, "Direção de gravação em JSON compacto.", 600);
     const parsed = extractJson(text);
 
