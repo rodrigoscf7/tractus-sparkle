@@ -24,11 +24,9 @@ Sua tarefa é IDENTIFICAR POTENCIAL, não filtrar por tom ou profundidade.
 Os agentes seguintes (ideador e copy) vão adaptar tom, profundidade e contexto
 ao perfil. Você só precisa dizer se o TEMA/GANCHO/TRAÇÃO justifica entrar no funil.
 
-Rubrica de score (0-10):
-- 9-10: viral claro (alto engajamento p/ o perfil) OU gancho muito forte no nicho
-- 7-8: bom tema com tração razoável ou ângulo interessante
-- 5-6: tema pertinente ao nicho, tração mediana — ainda vale registrar
-- 0-4: fora do nicho, sem tração e sem ângulo aproveitável
+Foco estratégico desta busca: {{foco}}
+{{rubrica_foco}}
+
 
 Retorne APENAS um JSON, sem markdown:
 { "score_curadoria": 0-10, "tema": "string", "gancho_identificado": "string",
@@ -37,11 +35,52 @@ Retorne APENAS um JSON, sem markdown:
 "aproveitavel" deve ser true sempre que score_curadoria >= 5.
 Não descarte por "clichê" ou "raso" se o engajamento for alto — vira insumo mesmo assim.`;
 
+const RUBRICA_VIRAL = `Rubrica de score (0-10) — foco VIRAL (modelar o que já performou):
+- 9-10: tração muito acima da média do perfil e gancho replicável no nicho
+- 7-8: boa tração com ângulo aproveitável
+- 5-6: tração razoável e tema pertinente ao nicho
+- 0-4: sem tração relevante ou fora do nicho
+Peso maior em visualizações, curtidas e comentários — potencial de alcance.`;
+
+const RUBRICA_POSICIONAMENTO =
+  `Rubrica de score (0-10) — foco POSICIONAMENTO (assunto atual e tese defensável):
+- 9-10: assunto muito atual no nicho, com tese clara de posicionamento a defender
+- 7-8: tema pertinente e atual, bom ângulo de opinião
+- 5-6: tema do nicho aproveitável, mesmo sem grande novidade
+- 0-4: fora do nicho ou sem ângulo de opinião possível
+IGNORE visualizações e engajamento no julgamento: post com pouca tração pode ter score alto.`;
+
 const APIFY_TIMEOUT_MS = 60_000;
 const CLAUDE_TIMEOUT_MS = 30_000;
-const APIFY_RESULTS_LIMIT = 6;
+const APIFY_RESULTS_LIMIT = 12;
 const MAX_NEW_POSTS_TO_SCORE = 5;
 const MIN_SCORE_TO_SAVE = 6;
+
+type Foco = "viral" | "posicionamento";
+
+function normalizeFoco(v: unknown): Foco {
+  return String(v ?? "").toLowerCase() === "viral" ? "viral" : "posicionamento";
+}
+
+function engajamento(post: Record<string, unknown>): number {
+  const views = Number(post["videoPlayCount"] ?? 0) || 0;
+  const likes = Number(post["likesCount"] ?? 0) || 0;
+  const comentarios = Number(post["commentsCount"] ?? 0) || 0;
+  return views + likes * 3 + comentarios * 10;
+}
+
+function postTime(post: Record<string, unknown>): number {
+  const ts = post["timestamp"] ?? post["taken_at_timestamp"];
+  if (typeof ts === "number") return ts * 1000;
+  const parsed = Date.parse(String(ts ?? ""));
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function ordenarPorFoco(posts: Record<string, unknown>[], foco: Foco) {
+  return [...posts].sort((a, b) =>
+    foco === "viral" ? engajamento(b) - engajamento(a) : postTime(b) - postTime(a)
+  );
+}
 
 async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return await Promise.race([
@@ -60,7 +99,7 @@ async function processRef(refId: string) {
   const { data: ref } = await supabase
     .from("perfis_referencia")
     .select(
-      "id, handle, perfil_id_relacionado, perfis:perfis!perfis_referencia_perfil_id_relacionado_fkey(id,nome,tipo,diretrizes)",
+      "id, handle, foco_curadoria, perfil_id_relacionado, perfis:perfis!perfis_referencia_perfil_id_relacionado_fkey(id,nome,tipo,diretrizes,foco_curadoria)",
     )
     .eq("id", refId)
     .maybeSingle();
@@ -69,7 +108,12 @@ async function processRef(refId: string) {
   const perfil = (ref as any).perfis;
   if (!perfil) throw new Error(`perfil para ref ${refId} não encontrado`);
 
-  await setStatus("curador", "working", `buscando @${ref.handle}`);
+  // Exceção por referência sobrescreve o foco padrão do perfil.
+  const foco: Foco = normalizeFoco(
+    (ref as any).foco_curadoria ?? perfil.foco_curadoria,
+  );
+
+  await setStatus("curador", "working", `buscando @${ref.handle} (${foco})`);
 
   let posts: any[] = [];
   try {
@@ -130,6 +174,9 @@ async function processRef(refId: string) {
   let duplicados = 0;
   let avaliados = 0;
 
+  // Viral: melhores por tração primeiro. Posicionamento: mais recentes primeiro.
+  posts = ordenarPorFoco(posts as Record<string, unknown>[], foco);
+
   for (const post of posts) {
     if (avaliados >= MAX_NEW_POSTS_TO_SCORE) break;
 
@@ -159,7 +206,9 @@ async function processRef(refId: string) {
     const system = SYSTEM
       .replace("{{perfil_nome}}", perfil.nome)
       .replace("{{perfil_tipo}}", perfil.tipo)
-      .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes));
+      .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
+      .replace("{{foco}}", foco)
+      .replace("{{rubrica_foco}}", foco === "viral" ? RUBRICA_VIRAL : RUBRICA_POSICIONAMENTO);
 
     try {
       const text = await withTimeout(
@@ -196,7 +245,7 @@ async function processRef(refId: string) {
     }
   }
 
-  return { ref: ref.handle, curados, avaliados, duplicados, encontrados: posts.length };
+  return { ref: ref.handle, foco, curados, avaliados, duplicados, encontrados: posts.length };
 }
 
 Deno.serve(async (req) => {

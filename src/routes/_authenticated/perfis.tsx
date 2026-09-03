@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TemplateCarrosselEditor } from "@/components/TemplateCarrosselEditor";
 
 
@@ -167,15 +174,39 @@ function PerfisPage() {
               {refs?.map((r) => (
                 <div
                   key={r.id}
-                  className="flex items-center justify-between p-3 rounded border border-border bg-background"
+                  className="flex flex-wrap items-center justify-between gap-2 p-3 rounded border border-border bg-background"
                 >
                   <span className="font-mono text-sm">@{r.handle}</span>
-                  <button
-                    onClick={() => removeRef(r.id)}
-                    className="text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    remover
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={
+                        (r as { foco_curadoria?: string | null }).foco_curadoria ?? "herdar"
+                      }
+                      onValueChange={async (v) => {
+                        const { error } = await supabase
+                          .from("perfis_referencia")
+                          .update({ foco_curadoria: v === "herdar" ? null : v })
+                          .eq("id", r.id);
+                        if (error) toast.error(error.message);
+                        else refetchRefs();
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-[190px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="herdar">Herdar do perfil</SelectItem>
+                        <SelectItem value="viral">Foco viral</SelectItem>
+                        <SelectItem value="posicionamento">Foco posicionamento</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <button
+                      onClick={() => removeRef(r.id)}
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      remover
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -192,10 +223,14 @@ type Perfil = {
   tom_de_voz: string | null;
   diretrizes: unknown;
   identidade_visual: unknown;
+  cta_padrao?: string | null;
+  foco_curadoria?: string | null;
 };
 
 function IdentityEditor({ perfil, onSaved }: { perfil: Perfil; onSaved: () => void }) {
   const [tom, setTom] = useState(perfil.tom_de_voz ?? "");
+  const [cta, setCta] = useState(perfil.cta_padrao ?? "");
+  const [foco, setFoco] = useState(perfil.foco_curadoria ?? "posicionamento");
   const [diretrizes, setDiretrizes] = useState(
     JSON.stringify(perfil.diretrizes ?? {}, null, 2),
   );
@@ -206,6 +241,8 @@ function IdentityEditor({ perfil, onSaved }: { perfil: Perfil; onSaved: () => vo
 
   useEffect(() => {
     setTom(perfil.tom_de_voz ?? "");
+    setCta(perfil.cta_padrao ?? "");
+    setFoco(perfil.foco_curadoria ?? "posicionamento");
     setDiretrizes(JSON.stringify(perfil.diretrizes ?? {}, null, 2));
     setIdentidade(JSON.stringify(perfil.identidade_visual ?? {}, null, 2));
   }, [perfil.id]);
@@ -230,6 +267,8 @@ function IdentityEditor({ perfil, onSaved }: { perfil: Perfil; onSaved: () => vo
       .from("perfis")
       .update({
         tom_de_voz: tom.trim() || null,
+        cta_padrao: cta.trim() || null,
+        foco_curadoria: foco,
         diretrizes: dirJson as never,
         identidade_visual: idJson as never,
       })
@@ -259,6 +298,41 @@ function IdentityEditor({ perfil, onSaved }: { perfil: Perfil; onSaved: () => vo
             Tom de voz
           </div>
           <Input value={tom} onChange={(e) => setTom(e.target.value)} placeholder="ex: direto, provocativo, empático" />
+        </div>
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+            CTA padrão (fim do reel e último slide do carrossel)
+          </div>
+          <Textarea
+            value={cta}
+            onChange={(e) => setCta(e.target.value)}
+            className="min-h-20 text-sm"
+            placeholder="ex: Se isso fez sentido pra você, me chama no direct."
+          />
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Os agentes mantêm a intenção e o canal desta CTA, adaptando as palavras ao tema.
+          </p>
+        </div>
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+            Foco da curadoria
+          </div>
+          <Select value={foco} onValueChange={setFoco}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="posicionamento">
+                Posicionamento — últimas postagens das referências
+              </SelectItem>
+              <SelectItem value="viral">
+                Viral — posts com mais visualização e engajamento
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Vale para todas as referências deste perfil, exceto as que tiverem foco próprio.
+          </p>
         </div>
         <div>
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
