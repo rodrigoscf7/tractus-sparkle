@@ -7,6 +7,7 @@ import {
   formatAgentError,
   getServiceClient,
   requireAgentAuth,
+  setCustoContexto,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
