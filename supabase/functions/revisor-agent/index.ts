@@ -68,6 +68,12 @@ Deno.serve(async (req) => {
       .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
       .replace("{{conteudo_completo}}", JSON.stringify(conteudoCompleto));
 
+    setCustoContexto({
+      contaId: (pauta as any)?.conta_id ?? null,
+      perfilId: pauta!.perfil_id,
+      agente: "revisor",
+      tipo: "revisao",
+    });
     const text = await callClaude(
       `${system}\nLimite a resposta a no máximo 3 inconsistências curtas. Não use markdown nem bloco de código.`,
       "Faça a revisão agora.",
