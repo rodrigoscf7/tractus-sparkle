@@ -47,7 +47,8 @@ type Curado = {
   perfis_referencia: {
     handle: string;
     nicho: string | null;
-    perfis: { nome: string } | null;
+    foco_curadoria: string | null;
+    perfis: { nome: string; foco_curadoria: string | null } | null;
   } | null;
 };
 
@@ -67,7 +68,7 @@ function CuradoriaPage() {
       const { data, error } = await supabase
         .from("conteudos_curados")
         .select(
-          "id, url, formato, tema, gancho, score_curadoria, texto_original, capturado_em, likes, comentarios, views, postado_em, aprovacao_humana, decidido_em, perfis_referencia:perfis_referencia(handle,nicho,perfis:perfis(nome))",
+          "id, url, formato, tema, gancho, score_curadoria, texto_original, capturado_em, likes, comentarios, views, postado_em, aprovacao_humana, decidido_em, perfis_referencia:perfis_referencia(handle,nicho,foco_curadoria,perfis:perfis(nome,foco_curadoria))",
         )
         .eq("aprovacao_humana", tab)
         .order("views", { ascending: false, nullsFirst: false })
@@ -144,6 +145,14 @@ function CuradoriaPage() {
               <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
                 ref @{item.perfis_referencia?.handle ?? "—"}
               </span>
+              <Badge variant="outline" className="text-[10px] font-mono uppercase">
+                foco{" "}
+                {(item.perfis_referencia?.foco_curadoria ??
+                  item.perfis_referencia?.perfis?.foco_curadoria ??
+                  "posicionamento") === "viral"
+                  ? "viral"
+                  : "posicionamento"}
+              </Badge>
               {item.formato && (
                 <Badge variant="outline" className="text-[10px] font-mono uppercase">
                   {item.formato}

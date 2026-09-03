@@ -14,13 +14,16 @@ const SYSTEM = `Você escreve roteiros de REELS FALADOS de posicionamento para: 
 Formato fixo: vídeo de 30 a 60 segundos, uma pessoa falando à câmera. NÃO é carrossel, NÃO é slide.
 Tom: direto, assertivo, primeira pessoa, português do Brasil. Sem emoji, sem travessão, sem hashtag no meio do texto.
 Diretrizes do perfil: {{perfil_diretrizes}}
+CTA padrão do perfil (âncora obrigatória): {{cta_padrao}}
 Pauta: tema={{pauta_tema}} | ângulo={{pauta_angulo}}
 Roteiros rejeitados (não repita o padrão): {{historico_roteiros_rejeitados}}
 
 Estruture o discurso em 3 blocos curtos, prontos pra gravar lendo:
 1. gancho_falado: 1 frase de até 15 palavras, provocativa, dita nos 3 primeiros segundos.
 2. desenvolvimento_falado: 3 a 5 frases curtas, conectadas, defendendo UMA tese de posicionamento. Sem listas, sem "primeiro/segundo/terceiro", sem slides.
-3. cta_falado: 1 frase fechando com convite claro (comentar, salvar, chamar no direct, etc.).
+3. cta_falado: 1 frase fechando com convite claro. Se houver CTA padrão do perfil, ela é a base:
+   mantenha a MESMA intenção e o MESMO canal de resposta, podendo ajustar as palavras ao tema.
+   Se a CTA padrão for "nenhuma", escolha você a melhor CTA.
 
 Retorne APENAS um JSON compacto:
 { "gancho_falado": "string",
@@ -41,7 +44,9 @@ Deno.serve(async (req) => {
 
     const { data: pauta } = await supabase
       .from("pautas_geradas")
-      .select("id, perfil_id, tema, angulo, formato_sugerido, perfis:perfis(nome,diretrizes)")
+      .select(
+        "id, perfil_id, tema, angulo, formato_sugerido, perfis:perfis(nome,diretrizes,cta_padrao)",
+      )
       .eq("id", pauta_id)
       .single();
 
@@ -53,6 +58,7 @@ Deno.serve(async (req) => {
     const system = SYSTEM
       .replace("{{perfil_nome}}", perfil.nome)
       .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
+      .replace("{{cta_padrao}}", String(perfil.cta_padrao ?? "").trim() || "nenhuma")
       .replace("{{pauta_tema}}", pauta!.tema ?? "")
       .replace("{{pauta_angulo}}", pauta!.angulo ?? "")
       .replace("{{historico_roteiros_rejeitados}}", formatHistorico(historico));

@@ -276,7 +276,9 @@ export type Database = {
         Row: {
           ativo: boolean | null
           criado_em: string | null
+          cta_padrao: string | null
           diretrizes: Json | null
+          foco_curadoria: string
           id: string
           identidade_visual: Json | null
           nome: string
@@ -287,7 +289,9 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           criado_em?: string | null
+          cta_padrao?: string | null
           diretrizes?: Json | null
+          foco_curadoria?: string
           id?: string
           identidade_visual?: Json | null
           nome: string
@@ -298,7 +302,9 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           criado_em?: string | null
+          cta_padrao?: string | null
           diretrizes?: Json | null
+          foco_curadoria?: string
           id?: string
           identidade_visual?: Json | null
           nome?: string
@@ -312,6 +318,7 @@ export type Database = {
         Row: {
           ativo: boolean | null
           criado_em: string | null
+          foco_curadoria: string | null
           handle: string
           id: string
           nicho: string | null
@@ -320,6 +327,7 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           criado_em?: string | null
+          foco_curadoria?: string | null
           handle: string
           id?: string
           nicho?: string | null
@@ -328,6 +336,7 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           criado_em?: string | null
+          foco_curadoria?: string | null
           handle?: string
           id?: string
           nicho?: string | null

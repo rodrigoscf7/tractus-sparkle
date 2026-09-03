@@ -14,6 +14,7 @@ const SYSTEM_COPY =
   `Você adapta um ROTEIRO FALADO de Reel para a COPY de um CARROSSEL de {{perfil_nome}}.
 Tom: direto, assertivo, primeira pessoa, português do Brasil. Sem emoji, sem hashtag, sem travessão.
 Diretrizes do perfil: {{perfil_diretrizes}}
+CTA padrão do perfil (âncora obrigatória do último slide): {{cta_padrao}}
 Pauta: tema={{pauta_tema}} | ângulo={{pauta_angulo}}
 Roteiro aprovado (fonte da verdade — mantenha a MESMA tese e o MESMO posicionamento): {{roteiro_texto}}
 
@@ -21,7 +22,8 @@ Regras do carrossel:
 - Entre 5 e 8 slides no total, você decide conforme a densidade do roteiro.
 - Slide 1 = hook: frase curta e provocativa, até 12 palavras.
 - Slides do meio = desenvolvimento: um argumento por slide, 1 a 3 frases curtas cada, encadeados.
-- Último slide = CTA: convite claro (comentar, salvar, chamar no direct).
+- Último slide = CTA: sempre presente. Se houver CTA padrão do perfil, ela é a base: mantenha a MESMA
+  intenção e o MESMO canal de resposta, podendo ajustar as palavras ao tema. Se for "nenhuma", escolha você.
 - Cada slide é TEXTO SIMPLES lido em segundos. Máximo 220 caracteres por slide. Sem numeração no texto.
 
 Retorne APENAS um JSON compacto:
@@ -56,7 +58,7 @@ Deno.serve(async (req) => {
     const { data: pauta, error: pautaErr } = await supabase
       .from("pautas_geradas")
       .select(
-        "id, perfil_id, tema, angulo, status, perfis:perfis(nome,diretrizes,identidade_visual)",
+        "id, perfil_id, tema, angulo, status, perfis:perfis(nome,diretrizes,identidade_visual,cta_padrao)",
       )
       .eq("id", pauta_id)
       .single();
@@ -117,6 +119,7 @@ Deno.serve(async (req) => {
       .replace("{{perfil_diretrizes}}", JSON.stringify(perfil?.["diretrizes"] ?? {}).slice(0, 900))
       .replace("{{pauta_tema}}", pauta.tema ?? "")
       .replace("{{pauta_angulo}}", pauta.angulo ?? "")
+      .replace("{{cta_padrao}}", String(perfil?.["cta_padrao"] ?? "").trim() || "nenhuma")
       .replace("{{roteiro_texto}}", roteiroTexto);
 
     const copyText = await callClaude(systemCopy, "Copy do carrossel agora. JSON apenas.", 1100);
