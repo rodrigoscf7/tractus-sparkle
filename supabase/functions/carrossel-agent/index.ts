@@ -58,13 +58,25 @@ Deno.serve(async (req) => {
     const { data: pauta, error: pautaErr } = await supabase
       .from("pautas_geradas")
       .select(
-        "id, perfil_id, tema, angulo, status, perfis:perfis(nome,diretrizes,identidade_visual,cta_padrao)",
+        "id, perfil_id, tema, angulo, status, conta_id, perfis:perfis(nome,diretrizes,identidade_visual,cta_padrao,conta_id)",
       )
       .eq("id", pauta_id)
       .single();
     if (pautaErr || !pauta) throw new Error("Pauta não encontrada");
     if (pauta.status !== "aprovada") {
       throw new Error("O carrossel só pode ser gerado depois da aprovação final da pauta");
+    }
+
+    // Cota do plano validada no servidor antes de gastar tokens.
+    const cotaCarrossel = await limiteDisponivel(
+      (pauta as unknown as { conta_id?: string | null }).conta_id ??
+        ((pauta as unknown as { perfis?: { conta_id?: string | null } }).perfis?.conta_id ?? null),
+      "carrossel",
+    );
+    if (!cotaCarrossel.permitido) {
+      throw new Error(
+        `Limite de carrosséis do plano atingido (${cotaCarrossel.motivo}). Renova no próximo ciclo.`,
+      );
     }
 
     const { data: roteiro } = await supabase
