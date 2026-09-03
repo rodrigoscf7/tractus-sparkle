@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -12,7 +16,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { AlertTriangle } from "lucide-react";
 import { useIsPlatformAdmin } from "@/hooks/use-platform-admin";
+import {
+  getAdminDashboard,
+  acaoConta,
+  salvarPlano,
+  salvarPrecoCusto,
+  reprocessarEventoKiwify,
+} from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -20,10 +32,10 @@ export const Route = createFileRoute("/_authenticated/admin")({
       { title: "Administração da plataforma | prevIA - CONTENT" },
       {
         name: "description",
-        content: "Contas, planos, consumo e falhas de agentes de toda a plataforma.",
+        content: "Receita, contas pagantes, custo real de uso, margem por plano e eventos de cobrança.",
       },
       { property: "og:title", content: "Administração da plataforma | prevIA - CONTENT" },
-      { property: "og:description", content: "Operação interna prevIA - CONTENT." },
+      { property: "og:description", content: "Operação e economia do prevIA - CONTENT." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -31,66 +43,66 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
-const cicloAtual = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-};
+const brl = (centavos: number) =>
+  (Number(centavos || 0) / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 2,
+  });
+
+function Kpi({
+  label,
+  valor,
+  detalhe,
+  alerta,
+}: {
+  label: string;
+  valor: string;
+  detalhe?: string;
+  alerta?: boolean;
+}) {
+  return (
+    <Card className="p-4">
+      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+        {label}
+      </div>
+      <div
+        className={`num font-display text-2xl mt-1 ${alerta ? "text-destructive" : ""}`}
+      >
+        {valor}
+      </div>
+      {detalhe && <div className="num text-xs text-muted-foreground mt-1">{detalhe}</div>}
+    </Card>
+  );
+}
 
 function AdminPage() {
   const { data: isAdmin, isLoading: loadingRole } = useIsPlatformAdmin();
+  const carregar = useServerFn(getAdminDashboard);
+  const executar = useServerFn(acaoConta);
+  const gravarPlano = useServerFn(salvarPlano);
+  const gravarPreco = useServerFn(salvarPrecoCusto);
+  const reprocessar = useServerFn(reprocessarEventoKiwify);
 
-  const { data: planos } = useQuery({
-    queryKey: ["admin-planos"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("planos").select("*").order("ordem");
-      if (error) throw error;
-      return data ?? [];
-    },
+  const { data, refetch, isLoading } = useQuery({
+    queryKey: ["admin-dashboard"],
+    queryFn: () => carregar(),
     enabled: !!isAdmin,
   });
 
-  const { data: contas, refetch } = useQuery({
-    queryKey: ["admin-contas"],
-    queryFn: async () => {
-      const ciclo = cicloAtual();
-      const [c, u, m, e] = await Promise.all([
-        supabase.from("contas").select("*, planos:planos(*)").order("criado_em"),
-        supabase.from("uso_mensal").select("conta_id, tipo, quantidade").eq("ciclo", ciclo),
-        supabase.from("conta_membros").select("conta_id, user_id, papel"),
-        supabase.from("carrosseis").select("conta_id, erro").not("erro", "is", null),
-      ]);
-      if (c.error) throw c.error;
-      return (c.data ?? []).map((conta) => ({
-        ...conta,
-        uso: Object.fromEntries(
-          (u.data ?? []).filter((x) => x.conta_id === conta.id).map((x) => [x.tipo, x.quantidade]),
-        ) as Record<string, number>,
-        membros: (m.data ?? []).filter((x) => x.conta_id === conta.id).length,
-        falhas: (e.data ?? []).filter((x) => x.conta_id === conta.id).length,
-      }));
-    },
-    enabled: !!isAdmin,
-  });
-
-  async function trocarPlano(contaId: string, codigo: string) {
-    const { error } = await supabase
-      .from("contas")
-      .update({ plano_codigo: codigo })
-      .eq("id", contaId);
-    if (error) return toast.error(error.message);
-    toast.success("Plano atualizado.");
-    refetch();
+  async function rodar(fn: () => Promise<unknown>, msg: string) {
+    try {
+      await fn();
+      toast.success(msg);
+      refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha na operação.");
+    }
   }
 
-  async function alternarStatus(contaId: string, status: string) {
-    const novo = status === "ativa" ? "suspensa" : "ativa";
-    const { error } = await supabase.from("contas").update({ status: novo }).eq("id", contaId);
-    if (error) return toast.error(error.message);
-    toast.success(novo === "ativa" ? "Conta reativada." : "Conta suspensa.");
-    refetch();
+  if (loadingRole || (isAdmin && isLoading)) {
+    return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
   }
-
-  if (loadingRole) return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
   if (!isAdmin) {
     return (
       <div className="p-8 text-sm text-muted-foreground">
@@ -99,91 +111,415 @@ function AdminPage() {
     );
   }
 
+  const r = data?.resumo;
+
   return (
     <div className="p-4 sm:p-8 max-w-[1200px]">
-      <header className="mb-6 sm:mb-8">
+      <header className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-display font-semibold">Administração</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Contas da plataforma, plano, consumo do ciclo e falhas registradas.
+          Receita recorrente, custo real de uso, margem por plano e cobrança pela Kiwify.
         </p>
       </header>
 
-      <div className="space-y-3">
-        {(contas ?? []).map((conta) => (
-          <Card key={conta.id} className="p-4 sm:p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="font-display text-lg font-semibold truncate">{conta.nome}</div>
-                <div className="num text-xs text-muted-foreground mt-1">
-                  {conta.membros} membro(s) · ciclo desde{" "}
-                  {new Date(conta.ciclo_inicio).toLocaleDateString("pt-BR")}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {conta.falhas > 0 && (
-                  <Badge variant="destructive" className="num">
-                    {conta.falhas} falha(s)
-                  </Badge>
-                )}
-                <Badge variant={conta.status === "ativa" ? "outline" : "destructive"}>
-                  {conta.status}
-                </Badge>
-              </div>
-            </div>
+      <Tabs defaultValue="financeiro">
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+          <TabsTrigger value="contas">Contas</TabsTrigger>
+          <TabsTrigger value="planos">Planos</TabsTrigger>
+          <TabsTrigger value="custos">Custos</TabsTrigger>
+          <TabsTrigger value="kiwify">Cobrança</TabsTrigger>
+        </TabsList>
 
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                  Plano
-                </div>
-                <Select
-                  value={conta.plano_codigo}
-                  onValueChange={(v) => trocarPlano(conta.id, v)}
-                >
-                  <SelectTrigger className="mt-1 h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(planos ?? []).map((p) => (
-                      <SelectItem key={p.codigo} value={p.codigo}>
-                        {p.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Metrica
-                label="Curadorias"
-                usado={conta.uso["curadoria"] ?? 0}
-                limite={conta.planos?.limite_curadorias_mes ?? 0}
-              />
-              <Metrica
-                label="Roteiros"
-                usado={conta.uso["roteiro"] ?? 0}
-                limite={conta.planos?.limite_roteiros_mes ?? 0}
-              />
-              <Metrica
-                label="Carrosséis"
-                usado={conta.uso["carrossel"] ?? 0}
-                limite={conta.planos?.limite_carrosseis_mes ?? 0}
-              />
-            </div>
+        {/* ---------------- FINANCEIRO ---------------- */}
+        <TabsContent value="financeiro" className="space-y-6 mt-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Kpi label="Receita recorrente (MRR)" valor={brl(r?.mrr_centavos ?? 0)} detalhe={`ARR ${brl(r?.arr_centavos ?? 0)}`} />
+            <Kpi label="Contas pagantes" valor={String(r?.pagantes ?? 0)} detalhe={`${r?.trials ?? 0} em teste · ${r?.gratuitas ?? 0} gratuitas`} />
+            <Kpi label="Ticket médio" valor={brl(r?.ticket_medio_centavos ?? 0)} detalhe={`Conversão de teste ${r?.conversao_trial_pct ?? 0}%`} />
+            <Kpi
+              label="Margem bruta do mês"
+              valor={`${r?.margem_pct ?? 0}%`}
+              detalhe={`${brl(r?.margem_centavos ?? 0)} · custo ${brl(r?.custo_mes_centavos ?? 0)}`}
+              alerta={(r?.margem_pct ?? 0) < 50}
+            />
+          </div>
 
-            <div className="mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => alternarStatus(conta.id, conta.status)}
-              >
-                {conta.status === "ativa" ? "Suspender conta" : "Reativar conta"}
-              </Button>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Kpi label="Custo médio por conta / mês" valor={brl(r?.custo_por_conta_centavos ?? 0)} />
+            <Kpi label="Pagamentos pendentes" valor={String(r?.atrasadas ?? 0)} alerta={(r?.atrasadas ?? 0) > 0} />
+            <Kpi label="Cancelamentos no mês" valor={String(r?.canceladas_mes ?? 0)} alerta={(r?.canceladas_mes ?? 0) > 0} />
+          </div>
+
+          <Card className="p-5">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+              Coerência de preço por plano
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Custo máximo = conta usando 100% dos limites, com o custo médio medido por tipo de
+              geração. Margem abaixo de {data?.coerencia?.[0]?.piso_margem_pct ?? 60}% no uso máximo
+              indica preço apertado.
+            </p>
+            <div className="mt-4 space-y-3">
+              {(data?.coerencia ?? []).map((c) => (
+                <div key={c.codigo} className="rounded-md border border-border p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-display font-semibold">
+                      {c.nome}{" "}
+                      <span className="num text-sm text-muted-foreground">
+                        {c.preco_centavos === 0 ? "grátis" : `${brl(c.preco_centavos)}/mês`}
+                      </span>
+                    </div>
+                    {c.alerta && (
+                      <Badge variant="destructive" className="gap-1">
+                        <AlertTriangle className="h-3 w-3" /> margem apertada
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="grid gap-3 mt-3 sm:grid-cols-4 num text-sm">
+                    <div>
+                      <div className="text-[10px] font-mono uppercase text-muted-foreground">
+                        Custo no uso máximo
+                      </div>
+                      {brl(c.custo_max_centavos)}
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono uppercase text-muted-foreground">
+                        Custo real observado
+                      </div>
+                      {brl(c.custo_observado_centavos)}
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono uppercase text-muted-foreground">
+                        Margem no uso máximo
+                      </div>
+                      <span className={c.alerta ? "text-destructive" : ""}>{c.margem_max_pct}%</span>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono uppercase text-muted-foreground">
+                        Margem no uso médio
+                      </div>
+                      {c.margem_media_pct}%
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </Card>
-        ))}
-        {contas?.length === 0 && (
-          <p className="text-sm text-muted-foreground">Nenhuma conta cadastrada.</p>
-        )}
-      </div>
+
+          <Card className="p-5">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+              Projeção
+            </div>
+            <div className="mt-4 grid gap-4 lg:grid-cols-3">
+              {(data?.projecao ?? []).map((p) => (
+                <div key={p.cenario} className="rounded-md border border-border p-3">
+                  <div className="font-display font-semibold">{p.cenario}</div>
+                  <div className="mt-2 space-y-2">
+                    {p.meses.map((m) => (
+                      <div key={m.mes} className="num text-sm">
+                        <div className="text-muted-foreground text-xs">Em {m.mes} meses</div>
+                        {m.contas} pagantes · {brl(m.receita_centavos)} · margem {m.margem_pct}%
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {(data?.serie?.length ?? 0) > 0 && (
+            <Card className="p-5">
+              <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                Custo por mês
+              </div>
+              <div className="mt-3 space-y-2">
+                {(data?.serie ?? []).map((s) => (
+                  <div key={s.ciclo} className="num text-sm flex justify-between gap-3">
+                    <span>{new Date(s.ciclo).toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}</span>
+                    <span className="text-muted-foreground">
+                      IA {brl(s.custo_ia_centavos)} · coleta {brl(s.custo_scraping_centavos)} ·{" "}
+                      {s.geracoes} gerações
+                    </span>
+                    <span>{brl(s.custo_total_centavos)}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ---------------- CONTAS ---------------- */}
+        <TabsContent value="contas" className="space-y-3 mt-5">
+          {(data?.contas ?? []).map((conta) => (
+            <Card key={conta.id} className="p-4 sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="font-display text-lg font-semibold truncate">{conta.nome}</div>
+                  <div className="num text-xs text-muted-foreground mt-1">
+                    {conta.membros} membro(s) · desde{" "}
+                    {new Date(conta.criado_em).toLocaleDateString("pt-BR")}
+                    {conta.assinatura?.comprador_email ? ` · ${conta.assinatura.comprador_email}` : ""}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {conta.alerta_consumo && (
+                    <Badge variant="destructive" className="gap-1">
+                      <AlertTriangle className="h-3 w-3" /> consumo alto
+                    </Badge>
+                  )}
+                  <Badge variant="secondary">{conta.assinatura?.situacao ?? "sem assinatura"}</Badge>
+                  <Badge variant={conta.status === "ativa" ? "outline" : "destructive"}>
+                    {conta.status}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                    Plano
+                  </div>
+                  <Select
+                    value={conta.plano_codigo}
+                    onValueChange={(v) =>
+                      rodar(
+                        () => executar({ data: { contaId: conta.id, acao: "trocar_plano", planoCodigo: v } }),
+                        "Plano atualizado.",
+                      )
+                    }
+                  >
+                    <SelectTrigger className="mt-1 h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(data?.planos ?? []).map((p: any) => (
+                        <SelectItem key={p.codigo} value={p.codigo}>
+                          {p.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Metrica label="Curadorias" usado={conta.uso["curadoria"] ?? 0} limite={conta.limites.curadoria} />
+                <Metrica label="Roteiros" usado={conta.uso["roteiro"] ?? 0} limite={conta.limites.roteiro} />
+                <Metrica label="Carrosséis" usado={conta.uso["carrossel"] ?? 0} limite={conta.limites.carrossel} />
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-3 num text-sm">
+                <div>
+                  <div className="text-[10px] font-mono uppercase text-muted-foreground">Receita</div>
+                  {brl(conta.receita_centavos)}
+                </div>
+                <div>
+                  <div className="text-[10px] font-mono uppercase text-muted-foreground">
+                    Custo do ciclo
+                  </div>
+                  {brl(conta.custo_centavos)} · {conta.geracoes} gerações
+                </div>
+                <div>
+                  <div className="text-[10px] font-mono uppercase text-muted-foreground">Margem</div>
+                  <span className={conta.margem_centavos < 0 ? "text-destructive" : ""}>
+                    {brl(conta.margem_centavos)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    rodar(
+                      () =>
+                        executar({
+                          data: {
+                            contaId: conta.id,
+                            acao: conta.status === "ativa" ? "suspender" : "reativar",
+                          },
+                        }),
+                      conta.status === "ativa" ? "Conta suspensa." : "Conta reativada.",
+                    )
+                  }
+                >
+                  {conta.status === "ativa" ? "Suspender" : "Reativar"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    rodar(
+                      () => executar({ data: { contaId: conta.id, acao: "conceder_trial", dias: 14 } }),
+                      "Teste de 14 dias concedido.",
+                    )
+                  }
+                >
+                  Conceder 14 dias
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    rodar(
+                      () =>
+                        executar({
+                          data: {
+                            contaId: conta.id,
+                            acao: "pagamento_manual",
+                            observacao: "Pagamento registrado manualmente pelo admin",
+                          },
+                        }),
+                      "Pagamento manual registrado.",
+                    )
+                  }
+                >
+                  Marcar pagamento manual
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    rodar(
+                      () => executar({ data: { contaId: conta.id, acao: "cancelar_assinatura" } }),
+                      "Assinatura cancelada.",
+                    )
+                  }
+                >
+                  Cancelar assinatura
+                </Button>
+              </div>
+            </Card>
+          ))}
+          {data?.contas?.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhuma conta cadastrada.</p>
+          )}
+        </TabsContent>
+
+        {/* ---------------- PLANOS ---------------- */}
+        <TabsContent value="planos" className="space-y-3 mt-5">
+          {(data?.planos ?? []).map((p: any) => (
+            <PlanoEditor
+              key={p.codigo}
+              plano={p}
+              onSalvar={(valores) =>
+                rodar(() => gravarPlano({ data: { codigo: p.codigo, valores } }), "Plano salvo.")
+              }
+            />
+          ))}
+          <NovoPlano
+            onCriar={(codigo, valores) =>
+              rodar(() => gravarPlano({ data: { codigo, novo: true, valores } }), "Plano criado.")
+            }
+          />
+        </TabsContent>
+
+        {/* ---------------- CUSTOS ---------------- */}
+        <TabsContent value="custos" className="space-y-4 mt-5">
+          <Card className="p-5">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+              Custo médio medido por tipo de geração
+            </div>
+            <div className="mt-3 space-y-2">
+              {(data?.custo_medio_tipo ?? []).map((m) => (
+                <div key={m.tipo} className="num text-sm flex justify-between gap-3">
+                  <span className="capitalize">{m.tipo}</span>
+                  <span className="text-muted-foreground">{m.eventos} evento(s)</span>
+                  <span>
+                    médio {brl(m.custo_medio_centavos)} · pico {brl(m.custo_max_centavos)}
+                  </span>
+                </div>
+              ))}
+              {(data?.custo_medio_tipo?.length ?? 0) === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum evento de custo registrado ainda. Os valores aparecem após a próxima
+                  execução dos agentes.
+                </p>
+              )}
+            </div>
+          </Card>
+
+          {(data?.precos ?? []).map((p: any) => (
+            <PrecoEditor
+              key={p.chave}
+              preco={p}
+              onSalvar={(valores) =>
+                rodar(() => gravarPreco({ data: { ...valores, chave: p.chave } }), "Preço atualizado.")
+              }
+            />
+          ))}
+        </TabsContent>
+
+        {/* ---------------- COBRANÇA / KIWIFY ---------------- */}
+        <TabsContent value="kiwify" className="space-y-3 mt-5">
+          <Card className="p-5">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+              Endereço do webhook da Kiwify
+            </div>
+            <code className="block num text-xs mt-2 break-all">
+              {typeof window !== "undefined" ? window.location.origin : ""}
+              /api/public/webhooks/kiwify
+            </code>
+            <p className="text-xs text-muted-foreground mt-2">
+              Cadastre esse endereço na Kiwify para compra aprovada, recusada, reembolso,
+              cancelamento e atraso de assinatura.
+            </p>
+          </Card>
+
+          {(data?.eventos_kiwify ?? []).map((e: any) => (
+            <Card key={e.id} className="p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-display font-semibold">{e.evento}</div>
+                  <div className="num text-xs text-muted-foreground mt-1 break-all">
+                    {new Date(e.criado_em).toLocaleString("pt-BR")}
+                    {e.comprador_email ? ` · ${e.comprador_email}` : ""}
+                    {e.valor_centavos ? ` · ${brl(e.valor_centavos)}` : ""}
+                  </div>
+                  {e.erro && <div className="text-xs text-destructive mt-1">{e.erro}</div>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={e.processado ? "outline" : "destructive"}>
+                    {e.processado ? "processado" : "pendente"}
+                  </Badge>
+                  {!e.processado && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        rodar(
+                          () => reprocessar({ data: { eventoId: e.id } }),
+                          "Evento reprocessado.",
+                        )
+                      }
+                    >
+                      Reprocessar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+          {(data?.eventos_kiwify?.length ?? 0) === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhum evento recebido ainda.</p>
+          )}
+
+          <Card className="p-5">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+              Ações administrativas recentes
+            </div>
+            <div className="mt-3 space-y-1">
+              {(data?.acoes ?? []).map((a: any) => (
+                <div key={a.id} className="num text-xs text-muted-foreground">
+                  {new Date(a.criado_em).toLocaleString("pt-BR")} · {a.acao}
+                </div>
+              ))}
+              {(data?.acoes?.length ?? 0) === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhuma ação registrada.</p>
+              )}
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -205,5 +541,234 @@ function Metrica({ label, usado, limite }: { label: string; usado: number; limit
         />
       </div>
     </div>
+  );
+}
+
+const CAMPOS_PLANO: { campo: string; label: string; tipo: "texto" | "numero" | "bool" }[] = [
+  { campo: "nome", label: "Nome", tipo: "texto" },
+  { campo: "preco_mensal_centavos", label: "Preço mensal (centavos)", tipo: "numero" },
+  { campo: "preco_anual_centavos", label: "Preço anual (centavos)", tipo: "numero" },
+  { campo: "trial_dias", label: "Dias de teste", tipo: "numero" },
+  { campo: "limite_perfis", label: "Perfis", tipo: "numero" },
+  { campo: "limite_referencias", label: "Referências", tipo: "numero" },
+  { campo: "limite_curadorias_mes", label: "Curadorias/mês", tipo: "numero" },
+  { campo: "limite_roteiros_mes", label: "Roteiros/mês", tipo: "numero" },
+  { campo: "limite_carrosseis_mes", label: "Carrosséis/mês", tipo: "numero" },
+  { campo: "checkout_url", label: "Link de checkout Kiwify", tipo: "texto" },
+  { campo: "kiwify_produto_id", label: "ID do produto Kiwify", tipo: "texto" },
+  { campo: "kiwify_oferta_id", label: "ID da oferta Kiwify", tipo: "texto" },
+  { campo: "descricao", label: "Descrição", tipo: "texto" },
+  { campo: "ordem", label: "Ordem", tipo: "numero" },
+];
+
+function PlanoEditor({
+  plano,
+  onSalvar,
+}: {
+  plano: Record<string, any>;
+  onSalvar: (valores: Record<string, unknown>) => void;
+}) {
+  const [form, setForm] = useState<Record<string, any>>(plano);
+  const [beneficios, setBeneficios] = useState(
+    (Array.isArray(plano.beneficios) ? plano.beneficios : []).join("\n"),
+  );
+
+  return (
+    <Card className="p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="font-display text-lg font-semibold">
+          {plano.nome} <span className="num text-xs text-muted-foreground">{plano.codigo}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant={form.publico ? "outline" : "secondary"}>
+            {form.publico ? "público" : "oculto"}
+          </Badge>
+          <Badge variant={form.recomendado ? "default" : "secondary"}>
+            {form.recomendado ? "recomendado" : "padrão"}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="grid gap-3 mt-4 sm:grid-cols-2 lg:grid-cols-3">
+        {CAMPOS_PLANO.map((c) => (
+          <div key={c.campo}>
+            <Label className="text-xs">{c.label}</Label>
+            <Input
+              className="mt-1 h-9"
+              type={c.tipo === "numero" ? "number" : "text"}
+              value={form[c.campo] ?? ""}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  [c.campo]: c.tipo === "numero" ? Number(e.target.value) : e.target.value,
+                })
+              }
+            />
+          </div>
+        ))}
+        <div className="sm:col-span-2 lg:col-span-3">
+          <Label className="text-xs">Benefícios (um por linha)</Label>
+          <textarea
+            className="mt-1 w-full min-h-24 rounded-md border border-input bg-background p-2 text-sm"
+            value={beneficios}
+            onChange={(e) => setBeneficios(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          onClick={() =>
+            onSalvar({
+              nome: form.nome,
+              descricao: form.descricao,
+              preco_mensal_centavos: Number(form.preco_mensal_centavos ?? 0),
+              preco_anual_centavos: Number(form.preco_anual_centavos ?? 0),
+              trial_dias: Number(form.trial_dias ?? 0),
+              limite_perfis: Number(form.limite_perfis ?? 0),
+              limite_referencias: Number(form.limite_referencias ?? 0),
+              limite_curadorias_mes: Number(form.limite_curadorias_mes ?? 0),
+              limite_roteiros_mes: Number(form.limite_roteiros_mes ?? 0),
+              limite_carrosseis_mes: Number(form.limite_carrosseis_mes ?? 0),
+              checkout_url: form.checkout_url || null,
+              kiwify_produto_id: form.kiwify_produto_id || null,
+              kiwify_oferta_id: form.kiwify_oferta_id || null,
+              ordem: Number(form.ordem ?? 0),
+              publico: !!form.publico,
+              recomendado: !!form.recomendado,
+              ativo: !!form.ativo,
+              beneficios: beneficios
+                .split("\n")
+                .map((b) => b.trim())
+                .filter(Boolean),
+            })
+          }
+        >
+          Salvar plano
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setForm({ ...form, publico: !form.publico })}>
+          {form.publico ? "Ocultar da vitrine" : "Publicar na vitrine"}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setForm({ ...form, recomendado: !form.recomendado })}
+        >
+          {form.recomendado ? "Remover destaque" : "Marcar como recomendado"}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setForm({ ...form, ativo: !form.ativo })}>
+          {form.ativo ? "Desativar plano" : "Ativar plano"}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+function NovoPlano({
+  onCriar,
+}: {
+  onCriar: (codigo: string, valores: Record<string, unknown>) => void;
+}) {
+  const [codigo, setCodigo] = useState("");
+  const [nome, setNome] = useState("");
+  const [preco, setPreco] = useState(0);
+  return (
+    <Card className="p-4 sm:p-5">
+      <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+        Novo plano
+      </div>
+      <div className="grid gap-3 mt-3 sm:grid-cols-4">
+        <div>
+          <Label className="text-xs">Código</Label>
+          <Input className="mt-1 h-9" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+        </div>
+        <div>
+          <Label className="text-xs">Nome</Label>
+          <Input className="mt-1 h-9" value={nome} onChange={(e) => setNome(e.target.value)} />
+        </div>
+        <div>
+          <Label className="text-xs">Preço mensal (centavos)</Label>
+          <Input
+            className="mt-1 h-9"
+            type="number"
+            value={preco}
+            onChange={(e) => setPreco(Number(e.target.value))}
+          />
+        </div>
+        <div className="flex items-end">
+          <Button
+            size="sm"
+            disabled={!codigo || !nome}
+            onClick={() => onCriar(codigo, { nome, preco_mensal_centavos: preco, publico: false })}
+          >
+            Criar plano
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function PrecoEditor({
+  preco,
+  onSalvar,
+}: {
+  preco: Record<string, any>;
+  onSalvar: (valores: {
+    rotulo: string;
+    tipo: string;
+    custo_entrada_mi_centavos: number;
+    custo_saida_mi_centavos: number;
+    custo_execucao_centavos: number;
+  }) => void;
+}) {
+  const [form, setForm] = useState({
+    rotulo: preco.rotulo ?? "",
+    tipo: preco.tipo ?? "modelo",
+    custo_entrada_mi_centavos: Number(preco.custo_entrada_mi_centavos ?? 0),
+    custo_saida_mi_centavos: Number(preco.custo_saida_mi_centavos ?? 0),
+    custo_execucao_centavos: Number(preco.custo_execucao_centavos ?? 0),
+  });
+  return (
+    <Card className="p-4 sm:p-5">
+      <div className="font-display font-semibold">
+        {preco.rotulo} <span className="num text-xs text-muted-foreground">{preco.chave}</span>
+      </div>
+      <div className="grid gap-3 mt-3 sm:grid-cols-3">
+        <div>
+          <Label className="text-xs">Centavos por milhão de tokens de entrada</Label>
+          <Input
+            className="mt-1 h-9"
+            type="number"
+            value={form.custo_entrada_mi_centavos}
+            onChange={(e) =>
+              setForm({ ...form, custo_entrada_mi_centavos: Number(e.target.value) })
+            }
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Centavos por milhão de tokens de saída</Label>
+          <Input
+            className="mt-1 h-9"
+            type="number"
+            value={form.custo_saida_mi_centavos}
+            onChange={(e) => setForm({ ...form, custo_saida_mi_centavos: Number(e.target.value) })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Centavos por execução de coleta</Label>
+          <Input
+            className="mt-1 h-9"
+            type="number"
+            value={form.custo_execucao_centavos}
+            onChange={(e) => setForm({ ...form, custo_execucao_centavos: Number(e.target.value) })}
+          />
+        </div>
+      </div>
+      <Button size="sm" className="mt-3" onClick={() => onSalvar(form)}>
+        Salvar custo
+      </Button>
+    </Card>
   );
 }

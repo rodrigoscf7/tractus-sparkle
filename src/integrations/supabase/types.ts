@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_acoes: {
+        Row: {
+          acao: string
+          ator_user_id: string | null
+          conta_id: string | null
+          criado_em: string
+          detalhes: Json
+          id: string
+        }
+        Insert: {
+          acao: string
+          ator_user_id?: string | null
+          conta_id?: string | null
+          criado_em?: string
+          detalhes?: Json
+          id?: string
+        }
+        Update: {
+          acao?: string
+          ator_user_id?: string | null
+          conta_id?: string | null
+          criado_em?: string
+          detalhes?: Json
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_acoes_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agentes_status: {
         Row: {
           agente_nome: string
@@ -77,6 +112,78 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pautas_geradas"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      assinaturas: {
+        Row: {
+          atualizado_em: string
+          cancelada_em: string | null
+          comprador_email: string | null
+          conta_id: string
+          criado_em: string
+          id: string
+          iniciada_em: string
+          kiwify_assinatura_id: string | null
+          kiwify_pedido_id: string | null
+          observacao: string | null
+          origem: string
+          plano_codigo: string
+          proxima_renovacao: string | null
+          situacao: string
+          trial_fim: string | null
+          valor_centavos: number
+        }
+        Insert: {
+          atualizado_em?: string
+          cancelada_em?: string | null
+          comprador_email?: string | null
+          conta_id: string
+          criado_em?: string
+          id?: string
+          iniciada_em?: string
+          kiwify_assinatura_id?: string | null
+          kiwify_pedido_id?: string | null
+          observacao?: string | null
+          origem?: string
+          plano_codigo: string
+          proxima_renovacao?: string | null
+          situacao?: string
+          trial_fim?: string | null
+          valor_centavos?: number
+        }
+        Update: {
+          atualizado_em?: string
+          cancelada_em?: string | null
+          comprador_email?: string | null
+          conta_id?: string
+          criado_em?: string
+          id?: string
+          iniciada_em?: string
+          kiwify_assinatura_id?: string | null
+          kiwify_pedido_id?: string | null
+          observacao?: string | null
+          origem?: string
+          plano_codigo?: string
+          proxima_renovacao?: string | null
+          situacao?: string
+          trial_fim?: string | null
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinaturas_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: true
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_plano_codigo_fkey"
+            columns: ["plano_codigo"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["codigo"]
           },
         ]
       }
@@ -280,6 +387,90 @@ export type Database = {
           },
         ]
       }
+      custo_eventos: {
+        Row: {
+          agente: string
+          conta_id: string | null
+          criado_em: string
+          id: string
+          itens: number
+          modelo: string | null
+          perfil_id: string | null
+          tipo: string
+          tokens_entrada: number
+          tokens_saida: number
+        }
+        Insert: {
+          agente: string
+          conta_id?: string | null
+          criado_em?: string
+          id?: string
+          itens?: number
+          modelo?: string | null
+          perfil_id?: string | null
+          tipo: string
+          tokens_entrada?: number
+          tokens_saida?: number
+        }
+        Update: {
+          agente?: string
+          conta_id?: string | null
+          criado_em?: string
+          id?: string
+          itens?: number
+          modelo?: string | null
+          perfil_id?: string | null
+          tipo?: string
+          tokens_entrada?: number
+          tokens_saida?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custo_eventos_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custo_eventos_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custo_precos: {
+        Row: {
+          atualizado_em: string
+          chave: string
+          custo_entrada_mi_centavos: number
+          custo_execucao_centavos: number
+          custo_saida_mi_centavos: number
+          rotulo: string
+          tipo: string
+        }
+        Insert: {
+          atualizado_em?: string
+          chave: string
+          custo_entrada_mi_centavos?: number
+          custo_execucao_centavos?: number
+          custo_saida_mi_centavos?: number
+          rotulo: string
+          tipo?: string
+        }
+        Update: {
+          atualizado_em?: string
+          chave?: string
+          custo_entrada_mi_centavos?: number
+          custo_execucao_centavos?: number
+          custo_saida_mi_centavos?: number
+          rotulo?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       decisoes_aprovacao: {
         Row: {
           comentario_livre: string | null
@@ -327,6 +518,62 @@ export type Database = {
             columns: ["perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kiwify_eventos: {
+        Row: {
+          assinatura_externa_id: string | null
+          comprador_email: string | null
+          conta_id: string | null
+          criado_em: string
+          erro: string | null
+          evento: string
+          id: string
+          payload: Json
+          pedido_id: string | null
+          plano_codigo: string | null
+          processado: boolean
+          processado_em: string | null
+          valor_centavos: number | null
+        }
+        Insert: {
+          assinatura_externa_id?: string | null
+          comprador_email?: string | null
+          conta_id?: string | null
+          criado_em?: string
+          erro?: string | null
+          evento: string
+          id?: string
+          payload?: Json
+          pedido_id?: string | null
+          plano_codigo?: string | null
+          processado?: boolean
+          processado_em?: string | null
+          valor_centavos?: number | null
+        }
+        Update: {
+          assinatura_externa_id?: string | null
+          comprador_email?: string | null
+          conta_id?: string | null
+          criado_em?: string
+          erro?: string | null
+          evento?: string
+          id?: string
+          payload?: Json
+          pedido_id?: string | null
+          plano_codigo?: string | null
+          processado?: boolean
+          processado_em?: string | null
+          valor_centavos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kiwify_eventos_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
             referencedColumns: ["id"]
           },
         ]
@@ -493,42 +740,72 @@ export type Database = {
       planos: {
         Row: {
           ativo: boolean
+          beneficios: Json
+          checkout_url: string | null
           codigo: string
           criado_em: string
+          descricao: string | null
+          kiwify_oferta_id: string | null
+          kiwify_produto_id: string | null
           limite_carrosseis_mes: number
           limite_curadorias_mes: number
           limite_perfis: number
           limite_referencias: number
           limite_roteiros_mes: number
+          moeda: string
           nome: string
           ordem: number
+          preco_anual_centavos: number
           preco_mensal_centavos: number
+          publico: boolean
+          recomendado: boolean
+          trial_dias: number
         }
         Insert: {
           ativo?: boolean
+          beneficios?: Json
+          checkout_url?: string | null
           codigo: string
           criado_em?: string
+          descricao?: string | null
+          kiwify_oferta_id?: string | null
+          kiwify_produto_id?: string | null
           limite_carrosseis_mes?: number
           limite_curadorias_mes?: number
           limite_perfis?: number
           limite_referencias?: number
           limite_roteiros_mes?: number
+          moeda?: string
           nome: string
           ordem?: number
+          preco_anual_centavos?: number
           preco_mensal_centavos?: number
+          publico?: boolean
+          recomendado?: boolean
+          trial_dias?: number
         }
         Update: {
           ativo?: boolean
+          beneficios?: Json
+          checkout_url?: string | null
           codigo?: string
           criado_em?: string
+          descricao?: string | null
+          kiwify_oferta_id?: string | null
+          kiwify_produto_id?: string | null
           limite_carrosseis_mes?: number
           limite_curadorias_mes?: number
           limite_perfis?: number
           limite_referencias?: number
           limite_roteiros_mes?: number
+          moeda?: string
           nome?: string
           ordem?: number
+          preco_anual_centavos?: number
           preco_mensal_centavos?: number
+          publico?: boolean
+          recomendado?: boolean
+          trial_dias?: number
         }
         Relationships: []
       }
@@ -687,17 +964,95 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_conta_economia_mensal: {
+        Row: {
+          ciclo: string | null
+          conta_id: string | null
+          custo_ia_centavos: number | null
+          custo_medio_geracao_centavos: number | null
+          custo_scraping_centavos: number | null
+          custo_total_centavos: number | null
+          geracoes: number | null
+          geracoes_estimadas: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custo_eventos_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_custo_eventos: {
+        Row: {
+          agente: string | null
+          ciclo: string | null
+          conta_id: string | null
+          criado_em: string | null
+          custo_centavos: number | null
+          estimado: boolean | null
+          id: string | null
+          itens: number | null
+          modelo: string | null
+          perfil_id: string | null
+          tipo: string | null
+          tokens_entrada: number | null
+          tokens_saida: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custo_eventos_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custo_eventos_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_custo_medio_tipo: {
+        Row: {
+          custo_max_centavos: number | null
+          custo_medio_centavos: number | null
+          eventos: number | null
+          tipo: string | null
+        }
+        Relationships: []
+      }
+      vw_plataforma_mensal: {
+        Row: {
+          ciclo: string | null
+          contas_ativas: number | null
+          custo_ia_centavos: number | null
+          custo_scraping_centavos: number | null
+          custo_total_centavos: number | null
+          geracoes: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       agent_internal_headers: { Args: never; Returns: Json }
       contas_do_usuario: { Args: { _user_id: string }; Returns: string[] }
+      expirar_trials: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      iniciar_conta_trial: {
+        Args: { _nome: string; _plano?: string; _user_id: string }
+        Returns: string
       }
       is_conta_membro: { Args: { _conta_id: string }; Returns: boolean }
       is_conta_owner: { Args: { _conta_id: string }; Returns: boolean }

@@ -15,6 +15,20 @@
       "when": 1788472677787,
       "tag": "0001_saas_multitenant_contas_planos",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788475527390,
+      "tag": "0002_billing_kiwify_e_custos",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788475725363,
+      "tag": "0003_expirar_trials",
+      "breakpoints": true
     }
   ]
 }
