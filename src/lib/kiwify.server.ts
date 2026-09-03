@@ -188,7 +188,7 @@ export async function aplicarEventoKiwify(admin: AnyClient, evento: KiwifyEvento
   }
 
   await marcar(admin, evento, true, null, contaId, planoCodigo);
-  return { ok: true, contaId, planoCodigo, situacao: patch["situacao"] };
+  return { ok: true, contaId, planoCodigo, situacao: String(patch["situacao"] ?? "") };
 }
 
 async function marcar(
