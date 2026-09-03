@@ -1,60 +1,56 @@
-# Página de agentes: visão de processo, não só resultado
+# CTA padrão por perfil + estratégia de curadoria (viral vs posicionamento)
 
-Hoje `/agentes/:agente` lista os itens produzidos e cada clique leva pra tela de aprovação. Vou transformar essa página no "raio-x" do agente: como ele decide, com o que trabalhou e o que entregou — mantendo o pipeline atual intocado.
+## 1. CTA padrão por perfil
 
-## O que muda em cada página de agente
+Novo campo configurável na tela **Perfis**, junto da identidade e do template de carrossel:
 
-**Topo (fixo, por agente)** — bloco humanizado "Como este agente decide":
-- Explicação em português do papel, dos critérios e dos gatilhos.
-- Fontes de dados que consulta (perfis de referência, curadoria, pauta etc.).
-- Regras concretas (ex.: curador só grava se `score ≥ 7`; ideador gera fallback evergreen quando não há curadoria nova).
-- Estatísticas do dia: nº de execuções, aproveitados vs descartados, última rodada.
+- Campo de texto "CTA padrão" (ex: "Se isso fez sentido, me chama no direct").
+- O agente de copy recebe essa CTA como base obrigatória: mantém a intenção e o canal,
+  podendo ajustar as palavras ao tema (conforme sua escolha).
+- Aplicação:
+  - **Reel**: bloco `cta_falado` sempre derivado da CTA padrão.
+  - **Carrossel**: último slide sempre é o CTA, derivado da mesma frase.
+- Se o perfil não tiver CTA cadastrada, o comportamento atual continua (agente inventa a CTA).
 
-**Timeline de execuções** — cada item vira um card expansível (accordion), não mais um link direto pra aprovação:
+## 2. Estratégia de conteúdo: viral ou posicionamento
 
-- **Curador** — por conteúdo curado:
-  - Post original: handle, formato, link pro Instagram, data, likes, views, comentários.
-  - Análise do agente: `tema`, `gancho`, `score`, `motivo do score`.
-  - Trecho da caption original (colapsável).
-  - Se virou pauta, link "→ ver pauta gerada".
-- **Ideador** — por pauta:
-  - Origem: card do conteúdo curado que inspirou (ou marca "evergreen / posicionamento" quando é fallback).
-  - Pauta: tema, ângulo, formato.
-  - Perfil-alvo e diretrizes que pesaram.
-  - Link "→ ver roteiro/arte" quando existirem.
-- **Copy** — por roteiro:
-  - Pauta de entrada (tema/ângulo).
-  - Saída humanizada: gancho falado, desenvolvimento, CTA, legenda.
-  - Roteiros rejeitados do mesmo perfil que ele evitou repetir (contagem + amostra).
-- **Visual** — por briefing:
-  - Pauta + roteiro que serviram de base.
-  - Direções de gravação em texto corrido.
-- **Revisor** — por decisão:
-  - Pauta + roteiro + visual revisados.
-  - Status final (aprovada / aguardando / rejeitada) e, quando houver, comentário do usuário na aprovação.
+Nova configuração de **foco** no perfil, com exceção opcional por perfil de referência:
 
-O link para `/aprovacao/:pautaId` continua existindo, mas como botão explícito ("Ver na aprovação"), não como o clique inteiro do card.
+- No perfil: seletor "Foco da curadoria" → Viral | Posicionamento.
+- Em cada @ de referência: "Herdar do perfil" (padrão) ou sobrescrever para Viral/Posicionamento.
 
-## Pequeno ajuste de dados (necessário pra "ver métricas do post")
+Como cada foco muda a busca e o filtro:
 
-Hoje o curador **analisa** likes/views/comentários mas só persiste `score`, `tema`, `gancho`, `url`, `formato`, `texto_original`. Pra você ver as métricas do reel de referência sem depender de rebuscar no Apify, adiciono 4 colunas em `conteudos_curados`:
+```text
+VIRAL           busca 12 posts recentes → ranqueia por views + engajamento
+                → avalia só os 5 melhores → prioriza tração alta
+POSICIONAMENTO  busca 12 posts → ordena por data (mais recentes primeiro)
+                → avalia os 5 mais novos → ignora views no ranking
+```
 
-- `likes int`, `comentarios int`, `views int`, `postado_em timestamptz`
+O prompt de curadoria também muda de critério:
+- Viral: peso maior em tração, gancho replicável, potencial de alcance.
+- Posicionamento: peso maior em pertinência de tese, atualidade do assunto e ângulo
+  aproveitável — post com pouca visualização ainda pode entrar.
 
-E passo o curador a gravá-las junto no `insert`. É a única mudança fora da UI, e é aditiva (não quebra nada existente).
+A tela de Curadoria e as páginas de agentes passam a mostrar um selo do foco usado,
+para você entender por que cada item entrou.
 
-## Detalhes técnicos
+## 3. Detalhes técnicos
 
-- Arquivo principal: reescrever `src/routes/_authenticated/agentes.$agente.tsx` — trocar `fetchTimeline` por consultas com joins mais ricos e trocar o card-link por card-accordion (`Collapsible` do shadcn, já disponível).
-- Novo componente `AgenteCriterios` (um por agente) com o texto humanizado no topo — conteúdo estático em `src/lib/agente-criterios.ts` (fácil de editar depois).
-- Novo componente `ExecucaoCard` (accordion) com variantes por agente para renderizar input / processo / output.
-- Estatísticas do topo: `count` por status em cada tabela (uma query só, agregada).
-- Migração: `ALTER TABLE public.conteudos_curados ADD COLUMN likes int, ADD COLUMN comentarios int, ADD COLUMN views int, ADD COLUMN postado_em timestamptz;` (todas nulláveis, sem default, sem quebrar RLS/grants existentes).
-- Edge function `curador-agent`: incluir `likes: post.likesCount`, `comentarios: post.commentsCount`, `views: post.videoPlayCount`, `postado_em: post.timestamp` no `insert`. Deploy da função.
-- Sem mudanças em ideador, copy, visual, revisor, cron, triggers ou schema além do descrito.
-- Nada muda em `/pipeline` nem em `/aprovacao/:pautaId`.
+- Migração aditiva: `perfis.cta_padrao text`, `perfis.foco_curadoria text default 'posicionamento'`,
+  `perfis_referencia.foco_curadoria text null` (null = herda do perfil). Regenerar os tipos.
+- `curador-agent`: `APIFY_RESULTS_LIMIT` 6 → 12; ordenação dos posts antes do loop conforme o foco
+  (score de engajamento = views + likes*3 + comentários*10 no viral; `timestamp` desc no posicionamento);
+  mantém o teto de 5 avaliações por referência para não aumentar custo de LLM;
+  prompt de score parametrizado por foco.
+- `copy-agent` e `carrossel-agent`: recebem `cta_padrao` do perfil no system prompt como
+  âncora da CTA (adaptável, mesma intenção e canal).
+- Front: `src/routes/_authenticated/perfis.tsx` ganha o campo de CTA e o seletor de foco no editor
+  de identidade, e o seletor de foco por referência na lista de @; leitura/edição direta via
+  cliente Supabase, como já é feito hoje.
 
-## Fora de escopo (posso fazer depois se quiser)
+## Fora de escopo agora
 
-- Persistir o raciocínio bruto do modelo (prompt efetivo, resposta completa, tokens, duração) numa tabela `execucoes_agentes` — é a opção "rastro de raciocínio" que você preferiu deixar de fora agora.
-- Métricas históricas antigas: pautas/curadorias já gravadas não terão likes/views/comentários preenchidos retroativamente; só valem daqui pra frente.
+Busca por termos/hashtags (ex: "inteligência artificial") desvinculada de perfis de referência —
+fica para uma etapa seguinte, apoiada no seletor de foco criado aqui.
