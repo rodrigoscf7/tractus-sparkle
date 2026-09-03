@@ -12,7 +12,9 @@ import {
   formatAgentError,
   getServiceClient,
   limiteDisponivel,
+  registrarCustoScraping,
   requireAgentAuth,
+  setCustoContexto,
   setStatus,
 } from "../_shared/agent-utils.ts";
 
