@@ -21,6 +21,7 @@ import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAgentesIndexRouteImport } from './routes/_authenticated/agentes.index'
 import { Route as AuthenticatedAgentesAgenteRouteImport } from './routes/_authenticated/agentes.$agente'
 import { Route as AuthenticatedAprovacaoPautaIdRouteImport } from './routes/_authenticated/aprovacao.$pautaId'
+import { Route as ApiPublicWebhooksKiwifyRouteImport } from './routes/api/public/webhooks/kiwify'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -84,6 +85,11 @@ const AuthenticatedAprovacaoPautaIdRoute =
     path: '/aprovacao/$pautaId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicWebhooksKiwifyRoute = ApiPublicWebhooksKiwifyRouteImport.update({
+  id: '/api/public/webhooks/kiwify',
+  path: '/api/public/webhooks/kiwify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/agentes/': typeof AuthenticatedAgentesIndexRoute
+  '/api/public/webhooks/kiwify': typeof ApiPublicWebhooksKiwifyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/agentes': typeof AuthenticatedAgentesIndexRoute
+  '/api/public/webhooks/kiwify': typeof ApiPublicWebhooksKiwifyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/_authenticated/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/_authenticated/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/_authenticated/agentes/': typeof AuthenticatedAgentesIndexRoute
+  '/api/public/webhooks/kiwify': typeof ApiPublicWebhooksKiwifyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
     | '/agentes/'
+    | '/api/public/webhooks/kiwify'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
     | '/agentes'
+    | '/api/public/webhooks/kiwify'
   id:
     | '__root__'
     | '/'
@@ -165,12 +176,14 @@ export interface FileRouteTypes {
     | '/_authenticated/agentes/$agente'
     | '/_authenticated/aprovacao/$pautaId'
     | '/_authenticated/agentes/'
+    | '/api/public/webhooks/kiwify'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicWebhooksKiwifyRoute: typeof ApiPublicWebhooksKiwifyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -259,6 +272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAprovacaoPautaIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/webhooks/kiwify': {
+      id: '/api/public/webhooks/kiwify'
+      path: '/api/public/webhooks/kiwify'
+      fullPath: '/api/public/webhooks/kiwify'
+      preLoaderRoute: typeof ApiPublicWebhooksKiwifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -302,6 +322,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicWebhooksKiwifyRoute: ApiPublicWebhooksKiwifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

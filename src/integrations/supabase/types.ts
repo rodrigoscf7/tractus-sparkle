@@ -1042,12 +1042,17 @@ export type Database = {
     Functions: {
       agent_internal_headers: { Args: never; Returns: Json }
       contas_do_usuario: { Args: { _user_id: string }; Returns: string[] }
+      expirar_trials: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      iniciar_conta_trial: {
+        Args: { _nome: string; _plano?: string; _user_id: string }
+        Returns: string
       }
       is_conta_membro: { Args: { _conta_id: string }; Returns: boolean }
       is_conta_owner: { Args: { _conta_id: string }; Returns: boolean }
