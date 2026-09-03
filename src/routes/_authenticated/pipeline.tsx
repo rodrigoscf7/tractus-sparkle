@@ -8,6 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 
 export const Route = createFileRoute("/_authenticated/pipeline")({
+  head: () => ({
+    meta: [
+      { title: "Pipeline de produção | prevIA - CONTENT" },
+      {
+        name: "description",
+        content: "Acompanhe cada pauta da ideação à publicação, por perfil de cliente.",
+      },
+      { property: "og:title", content: "Pipeline de produção | prevIA - CONTENT" },
+      { property: "og:description", content: "Estado de cada pauta no fluxo de produção." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: PipelinePage,
 });
 

@@ -12,13 +12,13 @@ export const Route = createFileRoute("/_authenticated/curadoria")({
   component: CuradoriaPage,
   head: () => ({
     meta: [
-      { title: "Curadoria — selecionar referências | Tractus" },
+      { title: "Curadoria — selecionar referências | prevIA - CONTENT" },
       {
         name: "description",
         content:
           "Revise as referências capturadas pelo agente curador e escolha quais avançam para pauta.",
       },
-      { property: "og:title", content: "Curadoria — selecionar referências | Tractus" },
+      { property: "og:title", content: "Curadoria — selecionar referências | prevIA - CONTENT" },
       {
         property: "og:description",
         content: "Validação humana antes do ideador gerar pautas.",

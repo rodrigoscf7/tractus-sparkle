@@ -8,6 +8,13 @@
       "when": 1788436901876,
       "tag": "0000_add_cta_padrao_foco_curadoria",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788472677787,
+      "tag": "0001_saas_multitenant_contas_planos",
+      "breakpoints": true
     }
   ]
 }

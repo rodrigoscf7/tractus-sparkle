@@ -6,6 +6,19 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/agentes/")({
+  head: () => ({
+    meta: [
+      { title: "Agentes | prevIA - CONTENT" },
+      {
+        name: "description",
+        content: "Estado, última ação e produção de cada agente do pipeline.",
+      },
+      { property: "og:title", content: "Agentes | prevIA - CONTENT" },
+      { property: "og:description", content: "Operação dos agentes de curadoria e produção." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AgentesPage,
 });
 

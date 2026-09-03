@@ -6,10 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import tractusLogo from "@/assets/tractus-logo-cropped-v2.png.asset.json";
+import previaLogo from "@/assets/previa-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Entrar | prevIA - CONTENT" },
+      {
+        name: "description",
+        content: "Acesse sua conta para operar o pipeline de conteúdo prevIA - CONTENT.",
+      },
+      { property: "og:title", content: "Entrar | prevIA - CONTENT" },
+      { property: "og:description", content: "Acesso à plataforma prevIA - CONTENT." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AuthPage,
 });
 
@@ -48,9 +61,9 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <Card className="w-full max-w-md p-6 sm:p-8 bg-surface border-border">
         <div className="mb-8 flex flex-col items-center text-center">
-          <img src={tractusLogo.url} alt="Tractus" className="h-18 w-auto max-w-full sm:h-24" />
-          <p className="text-xs text-muted-foreground mt-3 font-mono uppercase tracking-wider">
-            Sistema de conteúdo
+          <img src={previaLogo.url} alt="prevIA" className="h-11 w-auto max-w-full sm:h-14" />
+          <p className="text-[11px] text-muted-foreground mt-3 font-mono uppercase tracking-widest">
+            Content
           </p>
         </div>
 

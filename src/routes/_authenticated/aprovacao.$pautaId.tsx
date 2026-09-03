@@ -345,6 +345,19 @@ function BriefingView({ briefing }: { briefing: any }) {
 }
 
 export const Route = createFileRoute("/_authenticated/aprovacao/$pautaId")({
+  head: () => ({
+    meta: [
+      { title: "Aprovação de conteúdo | prevIA - CONTENT" },
+      {
+        name: "description",
+        content: "Revise roteiro, direção visual e carrossel antes de liberar a publicação.",
+      },
+      { property: "og:title", content: "Aprovação de conteúdo | prevIA - CONTENT" },
+      { property: "og:description", content: "Última etapa humana antes da publicação." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AprovacaoPage,
 });
 
