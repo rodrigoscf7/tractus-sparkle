@@ -11,6 +11,7 @@ import {
   extractJson,
   formatAgentError,
   getServiceClient,
+  limiteDisponivel,
   requireAgentAuth,
   setStatus,
 } from "../_shared/agent-utils.ts";
@@ -99,7 +100,7 @@ async function processRef(refId: string) {
   const { data: ref } = await supabase
     .from("perfis_referencia")
     .select(
-      "id, handle, foco_curadoria, perfil_id_relacionado, perfis:perfis!perfis_referencia_perfil_id_relacionado_fkey(id,nome,tipo,diretrizes,foco_curadoria)",
+      "id, handle, foco_curadoria, conta_id, perfil_id_relacionado, perfis:perfis!perfis_referencia_perfil_id_relacionado_fkey(id,nome,tipo,diretrizes,foco_curadoria,conta_id)",
     )
     .eq("id", refId)
     .maybeSingle();
@@ -107,6 +108,13 @@ async function processRef(refId: string) {
   if (!ref) throw new Error(`ref ${refId} não encontrada`);
   const perfil = (ref as any).perfis;
   if (!perfil) throw new Error(`perfil para ref ${refId} não encontrado`);
+
+  // Cota do plano validada no servidor antes de gastar Apify/Claude.
+  const contaId = (ref as any).conta_id ?? perfil.conta_id;
+  const cota = await limiteDisponivel(contaId, "curadoria");
+  if (!cota.permitido) {
+    return { ref: ref.handle, curados: 0, error: `limite: ${cota.motivo}` };
+  }
 
   // Exceção por referência sobrescreve o foco padrão do perfil.
   const foco: Foco = normalizeFoco(
