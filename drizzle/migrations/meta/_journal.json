@@ -29,6 +29,13 @@
       "when": 1788475725363,
       "tag": "0003_expirar_trials",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788476621140,
+      "tag": "0004_revoke_public_execute_secdef_functions",
+      "breakpoints": true
     }
   ]
 }
