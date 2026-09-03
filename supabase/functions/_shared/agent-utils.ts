@@ -201,3 +201,24 @@ export function formatHistorico(rows: any[]): string {
     )
     .join("\n");
 }
+
+/**
+ * Cota do plano: retorna true quando a conta ainda pode gerar `tipo` neste ciclo.
+ * Contas suspensas ou sem vínculo bloqueiam a geração.
+ */
+export async function limiteDisponivel(
+  contaId: string | null | undefined,
+  tipo: "curadoria" | "roteiro" | "carrossel",
+): Promise<boolean> {
+  if (!contaId) return false;
+  const supabase = getServiceClient();
+  const { data, error } = await supabase.rpc("limite_disponivel", {
+    _conta_id: contaId,
+    _tipo: tipo,
+  });
+  if (error) {
+    console.error("limite_disponivel erro", error);
+    return false;
+  }
+  return data === true;
+}
