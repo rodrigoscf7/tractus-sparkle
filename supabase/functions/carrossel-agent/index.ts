@@ -136,6 +136,14 @@ Deno.serve(async (req) => {
       .replace("{{cta_padrao}}", String(perfil?.["cta_padrao"] ?? "").trim() || "nenhuma")
       .replace("{{roteiro_texto}}", roteiroTexto);
 
+    setCustoContexto({
+      contaId:
+        (pauta as unknown as { conta_id?: string | null }).conta_id ??
+        ((pauta as unknown as { perfis?: { conta_id?: string | null } }).perfis?.conta_id ?? null),
+      perfilId: pauta.perfil_id,
+      agente: "carrossel",
+      tipo: "carrossel",
+    });
     const copyText = await callClaude(systemCopy, "Copy do carrossel agora. JSON apenas.", 1100);
     const copyJson = extractJson(copyText) as {
       slides?: Array<{ tipo?: string; texto?: string }>;
