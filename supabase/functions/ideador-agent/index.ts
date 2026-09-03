@@ -132,7 +132,7 @@ async function gerarPautaFocada(supabase: SupabaseClient, conteudoId: string) {
 
   const { data: perfil } = await supabase
     .from("perfis")
-    .select("id, nome, tipo, diretrizes")
+    .select("id, nome, tipo, diretrizes, conta_id")
     .eq("id", perfilId)
     .single();
   if (!perfil) return 0;
