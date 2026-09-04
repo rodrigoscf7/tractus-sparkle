@@ -27,7 +27,22 @@ export const Route = createFileRoute("/api/public/webhooks/kiwify")({
           const b = Buffer.from(esperado.toLowerCase());
           return a.length === b.length && timingSafeEqual(a, b);
         });
-        if (!assinaturaValida) return new Response("Invalid signature", { status: 401 });
+        if (!assinaturaValida) {
+          // Registra a tentativa recusada para diagnóstico (sem tocar em assinaturas).
+          try {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            await (supabaseAdmin as any).from("kiwify_eventos").insert({
+              evento: "assinatura_invalida",
+              pedido_id: null,
+              payload: { recebido_em: new Date().toISOString(), signature, body: body.slice(0, 4000) },
+              processado: false,
+              erro: "Assinatura do webhook inválida",
+            });
+          } catch (e) {
+            console.error("kiwify: falha ao registrar tentativa recusada", e);
+          }
+          return new Response("Invalid signature", { status: 401 });
+        }
 
         let payload: Record<string, unknown>;
         try {
