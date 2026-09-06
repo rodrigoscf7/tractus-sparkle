@@ -16,6 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TemplateCarrosselEditor } from "@/components/TemplateCarrosselEditor";
+import { useConta } from "@/hooks/use-conta";
+
 
 
 export const Route = createFileRoute("/_authenticated/perfis")({
@@ -41,6 +43,11 @@ const STATUS_ORDER = ["gerada", "em_producao", "aguardando_aprovacao", "aprovada
 function PerfisPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [novoHandle, setNovoHandle] = useState("");
+  const [novoNome, setNovoNome] = useState("");
+  const [novoTipo, setNovoTipo] = useState("cliente");
+  const [criando, setCriando] = useState(false);
+  const { data: conta } = useConta();
+
 
   const { data: perfis, refetch: refetchPerfis } = useQuery({
     queryKey: ["perfis-all"],
