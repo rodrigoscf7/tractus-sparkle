@@ -47,7 +47,7 @@ function PerfisPage() {
   const [novoTipo, setNovoTipo] = useState("cliente");
   const [criando, setCriando] = useState(false);
   const { data: conta } = useConta();
-
+  const { data: isAdmin } = useIsPlatformAdmin();
 
   const { data: perfis, refetch: refetchPerfis } = useQuery({
     queryKey: ["perfis-all"],
