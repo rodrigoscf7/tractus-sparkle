@@ -16,6 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TemplateCarrosselEditor } from "@/components/TemplateCarrosselEditor";
+import { useConta } from "@/hooks/use-conta";
+
 
 
 export const Route = createFileRoute("/_authenticated/perfis")({
@@ -41,6 +43,11 @@ const STATUS_ORDER = ["gerada", "em_producao", "aguardando_aprovacao", "aprovada
 function PerfisPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [novoHandle, setNovoHandle] = useState("");
+  const [novoNome, setNovoNome] = useState("");
+  const [novoTipo, setNovoTipo] = useState("cliente");
+  const [criando, setCriando] = useState(false);
+  const { data: conta } = useConta();
+
 
   const { data: perfis, refetch: refetchPerfis } = useQuery({
     queryKey: ["perfis-all"],
@@ -100,6 +107,34 @@ function PerfisPage() {
     refetchRefs();
   }
 
+  async function criarPerfil() {
+    const nome = novoNome.trim();
+    if (!nome) {
+      toast.error("Informe o nome do perfil.");
+      return;
+    }
+    const contaId = conta?.conta?.id ?? null;
+    if (!contaId) {
+      toast.error("Conta ainda carregando. Tente novamente em instantes.");
+      return;
+    }
+    setCriando(true);
+    const { data, error } = await supabase
+      .from("perfis")
+      .insert({ nome, tipo: novoTipo, conta_id: contaId })
+      .select("id")
+      .single();
+    setCriando(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setNovoNome("");
+    await refetchPerfis();
+    setActiveId(data?.id ?? null);
+    toast.success(`Perfil "${nome}" criado.`);
+  }
+
   return (
     <div className="p-4 sm:p-8 max-w-[1400px]">
       <header className="mb-6 sm:mb-8">
@@ -109,7 +144,42 @@ function PerfisPage() {
         </p>
       </header>
 
+      <Card className="p-5 bg-surface border-border mb-8">
+        <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
+          Criar novo perfil
+        </h2>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Input
+            value={novoNome}
+            onChange={(e) => setNovoNome(e.target.value)}
+            placeholder="Nome do perfil (ex: Márcia Canuto)"
+            onKeyDown={(e) => e.key === "Enter" && criarPerfil()}
+          />
+          <Select value={novoTipo} onValueChange={setNovoTipo}>
+            <SelectTrigger className="sm:w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="cliente">Cliente</SelectItem>
+              <SelectItem value="socio">Sócio</SelectItem>
+              <SelectItem value="institucional">Institucional</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={criarPerfil} disabled={criando}>
+            {criando ? "Criando..." : "Criar perfil"}
+          </Button>
+        </div>
+      </Card>
+
+      {perfis?.length === 0 && (
+        <p className="text-sm text-muted-foreground italic mb-8">
+          Você ainda não tem perfis. Crie o primeiro acima para começar a configurar tom de voz,
+          CTA e perfis de referência.
+        </p>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+
         {perfis?.map((perfil) => {
           const ps = (pautas ?? []).filter((x) => x.perfil_id === perfil.id);
           const isActive = perfil.id === activeId;
