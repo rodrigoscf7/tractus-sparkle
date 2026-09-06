@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { TemplateCarrosselEditor } from "@/components/TemplateCarrosselEditor";
 import { useConta } from "@/hooks/use-conta";
-
+import { useIsPlatformAdmin } from "@/hooks/use-platform-admin";
 
 
 export const Route = createFileRoute("/_authenticated/perfis")({
