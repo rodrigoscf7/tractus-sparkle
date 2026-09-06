@@ -155,16 +155,18 @@ function PerfisPage() {
             placeholder="Nome do perfil (ex: Márcia Canuto)"
             onKeyDown={(e) => e.key === "Enter" && criarPerfil()}
           />
-          <Select value={novoTipo} onValueChange={setNovoTipo}>
-            <SelectTrigger className="sm:w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cliente">Cliente</SelectItem>
-              <SelectItem value="socio">Sócio</SelectItem>
-              <SelectItem value="institucional">Institucional</SelectItem>
-            </SelectContent>
-          </Select>
+          {isAdmin && (
+            <Select value={novoTipo} onValueChange={setNovoTipo}>
+              <SelectTrigger className="sm:w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cliente">Cliente</SelectItem>
+                <SelectItem value="socio">Sócio</SelectItem>
+                <SelectItem value="institucional">Institucional</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <Button onClick={criarPerfil} disabled={criando}>
             {criando ? "Criando..." : "Criar perfil"}
           </Button>
