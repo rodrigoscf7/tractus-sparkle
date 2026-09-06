@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { TemplateCarrosselEditor } from "@/components/TemplateCarrosselEditor";
 import { useConta } from "@/hooks/use-conta";
-
+import { useIsPlatformAdmin } from "@/hooks/use-platform-admin";
 
 
 export const Route = createFileRoute("/_authenticated/perfis")({
@@ -47,7 +47,7 @@ function PerfisPage() {
   const [novoTipo, setNovoTipo] = useState("cliente");
   const [criando, setCriando] = useState(false);
   const { data: conta } = useConta();
-
+  const { data: isAdmin } = useIsPlatformAdmin();
 
   const { data: perfis, refetch: refetchPerfis } = useQuery({
     queryKey: ["perfis-all"],
@@ -155,16 +155,18 @@ function PerfisPage() {
             placeholder="Nome do perfil (ex: Márcia Canuto)"
             onKeyDown={(e) => e.key === "Enter" && criarPerfil()}
           />
-          <Select value={novoTipo} onValueChange={setNovoTipo}>
-            <SelectTrigger className="sm:w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cliente">Cliente</SelectItem>
-              <SelectItem value="socio">Sócio</SelectItem>
-              <SelectItem value="institucional">Institucional</SelectItem>
-            </SelectContent>
-          </Select>
+          {isAdmin && (
+            <Select value={novoTipo} onValueChange={setNovoTipo}>
+              <SelectTrigger className="sm:w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cliente">Cliente</SelectItem>
+                <SelectItem value="socio">Sócio</SelectItem>
+                <SelectItem value="institucional">Institucional</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <Button onClick={criarPerfil} disabled={criando}>
             {criando ? "Criando..." : "Criar perfil"}
           </Button>
