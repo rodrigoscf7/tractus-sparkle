@@ -110,6 +110,9 @@ export const Route = createFileRoute("/api/public/webhooks/kiwify")({
 
         return new Response("ok", { status: 200 });
       },
+      // Algumas validações da Kiwify usam GET/HEAD antes de salvar o webhook.
+      GET: async () => new Response("ok", { status: 200 }),
     },
+
   },
 });
