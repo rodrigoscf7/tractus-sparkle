@@ -9,47 +9,61 @@ export const Route = createFileRoute("/api/public/webhooks/kiwify")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const token = process.env["KIWIFY_WEBHOOK_TOKEN"];
-        if (!token) return new Response("Webhook não configurado", { status: 503 });
+        const token = process.env["KIWIFY_WEBHOOK_TOKEN"] ?? "";
 
         const url = new URL(request.url);
         const signature =
           url.searchParams.get("signature") ??
           request.headers.get("x-kiwify-signature") ??
+          request.headers.get("x-kiwify-webhook-signature") ??
           "";
         const body = await request.text();
 
-        const candidatos = ["sha1", "sha256"].map((alg) =>
-          createHmac(alg, token).update(body).digest("hex"),
-        );
+        const candidatos = token
+          ? ["sha1", "sha256"].map((alg) => createHmac(alg, token).update(body).digest("hex"))
+          : [];
         const assinaturaValida = candidatos.some((esperado) => {
           const a = Buffer.from(signature.trim().toLowerCase());
           const b = Buffer.from(esperado.toLowerCase());
           return a.length === b.length && timingSafeEqual(a, b);
         });
-        if (!assinaturaValida) {
-          // Registra a tentativa recusada para diagnóstico (sem tocar em assinaturas).
+
+        let payload: Record<string, unknown> | null = null;
+        try {
+          payload = JSON.parse(body);
+        } catch {
+          try {
+            payload = Object.fromEntries(new URLSearchParams(body).entries());
+          } catch {
+            payload = null;
+          }
+        }
+
+        if (!assinaturaValida || !payload) {
+          // Sempre responde 200 para a Kiwify aceitar/manter o webhook ativo,
+          // mas registra a chamada recusada para diagnóstico.
           try {
             const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
             await (supabaseAdmin as any).from("kiwify_eventos").insert({
-              evento: "assinatura_invalida",
+              evento: assinaturaValida ? "payload_invalido" : "assinatura_invalida",
               pedido_id: null,
-              payload: { recebido_em: new Date().toISOString(), signature, body: body.slice(0, 4000) },
+              payload: {
+                recebido_em: new Date().toISOString(),
+                signature,
+                headers: Object.fromEntries(request.headers.entries()),
+                body: body.slice(0, 4000),
+              },
               processado: false,
-              erro: "Assinatura do webhook inválida",
+              erro: assinaturaValida
+                ? "Corpo do webhook não reconhecido"
+                : "Assinatura do webhook inválida",
             });
           } catch (e) {
             console.error("kiwify: falha ao registrar tentativa recusada", e);
           }
-          return new Response("Invalid signature", { status: 401 });
+          return new Response("ok", { status: 200 });
         }
 
-        let payload: Record<string, unknown>;
-        try {
-          payload = JSON.parse(body);
-        } catch {
-          return new Response("Invalid JSON", { status: 400 });
-        }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { normalizarEventoKiwify, aplicarEventoKiwify } = await import("@/lib/kiwify.server");
