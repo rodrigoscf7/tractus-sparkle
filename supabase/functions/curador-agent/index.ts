@@ -6,7 +6,7 @@
 //   com Claude e insere em conteudos_curados. O ideador roda em cron separado
 //   depois da curadoria para evitar estouro de limite por paralelismo.
 import {
-  callClaude,
+  callModelo,
   corsHeaders,
   extractJson,
   formatAgentError,
@@ -231,7 +231,7 @@ async function processRef(refId: string) {
 
     try {
       const text = await withTimeout(
-        callClaude(system, userPrompt, 220),
+        callModelo(system, userPrompt, 220),
         CLAUDE_TIMEOUT_MS,
         `claude ${ref.handle}`,
       );

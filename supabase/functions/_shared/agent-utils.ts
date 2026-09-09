@@ -79,8 +79,9 @@ export async function setStatus(
   });
 }
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-5-20250929"; // closest available; was "claude-sonnet-4-6" in prompt
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+// Trocar de modelo não exige deploy: basta ajustar o secret OPENROUTER_MODEL.
+const MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "anthropic/claude-sonnet-4.5";
 
 export type CustoContexto = {
   contaId?: string | null;
@@ -93,7 +94,7 @@ let custoContexto: CustoContexto | null = null;
 
 /**
  * Define a qual conta/perfil os próximos custos de modelo pertencem.
- * Chame antes de callClaude para que o consumo apareça no painel financeiro.
+ * Chame antes de callModelo para que o consumo apareça no painel financeiro.
  */
 export function setCustoContexto(ctx: CustoContexto | null) {
   custoContexto = ctx;
@@ -145,26 +146,28 @@ export async function registrarCustoScraping(
   }
 }
 
-export async function callClaude(
+export async function callModelo(
   systemPrompt: string,
   userPrompt: string,
   maxTokens = 2000,
 ): Promise<string> {
-  const key = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!key) throw new Error("ANTHROPIC_API_KEY missing");
+  const key = Deno.env.get("OPENROUTER_API_KEY");
+  if (!key) throw new Error("OPENROUTER_API_KEY missing");
 
-  const res = await fetch(ANTHROPIC_URL, {
+  const res = await fetch(OPENROUTER_URL, {
     method: "POST",
     headers: {
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
+      "Authorization": `Bearer ${key}`,
       "content-type": "application/json",
+      "X-Title": "Tractus Content Hub",
     },
     body: JSON.stringify({
       model: MODEL,
       max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
     }),
   });
 
@@ -177,14 +180,18 @@ export async function callClaude(
     } catch {
       // keep raw response text
     }
-    throw new Error(`Anthropic error ${res.status}: ${message}`);
+    throw new Error(`OpenRouter error ${res.status}: ${message}`);
   }
   const data = await res.json();
+  // O OpenRouter responde 200 com corpo de erro quando o upstream falha.
+  if (data?.error) {
+    throw new Error(`OpenRouter error: ${data.error.message ?? JSON.stringify(data.error)}`);
+  }
   await registrarCustoModelo(
-    Number(data?.usage?.input_tokens ?? 0),
-    Number(data?.usage?.output_tokens ?? 0),
+    Number(data?.usage?.prompt_tokens ?? 0),
+    Number(data?.usage?.completion_tokens ?? 0),
   );
-  return data.content?.[0]?.text ?? "";
+  return data?.choices?.[0]?.message?.content ?? "";
 }
 
 

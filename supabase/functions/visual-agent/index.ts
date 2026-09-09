@@ -1,6 +1,6 @@
 // Visual: direção de gravação enxuta para Reel falado.
 import {
-  callClaude,
+  callModelo,
   corsHeaders,
   extractJson,
   formatHistorico,
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       agente: "visual",
       tipo: "visual",
     });
-    const text = await callClaude(system, "Direção de gravação em JSON compacto.", 600);
+    const text = await callModelo(system, "Direção de gravação em JSON compacto.", 600);
     const parsed = extractJson(text);
 
     await supabase.from("artes").insert({

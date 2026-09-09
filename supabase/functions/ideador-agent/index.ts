@@ -3,7 +3,7 @@
 // - Sem payload (cron): varre curadorias aprovadas que ainda não têm pauta.
 // Não existe geração "evergreen" nem por perfil ativo — sem aprovação, nada roda.
 import {
-  callClaude,
+  callModelo,
   corsHeaders,
   extractJson,
   formatAgentError,
@@ -162,7 +162,7 @@ async function gerarPautaFocada(supabase: SupabaseClient, conteudoId: string) {
     agente: "ideador",
     tipo: "pauta",
   });
-  const text = await callClaude(system, "Gere 1 pauta focada na curadoria-alvo agora.", 500);
+  const text = await callModelo(system, "Gere 1 pauta focada na curadoria-alvo agora.", 500);
   const parsed = extractJson<{ pautas: PautaGerada[] }>(text);
   const p = parsed.pautas?.[0];
   if (!p) return 0;

@@ -33,7 +33,7 @@ const STATE_META: Record<string, { label: string; tone: string; dot: string }> =
 
 function formatLastAction(action?: string | null) {
   if (!action) return "—";
-  if (action.includes("Anthropic error 429") || action.includes("rate limit")) {
+  if (action.includes("OpenRouter error 429") || action.includes("rate limit")) {
     return "Limite temporário do modelo atingido; o agente tentará novamente no próximo ciclo.";
   }
   return action.length > 180 ? `${action.slice(0, 180)}…` : action;

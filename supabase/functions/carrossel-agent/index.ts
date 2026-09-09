@@ -2,7 +2,7 @@
 // Etapa 1 (copy): reescreve o roteiro falado como copy de carrossel (hook / desenvolvimento / CTA).
 // Etapa 2 (visual): define a direção dos slides no template estilo post de rede social.
 import {
-  callClaude,
+  callModelo,
   corsHeaders,
   extractJson,
   getServiceClient,
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
       agente: "carrossel",
       tipo: "carrossel",
     });
-    const copyText = await callClaude(systemCopy, "Copy do carrossel agora. JSON apenas.", 1100);
+    const copyText = await callModelo(systemCopy, "Copy do carrossel agora. JSON apenas.", 1100);
     const copyJson = extractJson(copyText) as {
       slides?: Array<{ tipo?: string; texto?: string }>;
       legenda_sugerida?: string;
@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
 
     let visualJson: unknown = null;
     try {
-      const visualText = await callClaude(systemVisual, "Direção dos slides em JSON.", 600);
+      const visualText = await callModelo(systemVisual, "Direção dos slides em JSON.", 600);
       visualJson = extractJson(visualText);
     } catch (e) {
       // Direção é opcional: sem ela o carrossel renderiza com texto simples.

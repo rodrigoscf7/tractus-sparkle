@@ -3,7 +3,7 @@
 Pipeline de produção de conteúdo com curadoria humana e agentes de IA.
 
 Stack: TanStack Start (React 19, SSR) no Railway, Supabase para banco, auth, storage
-e Edge Functions, Anthropic Claude para os agentes e Apify para a curadoria.
+e Edge Functions, OpenRouter (Claude Sonnet 4.5) para os agentes e Apify para a curadoria.
 
 ## Desenvolvimento
 
@@ -57,7 +57,9 @@ select vault.create_secret('<openssl rand -hex 32>',    'agent_internal_secret')
 ```
 
 O valor de `agent_internal_secret` precisa ser o mesmo do secret `AGENT_INTERNAL_SECRET`
-configurado nas Edge Functions, junto com `ANTHROPIC_API_KEY` e `APIFY_API_TOKEN`.
+configurado nas Edge Functions, junto com `OPENROUTER_API_KEY` e `APIFY_API_TOKEN`.
+O modelo padrão é `anthropic/claude-sonnet-4.5` e pode ser trocado pelo secret opcional
+`OPENROUTER_MODEL`, sem precisar de novo deploy.
 
 O primeiro usuário que se cadastrar vira admin da instância e assume a conta semeada
 pelas migrations.

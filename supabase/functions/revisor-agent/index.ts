@@ -1,7 +1,7 @@
 // Revisor: dispara quando copy + visual terminam. Checa consistência e sempre
 // move a pauta para 'aguardando_aprovacao' para a decisão humana final.
 import {
-  callClaude,
+  callModelo,
   corsHeaders,
   extractJson,
   formatAgentError,
@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       agente: "revisor",
       tipo: "revisao",
     });
-    const text = await callClaude(
+    const text = await callModelo(
       `${system}\nLimite a resposta a no máximo 3 inconsistências curtas. Não use markdown nem bloco de código.`,
       "Faça a revisão agora.",
       900,

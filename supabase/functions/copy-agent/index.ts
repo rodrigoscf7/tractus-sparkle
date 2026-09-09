@@ -1,6 +1,6 @@
 // Copy: disparado quando uma pauta vira 'em_producao'. Gera roteiro falado de Reel.
 import {
-  callClaude,
+  callModelo,
   corsHeaders,
   extractJson,
   formatHistorico,
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       agente: "copy",
       tipo: "roteiro",
     });
-    const text = await callClaude(system, "Escreva o roteiro falado agora. JSON apenas.", 900);
+    const text = await callModelo(system, "Escreva o roteiro falado agora. JSON apenas.", 900);
     const parsed = extractJson(text);
 
     await supabase.from("roteiros").insert({
