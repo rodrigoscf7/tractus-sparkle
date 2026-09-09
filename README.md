@@ -1,26 +1,63 @@
 # Tractus Content Hub
 
-execute o prompt e os blocos em anexo. quero usar a conexão do supabase, o nome do projeto dentro do Supabase é "TractusContent"
+Pipeline de produção de conteúdo com curadoria humana e agentes de IA.
 
-This project was built with [Lovable](https://lovable.dev).
+Stack: TanStack Start (React 19, SSR) no Railway, Supabase para banco, auth, storage
+e Edge Functions, Anthropic Claude para os agentes e Apify para a curadoria.
 
-**Live app**: https://tractus-sparkle.lovable.app
+## Desenvolvimento
 
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/18ed9754-4937-4f20-be68-2dc882f893cc).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Requer Node.js 22+.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+npm install
+cp .env.example .env.local   # preencha com as credenciais do seu projeto Supabase
 npm run dev
 ```
+
+Outros comandos:
+
+```sh
+npm run build   # gera .output/
+npm start       # sobe o build de produção
+npm run lint
+```
+
+## Arquitetura
+
+O app serve SSR e expõe o webhook da Kiwify em `/api/public/webhooks/kiwify`. A
+lógica de negócio de billing fica em server functions (`src/lib/*.functions.ts`),
+autenticadas pelo middleware em `src/integrations/supabase/auth-middleware.ts`.
+
+Os seis agentes rodam como Edge Functions no Supabase e são orquestrados pelo próprio
+banco: `pg_cron` dispara a curadoria e a promoção de pautas, e triggers em
+`conteudos_curados`, `pautas_geradas`, `roteiros` e `artes` encadeiam o restante do
+pipeline via `pg_net`.
+
+```
+curador -> ideador -> copy + visual -> revisor -> carrossel
+```
+
+## Banco de dados
+
+`supabase/migrations/` é a fonte da verdade. Para provisionar um projeto novo:
+
+```sh
+supabase link --project-ref <ref>
+supabase db push
+supabase functions deploy
+```
+
+Antes do `db push`, crie os segredos que os agentes usam para chamar as Edge Functions:
+
+```sql
+select vault.create_secret('https://<ref>.supabase.co', 'agent_base_url');
+select vault.create_secret('<publishable key>',         'agent_apikey');
+select vault.create_secret('<openssl rand -hex 32>',    'agent_internal_secret');
+```
+
+O valor de `agent_internal_secret` precisa ser o mesmo do secret `AGENT_INTERNAL_SECRET`
+configurado nas Edge Functions, junto com `ANTHROPIC_API_KEY` e `APIFY_API_TOKEN`.
+
+O primeiro usuário que se cadastrar vira admin da instância e assume a conta semeada
+pelas migrations.
