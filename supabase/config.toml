@@ -1,1 +1,25 @@
-project_id = "ngiitkwnarxsemdinthy"
+# Ref do projeto Supabase (Project Settings > General > Reference ID).
+project_id = "TROQUE_PELO_REF_DO_NOVO_PROJETO"
+
+# As seis funções fazem a própria autenticação em _shared/agent-utils.ts (requireAgentAuth):
+# aceitam o header x-agent-secret, usado pelos triggers e cron jobs via pg_net, ou um JWT
+# de usuário com role admin. Deixar o verify_jwt do gateway ligado bloquearia as chamadas
+# internas antes de chegarem nesse controle.
+
+[functions.curador-agent]
+verify_jwt = false
+
+[functions.ideador-agent]
+verify_jwt = false
+
+[functions.copy-agent]
+verify_jwt = false
+
+[functions.visual-agent]
+verify_jwt = false
+
+[functions.revisor-agent]
+verify_jwt = false
+
+[functions.carrossel-agent]
+verify_jwt = false

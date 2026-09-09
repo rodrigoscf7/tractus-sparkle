@@ -32,7 +32,9 @@ export const Route = createFileRoute("/_authenticated/agentes/$agente")({
   component: AgenteDetalhePage,
   notFoundComponent: () => <div className="p-8 text-muted-foreground">Agente não encontrado.</div>,
   errorComponent: ({ error }) => (
-    <div className="p-8 text-destructive">Erro ao carregar: {error.message}</div>
+    <div className="p-8 text-destructive">
+      Erro ao carregar: {error instanceof Error ? error.message : String(error)}
+    </div>
   ),
 });
 
