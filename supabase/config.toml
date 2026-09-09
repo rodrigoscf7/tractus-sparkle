@@ -1,5 +1,5 @@
 # Ref do projeto Supabase (Project Settings > General > Reference ID).
-project_id = "TROQUE_PELO_REF_DO_NOVO_PROJETO"
+project_id = "yamzlilsimggvgyuvlrv"
 
 # As seis funções fazem a própria autenticação em _shared/agent-utils.ts (requireAgentAuth):
 # aceitam o header x-agent-secret, usado pelos triggers e cron jobs via pg_net, ou um JWT
