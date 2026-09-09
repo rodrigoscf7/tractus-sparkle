@@ -81,7 +81,7 @@ export async function setStatus(
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 // Trocar de modelo não exige deploy: basta ajustar o secret OPENROUTER_MODEL.
-const MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "anthropic/claude-sonnet-4.5";
+const MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "anthropic/claude-sonnet-5";
 
 export type CustoContexto = {
   contaId?: string | null;
