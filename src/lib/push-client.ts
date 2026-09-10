@@ -49,7 +49,7 @@ export async function instalarApp(): Promise<boolean> {
   return escolha.outcome === "accepted";
 }
 
-function urlBase64ParaUint8Array(base64: string): Uint8Array {
+function urlBase64ParaUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const normalizado = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(normalizado);
