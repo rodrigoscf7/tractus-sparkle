@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ArrowRight, Download, Loader2, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { getDna, regerarDna } from "@/lib/onboarding.functions";
+import { ConvitePush } from "@/components/notificacoes/ConvitePush";
 
 export const Route = createFileRoute("/_authenticated/dna")({
   head: () => ({
@@ -132,6 +133,8 @@ function DnaPage() {
           </Link>
         </div>
       )}
+
+      <ConvitePush />
 
       <header className="border-b border-border pb-8">
         <div className="flex flex-wrap items-start justify-between gap-4">

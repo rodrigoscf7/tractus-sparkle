@@ -74,6 +74,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "theme-color", content: "#F4DB0B" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "prevIA" },
       { title: "prevIA - CONTENT" },
       { name: "description", content: "Pipeline de produção de conteúdo com curadoria humana e agentes de IA." },
       { property: "og:title", content: "prevIA - CONTENT" },
@@ -86,6 +89,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icon-192.png" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap",
@@ -124,6 +129,14 @@ function RootComponent() {
     });
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch((e) => {
+        console.error("Falha ao registrar o service worker", e);
+      });
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
