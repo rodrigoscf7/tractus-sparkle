@@ -61,5 +61,18 @@ configurado nas Edge Functions, junto com `OPENROUTER_API_KEY` e `APIFY_API_TOKE
 O modelo padrão é `anthropic/claude-sonnet-5` e pode ser trocado pelo secret opcional
 `OPENROUTER_MODEL`, sem precisar de novo deploy.
 
+Notificações push usam um par de chaves VAPID, gerado uma única vez com
+`npx web-push generate-vapid-keys` e configurado como segredo de Edge Function
+(nunca Vault, nunca committed):
+
+```sh
+supabase secrets set VAPID_PUBLIC_KEY="<chave pública>"
+supabase secrets set VAPID_PRIVATE_KEY="<chave privada>"
+supabase secrets set VAPID_SUBJECT="mailto:contato@previa.app"
+```
+
+A mesma chave pública também vai em `VITE_VAPID_PUBLIC_KEY` (`.env.local`), pois o
+navegador precisa dela para `pushManager.subscribe()`.
+
 O primeiro usuário que se cadastrar vira admin da instância e assume a conta semeada
 pelas migrations.
