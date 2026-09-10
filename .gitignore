@@ -24,6 +24,10 @@ dist-ssr
 supabase/.temp
 supabase/.branches
 
+# Isolated worktrees for subagent-driven development
+.worktrees
+.superpowers
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
