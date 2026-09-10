@@ -20,6 +20,7 @@ import { useIsPlatformAdmin } from "@/hooks/use-platform-admin";
 import previaLogo from "@/assets/previa-logo.png.asset.json";
 import previaLogoNegative from "@/assets/previa-logo-negative.png.asset.json";
 import previaIcon from "@/assets/previa-icon.png.asset.json";
+import { SininhoNotificacoes } from "@/components/notificacoes/SininhoNotificacoes";
 
 /**
  * Onboarding concluído nunca volta a ficar pendente, então basta confirmar uma
@@ -136,6 +137,7 @@ function AuthenticatedLayout() {
         {email && (
           <div className="px-3 py-2 text-xs text-muted-foreground truncate">{email}</div>
         )}
+        <SininhoNotificacoes />
         <button
           onClick={toggle}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition"
