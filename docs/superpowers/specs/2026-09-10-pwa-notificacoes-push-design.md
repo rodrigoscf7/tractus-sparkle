@@ -58,7 +58,7 @@ A fila de agregação — um "lote aberto" por perfil e tipo.
 
 ### Segredos
 
-Par de chaves VAPID gerado uma única vez. A chave **pública** não é segredo — é lida pelo navegador para `pushManager.subscribe()`, então vai como `VITE_VAPID_PUBLIC_KEY` no `.env` (mesmo padrão de `VITE_SUPABASE_PUBLISHABLE_KEY`, pública por natureza). A chave **privada** e o `subject` (e-mail de contato exigido pelo protocolo VAPID) vão para o Vault do Supabase, seguindo o padrão de `agent_secret()`.
+Par de chaves VAPID gerado uma única vez. A chave **pública** não é segredo — é lida pelo navegador para `pushManager.subscribe()`, então vai como `VITE_VAPID_PUBLIC_KEY` no `.env` (mesmo padrão de `VITE_SUPABASE_PUBLISHABLE_KEY`, pública por natureza). A chave **privada** e o `subject` (e-mail de contato exigido pelo protocolo VAPID) só são usados dentro do `push-agent` — não por nenhum trigger ou cron do banco — então vão como segredo de Edge Function (`VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`, lidos via `Deno.env.get`), no mesmo padrão de `OPENROUTER_API_KEY`. O Vault do Supabase (`agent_secret()`) continua reservado para segredos que o próprio Postgres precisa ler (cron/triggers), o que não é o caso aqui.
 
 ## 2. Casca do PWA
 
@@ -97,7 +97,7 @@ Ao conceder permissão, o app inscreve via `registration.pushManager.subscribe({
 - Pautas prontas (contagem = 1): *"{nome}, 1 pauta nova está esperando sua aprovação na prevIA."*
 - Pautas prontas (contagem > 1): *"{nome}, {contagem} pautas novas estão esperando sua aprovação na prevIA."*
 
-`{nome}` vem de `perfis.nome` — o nome que o próprio advogado escolheu na pergunta 1 do onboarding, então a notificação já nasce pessoal. `notificationclick` foca a janela existente ou abre uma nova em `/pipeline`, com o `perfil_id` como parâmetro de busca para o app já abrir filtrado no perfil certo.
+`{nome}` vem de `perfis.nome` — o nome que o próprio advogado escolheu na pergunta 1 do onboarding, então a notificação já nasce pessoal. `notificationclick` foca a janela existente ou abre uma nova: `/curadoria` para `curadoria_pronta`, `/pipeline` para `pautas_prontas`. Nenhuma das duas rotas filtra por perfil via URL hoje — abrir filtrado no perfil certo fica fora desta rodada (o `pipeline.tsx` já tem um filtro local por perfil, é só o usuário escolher).
 
 ## 6. Erros e limites
 
