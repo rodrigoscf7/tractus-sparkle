@@ -12,20 +12,51 @@ import {
   Sun,
   CreditCard,
   Shield,
+  BookOpen,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIsPlatformAdmin } from "@/hooks/use-platform-admin";
-import { useEnsureConta } from "@/hooks/use-ensure-conta";
 import previaLogo from "@/assets/previa-logo.png.asset.json";
 import previaLogoNegative from "@/assets/previa-logo-negative.png.asset.json";
 import previaIcon from "@/assets/previa-icon.png.asset.json";
+
+/**
+ * Onboarding concluído nunca volta a ficar pendente, então basta confirmar uma
+ * vez por carregamento da página. Sem isso, o gate faria duas consultas a cada
+ * troca de rota. Só o valor positivo é memorizado.
+ */
+let onboardingLiberado = false;
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+
+    if (onboardingLiberado) return { user: data.user };
+
+    // Sem conta ou com onboarding em aberto, o app não tem o que mostrar:
+    // o perfil, as diretrizes e as referências nascem no wizard.
+    // O espelho deste gate está em `routes/onboarding.tsx`.
+    const { data: membro } = await supabase
+      .from("conta_membros")
+      .select("conta_id")
+      .order("criado_em")
+      .limit(1)
+      .maybeSingle();
+
+    if (!membro?.conta_id) throw redirect({ to: "/onboarding" });
+
+    const { data: onboarding } = await supabase
+      .from("onboarding_respostas")
+      .select("concluido_em")
+      .eq("conta_id", membro.conta_id)
+      .maybeSingle();
+
+    if (!onboarding?.concluido_em) throw redirect({ to: "/onboarding" });
+
+    onboardingLiberado = true;
     return { user: data.user };
   },
   component: AuthenticatedLayout,
@@ -37,7 +68,6 @@ function AuthenticatedLayout() {
   const [open, setOpen] = useState(false);
   const { theme, toggle } = useTheme();
   const { data: isAdmin } = useIsPlatformAdmin();
-  useEnsureConta();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
@@ -88,6 +118,9 @@ function AuthenticatedLayout() {
         </NavLink>
         <NavLink to="/perfis" icon={<Users className="w-4 h-4" />}>
           Perfis
+        </NavLink>
+        <NavLink to="/dna" icon={<BookOpen className="w-4 h-4" />}>
+          Manual de marca
         </NavLink>
         <NavLink to="/assinatura" icon={<CreditCard className="w-4 h-4" />}>
           Assinatura

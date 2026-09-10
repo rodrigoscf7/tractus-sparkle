@@ -5,6 +5,7 @@ import {
   callModelo,
   corsHeaders,
   extractJson,
+  formatRestricoes,
   getServiceClient,
   limiteDisponivel,
   requireAgentAuth,
@@ -19,6 +20,9 @@ Diretrizes do perfil: {{perfil_diretrizes}}
 CTA padrão do perfil (âncora obrigatória do último slide): {{cta_padrao}}
 Pauta: tema={{pauta_tema}} | ângulo={{pauta_angulo}}
 Roteiro aprovado (fonte da verdade — mantenha a MESMA tese e o MESMO posicionamento): {{roteiro_texto}}
+
+REGRAS INEGOCIÁVEIS DESTE PERFIL
+{{restricoes_perfil}}
 
 Regras do carrossel:
 - Entre 5 e 8 slides no total, você decide conforme a densidade do roteiro.
@@ -134,7 +138,8 @@ Deno.serve(async (req) => {
       .replace("{{pauta_tema}}", pauta.tema ?? "")
       .replace("{{pauta_angulo}}", pauta.angulo ?? "")
       .replace("{{cta_padrao}}", String(perfil?.["cta_padrao"] ?? "").trim() || "nenhuma")
-      .replace("{{roteiro_texto}}", roteiroTexto);
+      .replace("{{roteiro_texto}}", roteiroTexto)
+      .replace("{{restricoes_perfil}}", formatRestricoes(perfil?.["diretrizes"]));
 
     setCustoContexto({
       contaId:

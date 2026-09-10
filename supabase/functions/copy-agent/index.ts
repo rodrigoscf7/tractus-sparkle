@@ -4,6 +4,7 @@ import {
   corsHeaders,
   extractJson,
   formatHistorico,
+  formatRestricoes,
   getHistoricoDecisoes,
   getServiceClient,
   limiteDisponivel,
@@ -19,6 +20,9 @@ Diretrizes do perfil: {{perfil_diretrizes}}
 CTA padrão do perfil (âncora obrigatória): {{cta_padrao}}
 Pauta: tema={{pauta_tema}} | ângulo={{pauta_angulo}}
 Roteiros rejeitados (não repita o padrão): {{historico_roteiros_rejeitados}}
+
+REGRAS INEGOCIÁVEIS DESTE PERFIL
+{{restricoes_perfil}}
 
 Estruture o discurso em 3 blocos curtos, prontos pra gravar lendo:
 1. gancho_falado: 1 frase de até 15 palavras, provocativa, dita nos 3 primeiros segundos.
@@ -76,7 +80,8 @@ Deno.serve(async (req) => {
       .replace("{{cta_padrao}}", String(perfil.cta_padrao ?? "").trim() || "nenhuma")
       .replace("{{pauta_tema}}", pauta!.tema ?? "")
       .replace("{{pauta_angulo}}", pauta!.angulo ?? "")
-      .replace("{{historico_roteiros_rejeitados}}", formatHistorico(historico));
+      .replace("{{historico_roteiros_rejeitados}}", formatHistorico(historico))
+      .replace("{{restricoes_perfil}}", formatRestricoes(perfil.diretrizes));
 
     setCustoContexto({
       contaId: (pauta as any)?.conta_id ?? perfil?.conta_id ?? null,

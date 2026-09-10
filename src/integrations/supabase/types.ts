@@ -522,6 +522,51 @@ export type Database = {
           },
         ]
       }
+      dna_relatorios: {
+        Row: {
+          conta_id: string
+          conteudo: Json
+          gerado_em: string
+          id: string
+          modelo: string | null
+          perfil_id: string | null
+          versao: number
+        }
+        Insert: {
+          conta_id: string
+          conteudo: Json
+          gerado_em?: string
+          id?: string
+          modelo?: string | null
+          perfil_id?: string | null
+          versao?: number
+        }
+        Update: {
+          conta_id?: string
+          conteudo?: Json
+          gerado_em?: string
+          id?: string
+          modelo?: string | null
+          perfil_id?: string | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dna_relatorios_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dna_relatorios_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kiwify_eventos: {
         Row: {
           assinatura_externa_id: string | null
@@ -574,6 +619,54 @@ export type Database = {
             columns: ["conta_id"]
             isOneToOne: false
             referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_respostas: {
+        Row: {
+          atualizado_em: string
+          concluido_em: string | null
+          conta_id: string
+          criado_em: string
+          id: string
+          passo_atual: number
+          perfil_id: string | null
+          respostas: Json
+        }
+        Insert: {
+          atualizado_em?: string
+          concluido_em?: string | null
+          conta_id: string
+          criado_em?: string
+          id?: string
+          passo_atual?: number
+          perfil_id?: string | null
+          respostas?: Json
+        }
+        Update: {
+          atualizado_em?: string
+          concluido_em?: string | null
+          conta_id?: string
+          criado_em?: string
+          id?: string
+          passo_atual?: number
+          perfil_id?: string | null
+          respostas?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_respostas_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: true
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_respostas_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
         ]
@@ -860,6 +953,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referencias_sugeridas: {
+        Row: {
+          area_atuacao: string
+          ativo: boolean
+          criado_em: string
+          descricao: string | null
+          handle: string
+          id: string
+          ordem: number
+        }
+        Insert: {
+          area_atuacao: string
+          ativo?: boolean
+          criado_em?: string
+          descricao?: string | null
+          handle: string
+          id?: string
+          ordem?: number
+        }
+        Update: {
+          area_atuacao?: string
+          ativo?: boolean
+          criado_em?: string
+          descricao?: string | null
+          handle?: string
+          id?: string
+          ordem?: number
+        }
+        Relationships: []
       }
       roteiros: {
         Row: {
