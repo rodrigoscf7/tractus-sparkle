@@ -254,6 +254,7 @@ export type Database = {
           criado_em: string
           id: string
           papel: string
+          quer_notificacoes: boolean
           user_id: string
         }
         Insert: {
@@ -261,6 +262,7 @@ export type Database = {
           criado_em?: string
           id?: string
           papel?: string
+          quer_notificacoes?: boolean
           user_id: string
         }
         Update: {
@@ -268,6 +270,7 @@ export type Database = {
           criado_em?: string
           id?: string
           papel?: string
+          quer_notificacoes?: boolean
           user_id?: string
         }
         Relationships: [
@@ -953,6 +956,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_notificacoes_pendentes: {
+        Row: {
+          conta_id: string
+          contagem: number
+          enviado_em: string | null
+          id: string
+          perfil_id: string
+          primeiro_evento_em: string
+          tipo: string
+          ultimo_evento_em: string
+        }
+        Insert: {
+          conta_id: string
+          contagem?: number
+          enviado_em?: string | null
+          id?: string
+          perfil_id: string
+          primeiro_evento_em?: string
+          tipo: string
+          ultimo_evento_em?: string
+        }
+        Update: {
+          conta_id?: string
+          contagem?: number
+          enviado_em?: string | null
+          id?: string
+          perfil_id?: string
+          primeiro_evento_em?: string
+          tipo?: string
+          ultimo_evento_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_notificacoes_pendentes_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_notificacoes_pendentes_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          criado_em: string
+          endpoint: string
+          id: string
+          p256dh: string
+          ultimo_uso_em: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          criado_em?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          ultimo_uso_em?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          criado_em?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          ultimo_uso_em?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       referencias_sugeridas: {
         Row: {
