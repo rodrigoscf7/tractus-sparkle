@@ -22,18 +22,14 @@ export const enviarNotificacaoTeste = createServerFn({ method: "POST" })
     const { invocarAgente } = await import("@/lib/agentes.server");
     const admin = supabaseAdmin as any;
 
-    const { data: membro } = await context.supabase
-      .from("conta_membros")
-      .select("conta_id")
-      .order("criado_em")
-      .limit(1)
-      .maybeSingle();
-    if (!membro?.conta_id) throw new Error("Seu usuário não está vinculado a nenhuma conta.");
+    const { data: contaId, error: erroConta } = await context.supabase.rpc("minha_conta");
+    if (erroConta) throw new Error(erroConta.message);
+    if (!contaId) throw new Error("Seu usuário não está vinculado a nenhuma conta.");
 
     const { data: perfil } = await admin
       .from("perfis")
       .select("id")
-      .eq("conta_id", membro.conta_id)
+      .eq("conta_id", contaId)
       .limit(1)
       .maybeSingle();
     if (!perfil?.id) throw new Error("Nenhum perfil encontrado para testar.");
@@ -41,7 +37,7 @@ export const enviarNotificacaoTeste = createServerFn({ method: "POST" })
     const { data: lote, error: erroLote } = await admin
       .from("push_notificacoes_pendentes")
       .insert({
-        conta_id: membro.conta_id,
+        conta_id: contaId,
         perfil_id: perfil.id,
         tipo: "pautas_prontas",
         contagem: 1,
