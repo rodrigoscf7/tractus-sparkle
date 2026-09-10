@@ -183,6 +183,75 @@
   }
 }
 
+/* ============================================================
+ * Impressão — o "Baixar PDF" do manual de marca usa o próprio
+ * diálogo de impressão do navegador. Sai a navegação, sai o
+ * tema escuro (papel é sempre claro) e as seções não quebram
+ * no meio.
+ * ============================================================ */
+@media print {
+  :root,
+  .dark {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.160 0.004 285.9);
+    --surface: oklch(1 0 0);
+    --surface-elevated: oklch(1 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.160 0.004 285.9);
+    --muted: oklch(0.945 0.005 106.5);
+    --muted-foreground: oklch(0.441 0.012 286.0);
+    --subtle-foreground: oklch(0.541 0.012 286.0);
+    --border: oklch(0.855 0.005 106.5);
+    --divider: oklch(0.900 0.005 106.5);
+    --primary: oklch(0.885 0.183 100.9);
+    --success: oklch(0.528 0.119 135.6);
+  }
+
+  @page {
+    margin: 16mm 14mm;
+  }
+
+  /* Navegação, cabeçalho mobile, gavetas e ações não vão para o papel. */
+  aside,
+  header.sticky,
+  nav,
+  [data-print-hide],
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  main {
+    overflow: visible !important;
+  }
+
+  [data-print-root] {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  section,
+  li,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+}
+
 @utility ai-chip {
   display: inline-flex;
   align-items: center;

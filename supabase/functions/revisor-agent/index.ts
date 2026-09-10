@@ -5,6 +5,7 @@ import {
   corsHeaders,
   extractJson,
   formatAgentError,
+  formatRestricoes,
   getServiceClient,
   requireAgentAuth,
   setCustoContexto,
@@ -14,8 +15,13 @@ import {
 const SYSTEM = `Você é o agente revisor de consistência de marca da Tractus.
 Perfil: {{perfil_nome}}. Diretrizes: {{perfil_diretrizes}}
 Conteúdo final a revisar: {{conteudo_completo}}
+
+REGRAS INEGOCIÁVEIS DESTE PERFIL
+{{restricoes_perfil}}
+
 Verifique: tom de voz, ausência de emojis/travessões, gancho não repetido, coerência
-texto-visual.
+texto-visual e, acima de tudo, se alguma regra inegociável acima foi violada.
+Violação de regra inegociável é sempre inconsistência.
 Retorne APENAS um JSON:
 { "aprovado_para_revisao_humana": true/false, "inconsistencias": ["string"],
   "sugestao_ajuste": "string ou null" }`;
@@ -66,7 +72,8 @@ Deno.serve(async (req) => {
     const system = SYSTEM
       .replace("{{perfil_nome}}", perfil.nome)
       .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
-      .replace("{{conteudo_completo}}", JSON.stringify(conteudoCompleto));
+      .replace("{{conteudo_completo}}", JSON.stringify(conteudoCompleto))
+      .replace("{{restricoes_perfil}}", formatRestricoes(perfil.diretrizes));
 
     setCustoContexto({
       contaId: (pauta as any)?.conta_id ?? null,

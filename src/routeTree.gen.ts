@@ -12,12 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
 import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
+import { Route as AuthenticatedDnaRouteImport } from './routes/_authenticated/dna'
 import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
+import { Route as OnboardingProcessandoRouteImport } from './routes/onboarding.processando'
 import { Route as AuthenticatedAgentesIndexRouteImport } from './routes/_authenticated/agentes.index'
 import { Route as AuthenticatedAgentesAgenteRouteImport } from './routes/_authenticated/agentes.$agente'
 import { Route as AuthenticatedAprovacaoPautaIdRouteImport } from './routes/_authenticated/aprovacao.$pautaId'
@@ -35,6 +39,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -57,6 +66,11 @@ const AuthenticatedCuradoriaRoute = AuthenticatedCuradoriaRouteImport.update({
   path: '/curadoria',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDnaRoute = AuthenticatedDnaRouteImport.update({
+  id: '/dna',
+  path: '/dna',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPerfisRoute = AuthenticatedPerfisRouteImport.update({
   id: '/perfis',
   path: '/perfis',
@@ -66,6 +80,16 @@ const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
   id: '/pipeline',
   path: '/pipeline',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingProcessandoRoute = OnboardingProcessandoRouteImport.update({
+  id: '/processando',
+  path: '/processando',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const AuthenticatedAgentesIndexRoute =
   AuthenticatedAgentesIndexRouteImport.update({
@@ -94,12 +118,16 @@ const ApiPublicWebhooksKiwifyRoute = ApiPublicWebhooksKiwifyRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/admin': typeof AuthenticatedAdminRoute
   '/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
+  '/dna': typeof AuthenticatedDnaRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
+  '/onboarding/processando': typeof OnboardingProcessandoRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/agentes/': typeof AuthenticatedAgentesIndexRoute
@@ -111,8 +139,11 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
+  '/dna': typeof AuthenticatedDnaRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
+  '/onboarding/processando': typeof OnboardingProcessandoRoute
+  '/onboarding': typeof OnboardingIndexRoute
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/agentes': typeof AuthenticatedAgentesIndexRoute
@@ -123,12 +154,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
   '/_authenticated/curadoria': typeof AuthenticatedCuradoriaRoute
+  '/_authenticated/dna': typeof AuthenticatedDnaRoute
   '/_authenticated/perfis': typeof AuthenticatedPerfisRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
+  '/onboarding/processando': typeof OnboardingProcessandoRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/_authenticated/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/_authenticated/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/_authenticated/agentes/': typeof AuthenticatedAgentesIndexRoute
@@ -139,12 +174,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/onboarding'
     | '/admin'
     | '/agentes'
     | '/assinatura'
     | '/curadoria'
+    | '/dna'
     | '/perfis'
     | '/pipeline'
+    | '/onboarding/processando'
+    | '/onboarding/'
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
     | '/agentes/'
@@ -156,8 +195,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assinatura'
     | '/curadoria'
+    | '/dna'
     | '/perfis'
     | '/pipeline'
+    | '/onboarding/processando'
+    | '/onboarding'
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
     | '/agentes'
@@ -167,12 +209,16 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/onboarding'
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
     | '/_authenticated/assinatura'
     | '/_authenticated/curadoria'
+    | '/_authenticated/dna'
     | '/_authenticated/perfis'
     | '/_authenticated/pipeline'
+    | '/onboarding/processando'
+    | '/onboarding/'
     | '/_authenticated/agentes/$agente'
     | '/_authenticated/aprovacao/$pautaId'
     | '/_authenticated/agentes/'
@@ -183,6 +229,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  OnboardingRoute: typeof OnboardingRouteWithChildren
   ApiPublicWebhooksKiwifyRoute: typeof ApiPublicWebhooksKiwifyRoute
 }
 
@@ -207,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -237,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCuradoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/dna': {
+      id: '/_authenticated/dna'
+      path: '/dna'
+      fullPath: '/dna'
+      preLoaderRoute: typeof AuthenticatedDnaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/perfis': {
       id: '/_authenticated/perfis'
       path: '/perfis'
@@ -250,6 +311,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/pipeline'
       preLoaderRoute: typeof AuthenticatedPipelineRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/processando': {
+      id: '/onboarding/processando'
+      path: '/processando'
+      fullPath: '/onboarding/processando'
+      preLoaderRoute: typeof OnboardingProcessandoRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/_authenticated/agentes/': {
       id: '/_authenticated/agentes/'
@@ -300,6 +375,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRouteWithChildren
   AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
   AuthenticatedCuradoriaRoute: typeof AuthenticatedCuradoriaRoute
+  AuthenticatedDnaRoute: typeof AuthenticatedDnaRoute
   AuthenticatedPerfisRoute: typeof AuthenticatedPerfisRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedAprovacaoPautaIdRoute: typeof AuthenticatedAprovacaoPautaIdRoute
@@ -310,6 +386,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgentesRoute: AuthenticatedAgentesRouteWithChildren,
   AuthenticatedAssinaturaRoute: AuthenticatedAssinaturaRoute,
   AuthenticatedCuradoriaRoute: AuthenticatedCuradoriaRoute,
+  AuthenticatedDnaRoute: AuthenticatedDnaRoute,
   AuthenticatedPerfisRoute: AuthenticatedPerfisRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedAprovacaoPautaIdRoute: AuthenticatedAprovacaoPautaIdRoute,
@@ -318,10 +395,25 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface OnboardingRouteChildren {
+  OnboardingProcessandoRoute: typeof OnboardingProcessandoRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
+}
+
+const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingProcessandoRoute: OnboardingProcessandoRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
+}
+
+const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
+  OnboardingRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  OnboardingRoute: OnboardingRouteWithChildren,
   ApiPublicWebhooksKiwifyRoute: ApiPublicWebhooksKiwifyRoute,
 }
 export const routeTree = rootRouteImport

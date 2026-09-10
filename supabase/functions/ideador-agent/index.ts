@@ -8,6 +8,7 @@ import {
   extractJson,
   formatAgentError,
   formatHistorico,
+  formatRestricoes,
   getHistoricoDecisoes,
   getServiceClient,
   requireAgentAuth,
@@ -36,6 +37,9 @@ Perfil: {{perfil_nome}} ({{perfil_tipo}})
 Diretrizes: {{perfil_diretrizes}}
 Histórico (padrão aceito/rejeitado): {{historico_decisoes_formatado}}
 Pautas recentes que NÃO devem ser repetidas: {{pautas_recentes}}
+
+REGRAS INEGOCIÁVEIS DESTE PERFIL
+{{restricoes_perfil}}
 
 CURADORIA-ALVO (transformar em pauta):
 {{curadoria_alvo}}
@@ -146,6 +150,7 @@ async function gerarPautaFocada(supabase: SupabaseClient, conteudoId: string) {
     .replace("{{perfil_diretrizes}}", JSON.stringify(perfil.diretrizes))
     .replace("{{historico_decisoes_formatado}}", formatHistorico(historico))
     .replace("{{pautas_recentes}}", JSON.stringify(pautasRecentes))
+    .replace("{{restricoes_perfil}}", formatRestricoes(perfil.diretrizes))
     .replace("{{curadoria_alvo}}", JSON.stringify({
       id: curadoria.id,
       tema: curadoria.tema,

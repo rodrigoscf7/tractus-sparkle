@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.carrossel-agent]
 verify_jwt = false
+
+[functions.dna-agent]
+verify_jwt = false

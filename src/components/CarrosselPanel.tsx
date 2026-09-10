@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { gerarCarrossel } from "@/lib/agentes.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +28,7 @@ export function CarrosselPanel({
   const [gerando, setGerando] = useState(false);
   const [fotoDataUrl, setFotoDataUrl] = useState("");
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const solicitarCarrossel = useServerFn(gerarCarrossel);
 
   const template = parseTemplate(perfilTemplateRaw);
   const slides = mergeSlides(carrossel);
@@ -48,19 +51,16 @@ export function CarrosselPanel({
 
   async function gerar() {
     setGerando(true);
-    const { data, error } = await supabase.functions.invoke("carrossel-agent", {
-      body: { pauta_id: pautaId },
-    });
-    setGerando(false);
-    if (error || (data && (data as { ok?: boolean }).ok === false)) {
-      const msg =
-        (data as { error?: string } | null)?.error ?? error?.message ?? "Falha ao gerar carrossel";
-      toast.error(msg);
+    try {
+      await solicitarCarrossel({ data: { pautaId } });
+      const row = await load();
+      toast.success(`Carrossel pronto com ${mergeSlides(row).length} slides.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao gerar carrossel");
       await load();
-      return;
+    } finally {
+      setGerando(false);
     }
-    const row = await load();
-    toast.success(`Carrossel pronto com ${mergeSlides(row).length} slides.`);
   }
 
   async function baixar(index: number) {

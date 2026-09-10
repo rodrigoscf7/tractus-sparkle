@@ -1,5 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  AREAS,
+  CANAIS,
+  ORIGEM,
+  SITUACAO,
+  TAMANHOS,
+  TRAFEGO,
+} from "@/lib/onboarding-perguntas";
 
 const cicloAtual = () => {
   const d = new Date();
@@ -20,20 +28,36 @@ export type AdminDashboard = Awaited<ReturnType<typeof carregarDashboard>>;
 async function carregarDashboard(supabase: any) {
   const ciclo = cicloAtual();
 
-  const [planos, contas, membros, assinaturas, uso, economia, plataforma, medias, precos, eventos, acoes] =
-    await Promise.all([
-      supabase.from("planos").select("*").order("ordem"),
-      supabase.from("contas").select("*").order("criado_em"),
-      supabase.from("conta_membros").select("conta_id"),
-      supabase.from("assinaturas").select("*"),
-      supabase.from("uso_mensal").select("conta_id, tipo, quantidade").eq("ciclo", ciclo),
-      supabase.from("vw_conta_economia_mensal").select("*"),
-      supabase.from("vw_plataforma_mensal").select("*").order("ciclo"),
-      supabase.from("vw_custo_medio_tipo").select("*"),
-      supabase.from("custo_precos").select("*").order("rotulo"),
-      supabase.from("kiwify_eventos").select("*").order("criado_em", { ascending: false }).limit(25),
-      supabase.from("admin_acoes").select("*").order("criado_em", { ascending: false }).limit(25),
-    ]);
+  const [
+    planos,
+    contas,
+    membros,
+    assinaturas,
+    uso,
+    economia,
+    plataforma,
+    medias,
+    precos,
+    eventos,
+    acoes,
+    onboarding,
+  ] = await Promise.all([
+    supabase.from("planos").select("*").order("ordem"),
+    supabase.from("contas").select("*").order("criado_em"),
+    supabase.from("conta_membros").select("conta_id"),
+    supabase.from("assinaturas").select("*"),
+    supabase.from("uso_mensal").select("conta_id, tipo, quantidade").eq("ciclo", ciclo),
+    supabase.from("vw_conta_economia_mensal").select("*"),
+    supabase.from("vw_plataforma_mensal").select("*").order("ciclo"),
+    supabase.from("vw_custo_medio_tipo").select("*"),
+    supabase.from("custo_precos").select("*").order("rotulo"),
+    supabase.from("kiwify_eventos").select("*").order("criado_em", { ascending: false }).limit(25),
+    supabase.from("admin_acoes").select("*").order("criado_em", { ascending: false }).limit(25),
+    supabase
+      .from("onboarding_respostas")
+      .select("conta_id, respostas, passo_atual, concluido_em, criado_em")
+      .order("criado_em", { ascending: false }),
+  ]);
 
   const planosData = (planos.data ?? []) as any[];
   const assinaturasData = (assinaturas.data ?? []) as any[];
@@ -199,8 +223,88 @@ async function carregarDashboard(supabase: any) {
     precos: (precos.data ?? []) as any[],
     eventos_kiwify: (eventos.data ?? []) as any[],
     acoes: (acoes.data ?? []) as any[],
+    onboarding: resumirOnboarding((onboarding.data ?? []) as any[], contasDetalhe),
     ciclo,
   };
+}
+
+/**
+ * Perguntas 11 a 15 do onboarding não configuram nada nos agentes: são
+ * atribuição de canal e qualificação de lead. Ficam agregadas aqui para o
+ * painel da plataforma. A área de atuação entra junto porque é o corte mais
+ * útil para decidir quais referências curar.
+ */
+function resumirOnboarding(registros: any[], contas: { id: string; nome: string }[]) {
+  const nomePorConta = new Map(contas.map((c) => [c.id, c.nome]));
+  const concluidos = registros.filter((r) => r.concluido_em);
+
+  const distribuicao = (extrair: (r: any) => string[]) => {
+    const contagem = new Map<string, number>();
+    for (const registro of concluidos) {
+      for (const valor of extrair(registro)) {
+        if (!valor) continue;
+        contagem.set(valor, (contagem.get(valor) ?? 0) + 1);
+      }
+    }
+    return [...contagem.entries()]
+      .map(([label, quantidade]) => ({ label, quantidade }))
+      .sort((a, b) => b.quantidade - a.quantidade);
+  };
+
+  const unico = (campo: string, opcoes: { valor: string; label: string }[]) =>
+    distribuicao((r) => {
+      const bruto = r.respostas?.[campo];
+      if (typeof bruto !== "string" || !bruto) return [];
+      return [opcoes.find((o) => o.valor === bruto)?.label ?? bruto];
+    });
+
+  const multiplo = (campo: string, opcoes: { valor: string; label: string }[]) =>
+    distribuicao((r) => {
+      const bruto = r.respostas?.[campo];
+      if (!Array.isArray(bruto)) return [];
+      return bruto.map(
+        (v: unknown) => opcoes.find((o) => o.valor === v)?.label ?? String(v ?? ""),
+      );
+    });
+
+  const abandonoPorPasso = [1, 2, 3, 4, 5].map((passo) => ({
+    passo,
+    quantidade: registros.filter((r) => !r.concluido_em && r.passo_atual === passo).length,
+  }));
+
+  return {
+    iniciados: registros.length,
+    concluidos: concluidos.length,
+    conversao_pct: registros.length
+      ? Math.round((concluidos.length / registros.length) * 100)
+      : 0,
+    abandono_por_passo: abandonoPorPasso,
+    area: unico("area_atuacao", AREAS),
+    origem: unico("origem", ORIGEM),
+    situacao: unico("situacao", SITUACAO),
+    tamanho: unico("tamanho_escritorio", TAMANHOS),
+    trafego: unico("trafego_pago", TRAFEGO),
+    canais: multiplo("canais", CANAIS),
+    contas: registros.map((r) => ({
+      conta_id: r.conta_id as string,
+      nome: nomePorConta.get(r.conta_id) ?? "—",
+      concluido_em: (r.concluido_em ?? null) as string | null,
+      passo_atual: Number(r.passo_atual ?? 1),
+      nome_informado: (r.respostas?.nome ?? null) as string | null,
+      area: labelDe(AREAS, r.respostas?.area_atuacao),
+      nicho: (r.respostas?.nicho ?? null) as string | null,
+      origem: labelDe(ORIGEM, r.respostas?.origem),
+      situacao: labelDe(SITUACAO, r.respostas?.situacao),
+      tamanho: labelDe(TAMANHOS, r.respostas?.tamanho_escritorio),
+      trafego: labelDe(TRAFEGO, r.respostas?.trafego_pago),
+      referencias: Array.isArray(r.respostas?.referencias) ? r.respostas.referencias.length : 0,
+    })),
+  };
+}
+
+function labelDe(opcoes: { valor: string; label: string }[], valor: unknown) {
+  if (typeof valor !== "string" || !valor) return null;
+  return opcoes.find((o) => o.valor === valor)?.label ?? valor;
 }
 
 export const getAdminDashboard = createServerFn({ method: "GET" })

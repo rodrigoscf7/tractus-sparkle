@@ -81,7 +81,7 @@ export async function setStatus(
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 // Trocar de modelo não exige deploy: basta ajustar o secret OPENROUTER_MODEL.
-const MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "anthropic/claude-sonnet-5";
+export const MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "anthropic/claude-sonnet-5";
 
 export type CustoContexto = {
   contaId?: string | null;
@@ -263,6 +263,68 @@ export async function getHistoricoDecisoes(perfilId: string, limit = 20) {
     .order("criado_em", { ascending: false })
     .limit(limit);
   return data ?? [];
+}
+
+/**
+ * Bloco de regras duras do perfil, para entrar como INSTRUÇÃO no system prompt.
+ *
+ * As diretrizes já viajam como JSON nos prompts, mas ali são só dados — o
+ * modelo não sabe que a lista proibida é inegociável. Este bloco transforma o
+ * que veio do onboarding (perguntas 8 e 9) em ordem explícita.
+ *
+ * As regras de publicidade da advocacia só entram quando o perfil tem área de
+ * atuação definida, isto é, quando veio do onboarding. Perfis antigos seguem
+ * sem essa camada.
+ */
+export function formatRestricoes(diretrizes: unknown): string {
+  const d = (diretrizes ?? {}) as Record<string, unknown>;
+  const lista = (chave: string) => {
+    const valor = d[chave];
+    if (Array.isArray(valor)) return valor.map((v) => String(v).trim()).filter(Boolean);
+    if (typeof valor === "string" && valor.trim()) return [valor.trim()];
+    return [];
+  };
+
+  const restricoes = lista("restricoes");
+  const bordoes = lista("bordoes");
+  const estiloNome = typeof d["estilo_nome"] === "string" ? d["estilo_nome"] : null;
+  const estiloComoSoa = typeof d["estilo_como_soa"] === "string" ? d["estilo_como_soa"] : null;
+  const estiloExemplo = typeof d["estilo_exemplo"] === "string" ? d["estilo_exemplo"] : null;
+  const area = typeof d["area_atuacao"] === "string" ? d["area_atuacao"] : null;
+
+  const partes: string[] = [];
+
+  if (restricoes.length) {
+    partes.push(
+      `NUNCA use, mencione ou se aproxime disto (definido pelo próprio perfil):\n` +
+        restricoes.map((r) => `- ${r}`).join("\n"),
+    );
+  }
+
+  if (bordoes.length) {
+    partes.push(
+      `Bordões do perfil. Use no fechamento quando couber naturalmente, sem forçar:\n` +
+        bordoes.map((b) => `- "${b}"`).join("\n"),
+    );
+  }
+
+  if (estiloNome) {
+    const detalhe = [estiloComoSoa, estiloExemplo ? `Exemplo: "${estiloExemplo}"` : null]
+      .filter(Boolean)
+      .join(" ");
+    partes.push(`Estilo de abertura do perfil: ${estiloNome}. ${detalhe}`.trim());
+  }
+
+  if (area) {
+    partes.push(
+      "PUBLICIDADE NA ADVOCACIA: não prometa nem insinue resultado, não mercantilize o " +
+        "serviço (preço, promoção, consulta grátis) e não faça captação direta de clientela. " +
+        "Gancho, retenção e opinião defensável são permitidos e desejáveis — o que é vedado é " +
+        "prometer resultado e mercantilizar, não ser interessante.",
+    );
+  }
+
+  return partes.length ? partes.join("\n\n") : "(sem restrições específicas)";
 }
 
 export function formatHistorico(rows: any[]): string {

@@ -129,6 +129,7 @@ function AdminPage() {
           <TabsTrigger value="planos">Planos</TabsTrigger>
           <TabsTrigger value="custos">Custos</TabsTrigger>
           <TabsTrigger value="kiwify">Cobrança</TabsTrigger>
+          <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
         </TabsList>
 
         {/* ---------------- FINANCEIRO ---------------- */}
@@ -519,8 +520,172 @@ function AdminPage() {
             </div>
           </Card>
         </TabsContent>
+
+        {/* ---------------- ONBOARDING ---------------- */}
+        <TabsContent value="onboarding" className="space-y-4 mt-5">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Kpi
+              label="Onboardings iniciados"
+              valor={String(data?.onboarding?.iniciados ?? 0)}
+              detalhe={`${data?.onboarding?.concluidos ?? 0} concluídos`}
+            />
+            <Kpi
+              label="Conclusão do wizard"
+              valor={`${data?.onboarding?.conversao_pct ?? 0}%`}
+              alerta={(data?.onboarding?.conversao_pct ?? 100) < 70}
+            />
+            <Kpi
+              label="Em aberto"
+              valor={String(
+                (data?.onboarding?.iniciados ?? 0) - (data?.onboarding?.concluidos ?? 0),
+              )}
+            />
+          </div>
+
+          <Card className="p-5">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+              Onde as pessoas param
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Contas que abriram o wizard e não terminaram, pelo passo em que estavam.
+            </p>
+            <div className="mt-4 space-y-2">
+              {(data?.onboarding?.abandono_por_passo ?? []).map((p) => (
+                <div key={p.passo} className="num text-sm flex justify-between gap-3">
+                  <span>Passo {p.passo}</span>
+                  <span className={p.quantidade > 0 ? "" : "text-muted-foreground"}>
+                    {p.quantidade}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Distribuicao
+              titulo="Como conheceram a prevIA"
+              itens={data?.onboarding?.origem ?? []}
+              total={data?.onboarding?.concluidos ?? 0}
+            />
+            <Distribuicao
+              titulo="Área de atuação"
+              itens={data?.onboarding?.area ?? []}
+              total={data?.onboarding?.concluidos ?? 0}
+            />
+            <Distribuicao
+              titulo="Situação declarada"
+              itens={data?.onboarding?.situacao ?? []}
+              total={data?.onboarding?.concluidos ?? 0}
+            />
+            <Distribuicao
+              titulo="Tamanho do escritório"
+              itens={data?.onboarding?.tamanho ?? []}
+              total={data?.onboarding?.concluidos ?? 0}
+            />
+            <Distribuicao
+              titulo="Tráfego pago"
+              itens={data?.onboarding?.trafego ?? []}
+              total={data?.onboarding?.concluidos ?? 0}
+            />
+            <Distribuicao
+              titulo="Onde já publicam"
+              itens={data?.onboarding?.canais ?? []}
+              total={data?.onboarding?.concluidos ?? 0}
+            />
+          </div>
+
+          <Card className="p-5">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+              Respostas por conta
+            </div>
+            <div className="mt-4 space-y-2">
+              {(data?.onboarding?.contas ?? []).map((c) => (
+                <div
+                  key={c.conta_id}
+                  className="rounded-md border border-border p-3 flex flex-wrap items-center gap-x-4 gap-y-1"
+                >
+                  <span className="font-display font-semibold">
+                    {c.nome_informado ?? c.nome}
+                  </span>
+                  {c.concluido_em ? (
+                    <Badge variant="outline" className="num text-xs">
+                      {new Date(c.concluido_em).toLocaleDateString("pt-BR")}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs">
+                      parou no passo {c.passo_atual}
+                    </Badge>
+                  )}
+                  <span className="text-sm text-muted-foreground">
+                    {[
+                      c.area,
+                      c.nicho,
+                      c.origem && `via ${c.origem}`,
+                      c.tamanho,
+                      c.trafego && `tráfego: ${c.trafego}`,
+                      `${c.referencias} referência(s)`,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                  {c.situacao && (
+                    <span className="text-sm text-muted-foreground basis-full">
+                      “{c.situacao}”
+                    </span>
+                  )}
+                </div>
+              ))}
+              {(data?.onboarding?.contas?.length ?? 0) === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma conta passou pelo onboarding ainda.
+                </p>
+              )}
+            </div>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function Distribuicao({
+  titulo,
+  itens,
+  total,
+}: {
+  titulo: string;
+  itens: { label: string; quantidade: number }[];
+  total: number;
+}) {
+  const maior = itens[0]?.quantidade ?? 0;
+  return (
+    <Card className="p-5">
+      <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+        {titulo}
+      </div>
+      <div className="mt-4 space-y-3">
+        {itens.map((item) => (
+          <div key={item.label}>
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-sm">{item.label}</span>
+              <span className="num text-sm text-muted-foreground">
+                {item.quantidade}
+                {total > 0 && ` · ${Math.round((item.quantidade / total) * 100)}%`}
+              </span>
+            </div>
+            <div className="mt-1.5 h-1.5 w-full rounded-md bg-secondary overflow-hidden">
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${maior > 0 ? (item.quantidade / maior) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        ))}
+        {itens.length === 0 && (
+          <p className="text-sm text-muted-foreground">Sem respostas ainda.</p>
+        )}
+      </div>
+    </Card>
   );
 }
 
