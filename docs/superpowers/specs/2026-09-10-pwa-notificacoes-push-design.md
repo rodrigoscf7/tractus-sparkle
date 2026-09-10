@@ -82,7 +82,7 @@ Ao conceder permissão, o app inscreve via `registration.pushManager.subscribe({
 ## 4. Motor de disparo
 
 **Produtores do evento** (upsert na fila), ambos via trigger de banco — não dependem do código do agente ter sucesso, só do estado final na tabela:
-- `AFTER INSERT ON conteudos_curados WHEN NEW.aprovacao_humana IS NULL` (mesma coluna que já gate-ia `trigger_ideador`) → upsert `(perfil_id, 'curadoria_pronta')`.
+- `AFTER INSERT ON conteudos_curados WHEN NEW.aprovacao_humana = 'pendente'` (o valor padrão da coluna, mesma que já gate-ia `trigger_ideador`) → resolve `perfil_id` via `perfis_referencia.perfil_id_relacionado` (não existe FK direto de `conteudos_curados` para `perfis`) e faz upsert `(perfil_id, 'curadoria_pronta')`. Se `perfil_referencia_id` for nulo ou não resolver um perfil, não gera evento — mesma tolerância que `gerarPautaFocada` já tem no `ideador-agent`.
 - `AFTER UPDATE ON pautas_geradas WHEN NEW.status = 'aguardando_aprovacao' AND OLD.status IS DISTINCT FROM NEW.status` → upsert `(perfil_id, 'pautas_prontas')`.
 
 **Varredura**: novo cron a cada 2 minutos chamando `public.despachar_notificacoes_pendentes()` (`SECURITY DEFINER`, no padrão dos demais). A função seleciona lotes abertos onde `now() - ultimo_evento_em > interval '10 minutes'` e o horário atual (em América/São Paulo) está fora de 22h–7h; marca `enviado_em = now()` e dispara `net.http_post` para a nova edge function `push-agent`, usando `agent_internal_headers()`.
