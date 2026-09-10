@@ -25,6 +25,7 @@ import {
   salvarPrecoCusto,
   reprocessarEventoKiwify,
 } from "@/lib/billing.functions";
+import { enviarNotificacaoTeste } from "@/lib/notificacoes.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -83,6 +84,7 @@ function AdminPage() {
   const gravarPlano = useServerFn(salvarPlano);
   const gravarPreco = useServerFn(salvarPrecoCusto);
   const reprocessar = useServerFn(reprocessarEventoKiwify);
+  const testarPush = useServerFn(enviarNotificacaoTeste);
 
   const { data, refetch, isLoading } = useQuery({
     queryKey: ["admin-dashboard"],
@@ -541,6 +543,28 @@ function AdminPage() {
               )}
             />
           </div>
+
+          <Card className="p-5">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+              Notificações push
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Cria um lote de teste na fila e chama o push-agent na hora, sem esperar o cron —
+              use para confirmar que as chaves VAPID estão configuradas.
+            </p>
+            <Button
+              size="sm"
+              className="mt-3"
+              onClick={() =>
+                rodar(
+                  () => testarPush(),
+                  "Notificação de teste enviada (confira as inscrições ativas do seu usuário).",
+                )
+              }
+            >
+              Enviar notificação de teste
+            </Button>
+          </Card>
 
           <Card className="p-5">
             <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">

@@ -24,6 +24,7 @@ const AGENTES = [
   "revisor-agent",
   "carrossel-agent",
   "dna-agent",
+  "push-agent",
 ] as const;
 
 export type Agente = (typeof AGENTES)[number];
