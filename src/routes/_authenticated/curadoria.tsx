@@ -112,8 +112,8 @@ function CuradoriaPage() {
     onSuccess: (decisao) => {
       toast.success(
         decisao === "aprovado"
-          ? "Referência aprovada — o ideador vai gerar a pauta."
-          : "Referência descartada.",
+          ? "Aprovado — a prevIA já está escrevendo o roteiro."
+          : "Descartado. A prevIA anotou que esse assunto não é a sua cara.",
       );
       queryClient.invalidateQueries({ queryKey: ["curadoria"] });
     },
@@ -123,10 +123,10 @@ function CuradoriaPage() {
   return (
     <div className="p-4 sm:p-8 max-w-[1100px]">
       <header className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-display font-bold">Curadoria</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold">Escolher assuntos</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Nada avança sem você. O curador captura e pontua as referências; o ideador só gera pauta
-          das que você aprovar aqui. Ordenado por alcance (views) — os de maior tração primeiro.
+          Nada vira post sem você. Estes são os assuntos que mais renderam nos perfis que você
+          acompanha, dos de maior alcance para os menores. O que você aprovar vira roteiro seu.
         </p>
       </header>
 

@@ -70,9 +70,10 @@ function AgentesPage() {
   return (
     <div className="p-4 sm:p-8 max-w-[1200px]">
       <header className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-display font-bold">Agentes</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold">Bastidores</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Status em tempo real dos 5 agentes do pipeline.
+          O que a prevIA está fazendo agora. Você não precisa acompanhar isto — está aqui para
+          quando der vontade de ver a máquina rodando.
         </p>
       </header>
 

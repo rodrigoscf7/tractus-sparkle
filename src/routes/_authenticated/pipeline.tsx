@@ -91,9 +91,9 @@ function PipelinePage() {
     <div className="p-4 sm:p-8 max-w-[1600px]">
       <header className="mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold">Pipeline</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold">Acompanhar</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Fluxo completo de produção. Único passo manual: aprovar ou rejeitar.
+            Onde está cada assunto, do primeiro rascunho ao post no ar.
           </p>
         </div>
         <div className="w-full sm:w-64">

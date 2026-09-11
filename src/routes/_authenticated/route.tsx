@@ -112,20 +112,22 @@ function AuthenticatedLayout() {
           Curadoria
         </NavLink>
         <NavLink to="/pipeline" icon={<LayoutGrid className="w-4 h-4" />}>
-          Pipeline
+          Acompanhar
         </NavLink>
 
-        <NavLink to="/agentes" icon={<Activity className="w-4 h-4" />}>
-          Agentes
-        </NavLink>
         <NavLink to="/perfis" icon={<Users className="w-4 h-4" />}>
-          Perfis
+          Minha marca
         </NavLink>
         <NavLink to="/dna" icon={<BookOpen className="w-4 h-4" />}>
           Manual de marca
         </NavLink>
         <NavLink to="/assinatura" icon={<CreditCard className="w-4 h-4" />}>
           Assinatura
+        </NavLink>
+        {/* Bastidores da operação: útil como prova de que a esteira roda, não é
+            tarefa do usuário. Fica depois do que ele realmente usa. */}
+        <NavLink to="/agentes" icon={<Activity className="w-4 h-4" />}>
+          Bastidores
         </NavLink>
         {isAdmin && (
           <NavLink to="/admin" icon={<Shield className="w-4 h-4" />}>
