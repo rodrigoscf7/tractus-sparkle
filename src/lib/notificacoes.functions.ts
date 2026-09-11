@@ -22,8 +22,15 @@ export const enviarNotificacaoTeste = createServerFn({ method: "POST" })
     const { invocarAgente } = await import("@/lib/agentes.server");
     const admin = supabaseAdmin as any;
 
-    const { data: contaId, error: erroConta } = await context.supabase.rpc("minha_conta");
-    if (erroConta) throw new Error(erroConta.message);
+    const { data: membro, error: erroMembro } = await context.supabase
+      .from("conta_membros")
+      .select("conta_id")
+      .eq("user_id", context.userId)
+      .order("criado_em")
+      .limit(1)
+      .maybeSingle();
+    if (erroMembro) throw new Error(erroMembro.message);
+    const contaId = membro?.conta_id;
     if (!contaId) throw new Error("Seu usuário não está vinculado a nenhuma conta.");
 
     const { data: perfil } = await admin
