@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutGrid,
   Activity,
+  CalendarDays,
   Users,
   LogOut,
   Menu,
@@ -104,11 +105,14 @@ function AuthenticatedLayout() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        <NavLink to="/pipeline" icon={<LayoutGrid className="w-4 h-4" />}>
-          Pipeline
+        <NavLink to="/hoje" icon={<CalendarDays className="w-4 h-4" />}>
+          Hoje
         </NavLink>
         <NavLink to="/curadoria" icon={<CheckCheck className="w-4 h-4" />}>
           Curadoria
+        </NavLink>
+        <NavLink to="/pipeline" icon={<LayoutGrid className="w-4 h-4" />}>
+          Pipeline
         </NavLink>
 
         <NavLink to="/agentes" icon={<Activity className="w-4 h-4" />}>

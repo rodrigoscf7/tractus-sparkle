@@ -19,6 +19,7 @@ import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
 import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
 import { Route as AuthenticatedDnaRouteImport } from './routes/_authenticated/dna'
+import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
 import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
@@ -77,6 +78,11 @@ const AuthenticatedDnaRoute = AuthenticatedDnaRouteImport.update({
   path: '/dna',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHojeRoute = AuthenticatedHojeRouteImport.update({
+  id: '/hoje',
+  path: '/hoje',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPerfisRoute = AuthenticatedPerfisRouteImport.update({
   id: '/perfis',
   path: '/perfis',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/dna': typeof AuthenticatedDnaRoute
+  '/hoje': typeof AuthenticatedHojeRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/dna': typeof AuthenticatedDnaRoute
+  '/hoje': typeof AuthenticatedHojeRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
   '/_authenticated/curadoria': typeof AuthenticatedCuradoriaRoute
   '/_authenticated/dna': typeof AuthenticatedDnaRoute
+  '/_authenticated/hoje': typeof AuthenticatedHojeRoute
   '/_authenticated/perfis': typeof AuthenticatedPerfisRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/assinatura'
     | '/curadoria'
     | '/dna'
+    | '/hoje'
     | '/perfis'
     | '/pipeline'
     | '/onboarding/processando'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/assinatura'
     | '/curadoria'
     | '/dna'
+    | '/hoje'
     | '/perfis'
     | '/pipeline'
     | '/onboarding/processando'
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/_authenticated/assinatura'
     | '/_authenticated/curadoria'
     | '/_authenticated/dna'
+    | '/_authenticated/hoje'
     | '/_authenticated/perfis'
     | '/_authenticated/pipeline'
     | '/onboarding/processando'
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDnaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/hoje': {
+      id: '/_authenticated/hoje'
+      path: '/hoje'
+      fullPath: '/hoje'
+      preLoaderRoute: typeof AuthenticatedHojeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/perfis': {
       id: '/_authenticated/perfis'
       path: '/perfis'
@@ -396,6 +415,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
   AuthenticatedCuradoriaRoute: typeof AuthenticatedCuradoriaRoute
   AuthenticatedDnaRoute: typeof AuthenticatedDnaRoute
+  AuthenticatedHojeRoute: typeof AuthenticatedHojeRoute
   AuthenticatedPerfisRoute: typeof AuthenticatedPerfisRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedAprovacaoPautaIdRoute: typeof AuthenticatedAprovacaoPautaIdRoute
@@ -407,6 +427,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssinaturaRoute: AuthenticatedAssinaturaRoute,
   AuthenticatedCuradoriaRoute: AuthenticatedCuradoriaRoute,
   AuthenticatedDnaRoute: AuthenticatedDnaRoute,
+  AuthenticatedHojeRoute: AuthenticatedHojeRoute,
   AuthenticatedPerfisRoute: AuthenticatedPerfisRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedAprovacaoPautaIdRoute: AuthenticatedAprovacaoPautaIdRoute,

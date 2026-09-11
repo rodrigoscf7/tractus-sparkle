@@ -447,7 +447,7 @@ function AprovacaoPage() {
       toast.success(
         decision === "aprovar" ? "Aprovado — já pode gravar." : "Recusado. A prevIA anotou o motivo.",
       );
-      navigate({ to: "/pipeline" });
+      navigate({ to: "/hoje" });
     } catch (err) {
       toast.error(mensagemErro(err, "Não consegui registrar sua decisão."));
     } finally {
@@ -486,7 +486,7 @@ function AprovacaoPage() {
           descricao="Ele pode ter sido removido, ou a conexão falhou no caminho."
           onTentarDeNovo={() => refetch()}
         />
-        <Button variant="outline" className="mt-4" onClick={() => navigate({ to: "/pipeline" })}>
+        <Button variant="outline" className="mt-4" onClick={() => navigate({ to: "/hoje" })}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
         </Button>
       </div>
@@ -500,7 +500,7 @@ function AprovacaoPage() {
   return (
     <div className="p-4 sm:p-8 max-w-[1400px]">
       <button
-        onClick={() => navigate({ to: "/pipeline" })}
+        onClick={() => navigate({ to: "/hoje" })}
         className="flex items-center gap-2 min-h-11 -ml-2 px-2 rounded-md text-sm text-muted-foreground hover:text-foreground mb-4 sm:mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <ArrowLeft className="w-4 h-4" /> Voltar

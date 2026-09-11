@@ -58,14 +58,14 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/pipeline` },
+          options: { emailRedirectTo: `${window.location.origin}/hoje` },
         });
         if (error) throw error;
         toast.success("Conta criada. Verifique seu e-mail se a confirmação estiver ativa.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/pipeline" });
+        navigate({ to: "/hoje" });
       }
     } catch (err) {
       toast.error(mensagemErro(err, "Não consegui completar o acesso. Tente de novo."));
