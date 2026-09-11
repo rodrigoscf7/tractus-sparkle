@@ -18,6 +18,7 @@ export const Route = createFileRoute("/onboarding")({
     const { data: membro } = await supabase
       .from("conta_membros")
       .select("conta_id")
+      .eq("user_id", data.user.id)
       .order("criado_em")
       .limit(1)
       .maybeSingle();

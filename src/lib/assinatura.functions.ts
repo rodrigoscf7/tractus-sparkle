@@ -40,6 +40,7 @@ export const getMinhaAssinatura = createServerFn({ method: "GET" })
     const { data: membro } = await context.supabase
       .from("conta_membros")
       .select("conta_id, papel")
+      .eq("user_id", context.userId)
       .order("criado_em")
       .limit(1)
       .maybeSingle();

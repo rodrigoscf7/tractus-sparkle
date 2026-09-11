@@ -14,9 +14,13 @@ export function useConta() {
   return useQuery({
     queryKey: ["minha-conta"],
     queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return null;
+
       const { data: membro, error: e1 } = await supabase
         .from("conta_membros")
         .select("papel, conta_id, contas:contas(*, planos:planos(*))")
+        .eq("user_id", userData.user.id)
         .order("criado_em")
         .limit(1)
         .maybeSingle();

@@ -19,12 +19,14 @@ import {
  */
 const REFERENCIAS_PRIMEIRA_COLETA = 3;
 
-async function contaDoUsuario(supabase: {
-  from: (t: string) => any;
-}): Promise<string> {
+async function contaDoUsuario(
+  supabase: { from: (t: string) => any },
+  userId: string,
+): Promise<string> {
   const { data: membro } = await supabase
     .from("conta_membros")
     .select("conta_id")
+    .eq("user_id", userId)
     .order("criado_em")
     .limit(1)
     .maybeSingle();
@@ -41,6 +43,7 @@ export const getOnboarding = createServerFn({ method: "GET" })
     const { data: membro } = await context.supabase
       .from("conta_membros")
       .select("conta_id")
+      .eq("user_id", context.userId)
       .order("criado_em")
       .limit(1)
       .maybeSingle();
@@ -69,7 +72,7 @@ export const salvarPasso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { passo: number; respostas: Respostas }) => data)
   .handler(async ({ data, context }) => {
-    const contaId = await contaDoUsuario(context.supabase as any);
+    const contaId = await contaDoUsuario(context.supabase as any, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
 
@@ -119,7 +122,7 @@ export const concluirOnboarding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { respostas: Respostas }) => data)
   .handler(async ({ data, context }) => {
-    const contaId = await contaDoUsuario(context.supabase as any);
+    const contaId = await contaDoUsuario(context.supabase as any, context.userId);
     const respostas = data.respostas;
 
     for (let passo = 1; passo <= TOTAL_PASSOS; passo++) {
@@ -274,7 +277,7 @@ export const concluirOnboarding = createServerFn({ method: "POST" })
 export const regerarDna = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const contaId = await contaDoUsuario(context.supabase as any);
+    const contaId = await contaDoUsuario(context.supabase as any, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { invocarAgente } = await import("@/lib/agentes.server");
     const admin = supabaseAdmin as any;
@@ -301,6 +304,7 @@ export const getDna = createServerFn({ method: "GET" })
     const { data: membro } = await context.supabase
       .from("conta_membros")
       .select("conta_id")
+      .eq("user_id", context.userId)
       .order("criado_em")
       .limit(1)
       .maybeSingle();
