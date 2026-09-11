@@ -6,6 +6,7 @@ import { ArrowRight, Download, Loader2, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { getDna, regerarDna } from "@/lib/onboarding.functions";
 import { ConvitePush } from "@/components/notificacoes/ConvitePush";
+import { mensagemErro } from "@/lib/mensagem-erro";
 
 export const Route = createFileRoute("/_authenticated/dna")({
   head: () => ({
@@ -52,7 +53,7 @@ function DnaPage() {
       await queryClient.invalidateQueries({ queryKey: ["dna"] });
       toast.success("Manual atualizado.");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível gerar o manual.");
+      toast.error(mensagemErro(e, "Não consegui gerar o manual. Tente de novo em instantes."));
     } finally {
       setRegerando(false);
     }
@@ -120,16 +121,20 @@ function DnaPage() {
           </div>
           <p className="mt-3 text-base leading-relaxed">
             Baixe e guarde este documento. Enquanto você lê, a prevIA está lendo os perfis que
-            você indicou — a primeira curadoria aparece em alguns minutos.
+            você indicou — os primeiros assuntos aparecem em alguns minutos.
           </p>
+          {/*
+           * Leva para `Hoje`, não para a curadoria: logo após o onboarding a
+           * curadoria costuma estar vazia, e `Hoje` sempre diz em que pé está.
+           */}
           <Link
-            to="/curadoria"
+            to="/hoje"
             className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-base
               font-medium text-primary-foreground transition hover:bg-primary/90
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
               focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            Ir para a curadoria <ArrowRight className="h-4 w-4" />
+            Ver o meu dia <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       )}

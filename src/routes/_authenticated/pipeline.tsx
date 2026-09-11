@@ -3,8 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EstadoCarregando, EstadoErro, EstadoVazio } from "@/components/estados";
 
 
 export const Route = createFileRoute("/_authenticated/pipeline")({
@@ -36,17 +38,18 @@ type Pauta = {
 };
 
 const COLUMNS: { id: string; label: string; tone: string }[] = [
-  { id: "gerada", label: "Geradas", tone: "bg-muted text-muted-foreground" },
-  { id: "em_producao", label: "Em produção", tone: "bg-warning/20 text-warning" },
-  { id: "aguardando_aprovacao", label: "Aguardando aprovação", tone: "bg-primary/20 text-primary" },
-  { id: "aprovada", label: "Aprovadas", tone: "bg-success/20 text-success" },
-  { id: "rejeitada", label: "Rejeitadas", tone: "bg-destructive/20 text-destructive" },
+  { id: "gerada", label: "Geradas", tone: "bg-muted text-foreground" },
+  { id: "em_producao", label: "Em produção", tone: "bg-warning/15 text-warning" },
+  // Grafite sobre o amarelo, não amarelo como texto — ver regra em styles.css:10.
+  { id: "aguardando_aprovacao", label: "Aguardando aprovação", tone: "bg-primary/25 text-foreground" },
+  { id: "aprovada", label: "Aprovadas", tone: "bg-success/15 text-success" },
+  { id: "rejeitada", label: "Rejeitadas", tone: "bg-destructive/15 text-destructive" },
 ];
 
 function PipelinePage() {
   const [perfilFiltro, setPerfilFiltro] = useState<string>("todos");
 
-  const { data: pautas, refetch } = useQuery({
+  const { data: pautas, refetch, isLoading, isError } = useQuery({
     queryKey: ["pautas-pipeline"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -88,17 +91,20 @@ function PipelinePage() {
     <div className="p-4 sm:p-8 max-w-[1600px]">
       <header className="mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold">Pipeline</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold">Acompanhar</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Fluxo completo de produção. Único passo manual: aprovar ou rejeitar.
+            Onde está cada assunto, do primeiro rascunho ao post no ar.
           </p>
         </div>
         <div className="w-full sm:w-64">
-          <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          <label
+            htmlFor="filtro-perfil"
+            className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground"
+          >
             Perfil
           </label>
           <Select value={perfilFiltro} onValueChange={setPerfilFiltro}>
-            <SelectTrigger className="mt-1">
+            <SelectTrigger id="filtro-perfil" aria-label="Filtrar por perfil" className="mt-1">
               <SelectValue placeholder="Todos os perfis" />
             </SelectTrigger>
             <SelectContent>
@@ -113,58 +119,100 @@ function PipelinePage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-        {COLUMNS.map((col) => {
-          const items = filtradas.filter((p) => p.status === col.id);
-          return (
+      {isLoading && <EstadoCarregando linhas={4} rotulo="Carregando as pautas" />}
 
-            <div key={col.id} className="flex flex-col min-w-0">
-              <div className="flex items-center justify-between mb-3 px-1">
-                <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                  {col.label}
-                </h2>
-                <Badge className={`${col.tone} border-0`}>{items.length}</Badge>
+      {isError && (
+        <EstadoErro
+          titulo="Não consegui carregar as pautas"
+          descricao="A conexão falhou no meio do caminho. Nenhuma pauta foi perdida."
+          onTentarDeNovo={() => refetch()}
+        />
+      )}
+
+      {/*
+       * Quadro inteiro vazio é conta nova: uma orientação só, com a ação que
+       * destrava o fluxo. Repetir "Nada aqui ainda." nas cinco colunas dizia ao
+       * usuário que o produto está quebrado.
+       */}
+      {!isLoading && !isError && filtradas.length === 0 && (
+        <EstadoVazio
+          titulo="Nenhuma pauta por aqui ainda"
+          descricao="As pautas aparecem assim que você escolher, na curadoria, quais assuntos valem virar post seu."
+          acao={
+            <Button asChild>
+              <Link to="/curadoria">Escolher assuntos</Link>
+            </Button>
+          }
+        />
+      )}
+
+      {!isLoading && !isError && filtradas.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+          {COLUMNS.map((col) => {
+            const items = filtradas.filter((p) => p.status === col.id);
+            return (
+              <div key={col.id} className="flex flex-col min-w-0">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                    {col.label}
+                  </h2>
+                  <Badge className={`${col.tone} border-0 num`}>{items.length}</Badge>
+                </div>
+                <div className="space-y-3 min-h-[200px]">
+                  {items.map((p) => (
+                    <PautaCard
+                      key={p.id}
+                      pauta={p}
+                      clickable={col.id === "aguardando_aprovacao" || col.id === "aprovada"}
+                    />
+                  ))}
+                  {items.length === 0 && (
+                    <div
+                      aria-hidden="true"
+                      className="rounded-lg border border-dashed border-border h-20"
+                    />
+                  )}
+                </div>
               </div>
-              <div className="space-y-3 min-h-[200px]">
-                {items.map((p) => (
-                  <PautaCard key={p.id} pauta={p} clickable={col.id === "aguardando_aprovacao" || col.id === "aprovada"} />
-                ))}
-                {items.length === 0 && (
-                  <div className="text-xs text-muted-foreground/60 italic px-1 py-4">
-                    Nada aqui ainda.
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 function PautaCard({ pauta, clickable }: { pauta: Pauta; clickable: boolean }) {
   const body = (
-    <Card className="p-4 bg-surface border-border hover:border-primary/40 transition cursor-pointer">
+    <Card
+      className={`p-4 bg-surface border-border h-full ${
+        clickable ? "transition hover:border-primary/40 motion-reduce:transition-none" : ""
+      }`}
+    >
       <div className="flex items-center gap-2 mb-2">
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
-        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+        <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
           {pauta.perfis?.nome ?? "—"}
         </span>
       </div>
       <h3 className="font-medium text-sm leading-snug mb-2">{pauta.tema ?? "(sem tema)"}</h3>
       <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{pauta.angulo}</p>
       {pauta.formato_sugerido && (
-        <Badge variant="outline" className="text-[10px] font-mono uppercase">
+        <Badge variant="outline" className="text-[11px] font-mono uppercase">
           {pauta.formato_sugerido}
         </Badge>
       )}
     </Card>
   );
 
+  // Cartão sem destino não finge ser clicável: sem cursor-pointer, sem hover.
   if (!clickable) return body;
   return (
-    <Link to="/aprovacao/$pautaId" params={{ pautaId: pauta.id }}>
+    <Link
+      to="/aprovacao/$pautaId"
+      params={{ pautaId: pauta.id }}
+      className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
       {body}
     </Link>
   );

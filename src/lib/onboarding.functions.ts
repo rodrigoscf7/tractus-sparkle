@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  RITMO_SUGERIDO,
   TOTAL_PASSOS,
   diretrizesDeRespostas,
   focoDeObjetivos,
@@ -157,11 +158,18 @@ export const concluirOnboarding = createServerFn({ method: "POST" })
     }
 
     // ---- Perfil ----
+    // O ritmo é o compromisso do passo 5. Dias fora de 0–6 ou lista vazia caem no
+    // padrão: a restrição do banco recusaria, e o wizard não pode travar por isso.
+    const diasEscolhidos = [...new Set(respostas.ritmo_dias ?? [])]
+      .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+      .sort((a, b) => a - b);
+
     const camposPerfil = {
       nome: respostas.nome!.trim(),
       tom_de_voz: tomDeVoz(respostas) || null,
       foco_curadoria: focoDeObjetivos(respostas.objetivos),
       diretrizes: diretrizesDeRespostas(respostas),
+      ritmo_dias: diasEscolhidos.length ? diasEscolhidos : RITMO_SUGERIDO,
       conta_id: contaId,
     };
 

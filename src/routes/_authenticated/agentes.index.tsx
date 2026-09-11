@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EstadoCarregando, EstadoErro } from "@/components/estados";
 
 export const Route = createFileRoute("/_authenticated/agentes/")({
   head: () => ({
@@ -24,9 +25,14 @@ export const Route = createFileRoute("/_authenticated/agentes/")({
 
 const AGENTES = ["curador", "ideador", "copy", "visual", "revisor"] as const;
 
+// O amarelo entra no ponto pulsante, nunca no texto do rótulo.
 const STATE_META: Record<string, { label: string; tone: string; dot: string }> = {
   idle: { label: "Parado", tone: "text-muted-foreground", dot: "bg-muted-foreground/40" },
-  working: { label: "Trabalhando", tone: "text-primary", dot: "bg-primary animate-pulse" },
+  working: {
+    label: "Trabalhando",
+    tone: "text-foreground",
+    dot: "bg-primary animate-pulse motion-reduce:animate-none",
+  },
   waiting: { label: "Aguardando", tone: "text-warning", dot: "bg-warning" },
   error: { label: "Erro", tone: "text-destructive", dot: "bg-destructive" },
 };
@@ -40,7 +46,7 @@ function formatLastAction(action?: string | null) {
 }
 
 function AgentesPage() {
-  const { data, refetch } = useQuery({
+  const { data, refetch, isLoading, isError } = useQuery({
     queryKey: ["agentes-status"],
     queryFn: async () => {
       const { data, error } = await supabase.from("agentes_status").select("*");
@@ -64,12 +70,24 @@ function AgentesPage() {
   return (
     <div className="p-4 sm:p-8 max-w-[1200px]">
       <header className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-display font-bold">Agentes</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold">Bastidores</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Status em tempo real dos 5 agentes do pipeline.
+          O que a prevIA está fazendo agora. Você não precisa acompanhar isto — está aqui para
+          quando der vontade de ver a máquina rodando.
         </p>
       </header>
 
+      {isLoading && <EstadoCarregando linhas={3} rotulo="Carregando o estado dos agentes" />}
+
+      {isError && (
+        <EstadoErro
+          titulo="Não consegui ler o estado dos agentes"
+          descricao="Isso não interrompe a produção — a esteira continua rodando no servidor."
+          onTentarDeNovo={() => refetch()}
+        />
+      )}
+
+      {!isLoading && !isError && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {AGENTES.map((nome) => {
           const a = byName.get(nome);
@@ -79,34 +97,31 @@ function AgentesPage() {
               key={nome}
               to="/agentes/$agente"
               params={{ agente: nome }}
-              className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+              className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              <Card className="p-5 sm:p-6 bg-surface border-border hover:border-primary/40 transition cursor-pointer h-full">
+              <Card className="p-5 sm:p-6 bg-surface border-border hover:border-primary/40 transition motion-reduce:transition-none h-full">
                 <div className="flex items-start justify-between gap-2 mb-4">
-                  <div className="min-w-0">
-                    <h3 className="font-display font-semibold capitalize text-lg truncate">{nome}</h3>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
-                      Agent
-                    </p>
-                  </div>
+                  <h3 className="font-display font-semibold capitalize text-lg truncate min-w-0">
+                    {nome}
+                  </h3>
                   <Badge className={`${meta.tone} bg-transparent border-current shrink-0 whitespace-nowrap`}>
                     <span className={`inline-block w-2 h-2 rounded-full mr-2 ${meta.dot}`} />
                     {meta.label}
                   </Badge>
                 </div>
                 <div className="text-xs text-muted-foreground border-t border-border pt-3">
-                  <div className="font-mono uppercase tracking-wider text-[10px] mb-1">
+                  <div className="font-mono uppercase tracking-wider text-[11px] mb-1">
                     Última ação
                   </div>
-                  <div className="text-foreground/80 text-xs leading-relaxed break-words">
+                  <div className="text-foreground text-xs leading-relaxed break-words">
                     {formatLastAction(a?.ultima_acao)}
                   </div>
                   {a?.atualizado_em && (
-                    <div className="mt-2 text-[10px] font-mono text-muted-foreground/60">
+                    <div className="mt-2 text-[11px] font-mono text-muted-foreground num">
                       {new Date(a.atualizado_em).toLocaleString("pt-BR")}
                     </div>
                   )}
-                  <div className="mt-3 text-[10px] font-mono uppercase tracking-wider text-primary/80">
+                  <div className="mt-3 text-[11px] font-mono uppercase tracking-wider text-foreground">
                     Ver produção →
                   </div>
                 </div>
@@ -115,6 +130,7 @@ function AgentesPage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

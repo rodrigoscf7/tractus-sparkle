@@ -743,6 +743,9 @@ export type Database = {
           id: string
           identidade_visual: Json | null
           nome: string
+          ritmo_dias: number[]
+          ritmo_fuso: string
+          ritmo_hora: string
           template_carrossel: Json
           tipo: string
           tom_de_voz: string | null
@@ -757,6 +760,9 @@ export type Database = {
           id?: string
           identidade_visual?: Json | null
           nome: string
+          ritmo_dias?: number[]
+          ritmo_fuso?: string
+          ritmo_hora?: string
           template_carrossel?: Json
           tipo: string
           tom_de_voz?: string | null
@@ -771,6 +777,9 @@ export type Database = {
           id?: string
           identidade_visual?: Json | null
           nome?: string
+          ritmo_dias?: number[]
+          ritmo_fuso?: string
+          ritmo_hora?: string
           template_carrossel?: Json
           tipo?: string
           tom_de_voz?: string | null

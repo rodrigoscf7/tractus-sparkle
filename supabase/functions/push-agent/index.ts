@@ -13,23 +13,34 @@ function montarMensagem(tipo: string, nome: string, contagem: number) {
   if (tipo === "curadoria_pronta") {
     return {
       titulo: "prevIA",
-      corpo: `Bom dia, ${nome}! A curadoria de hoje já está pronta pra você aprovar.`,
+      corpo: `Bom dia, ${nome}! Os assuntos de hoje já estão prontos pra você escolher.`,
+    };
+  }
+  // Cobrança do ritmo: só chega quando já existe conteúdo esperando — ver
+  // enfileirar_cobranca_ritmo. Por isso pode prometer que tem o que gravar.
+  if (tipo === "ritmo_hoje") {
+    return {
+      titulo: "prevIA",
+      corpo: `${nome}, hoje é dia de postar — e já tem conteúdo pronto esperando você.`,
     };
   }
   if (contagem <= 1) {
     return {
       titulo: "prevIA",
-      corpo: `${nome}, 1 pauta nova está esperando sua aprovação na prevIA.`,
+      corpo: `${nome}, 1 roteiro novo está esperando sua aprovação.`,
     };
   }
   return {
     titulo: "prevIA",
-    corpo: `${nome}, ${contagem} pautas novas estão esperando sua aprovação na prevIA.`,
+    corpo: `${nome}, ${contagem} roteiros novos estão esperando sua aprovação.`,
   };
 }
 
 function destino(tipo: string): string {
-  return tipo === "curadoria_pronta" ? "/curadoria" : "/pipeline";
+  if (tipo === "curadoria_pronta") return "/curadoria";
+  // A cobrança leva para a tela que diz o que fazer agora, não para o quadro.
+  if (tipo === "ritmo_hoje") return "/hoje";
+  return "/pipeline";
 }
 
 Deno.serve(async (req) => {

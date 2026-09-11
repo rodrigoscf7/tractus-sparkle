@@ -32,7 +32,7 @@ export const Route = createFileRoute("/onboarding")({
       .eq("conta_id", membro.conta_id)
       .maybeSingle();
 
-    if (onboarding?.concluido_em) throw redirect({ to: "/pipeline" });
+    if (onboarding?.concluido_em) throw redirect({ to: "/hoje" });
 
     return { user: data.user };
   },

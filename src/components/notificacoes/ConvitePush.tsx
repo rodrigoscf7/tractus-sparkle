@@ -81,7 +81,7 @@ export function ConvitePush() {
   return (
     <div data-print-hide className="mb-10 rounded-lg border border-border bg-surface p-5 sm:p-6">
       <div className="flex items-center gap-3">
-        <Bell className="h-4 w-4 text-primary" />
+        <Bell className="h-4 w-4 text-foreground" />
         <span className="text-sm text-muted-foreground">Quer ser avisado quando algo estiver pronto?</span>
       </div>
 

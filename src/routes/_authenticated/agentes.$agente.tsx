@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_authenticated/agentes/$agente")({
 
 const STATE_META: Record<string, { label: string; tone: string; dot: string }> = {
   idle: { label: "Parado", tone: "text-muted-foreground", dot: "bg-muted-foreground/40" },
-  working: { label: "Trabalhando", tone: "text-primary", dot: "bg-primary animate-pulse" },
+  working: { label: "Trabalhando", tone: "text-foreground", dot: "bg-primary animate-pulse" },
   waiting: { label: "Aguardando", tone: "text-warning", dot: "bg-warning" },
   error: { label: "Erro", tone: "text-destructive", dot: "bg-destructive" },
 };
@@ -157,7 +157,7 @@ function ExecucaoCard({ agente, item }: { agente: AgenteNome; item: any }) {
   return (
     <Card className="bg-surface border-border overflow-hidden">
       <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger className="w-full text-left p-4 hover:bg-surface-hover transition flex items-start justify-between gap-3 cursor-pointer">
+        <CollapsibleTrigger className="w-full text-left p-4 rounded-lg hover:bg-surface-elevated transition motion-reduce:transition-none flex items-start justify-between gap-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
           <div className="min-w-0 flex-1">{header}</div>
           <ChevronDown
             className={`w-4 h-4 text-muted-foreground shrink-0 mt-1 transition-transform ${open ? "rotate-180" : ""}`}
@@ -197,29 +197,29 @@ function renderHeader(agente: AgenteNome, item: any) {
       <div>
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           {perfilDestino && (
-            <Badge className="text-[10px] font-mono border-transparent bg-primary/15 text-primary">
+            <Badge className="text-[11px] font-mono border-transparent bg-primary/25 text-foreground">
               {perfilDestino}
             </Badge>
           )}
           {ref?.handle && (
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
               @{ref.handle}
             </span>
           )}
           {item.score_curadoria != null && (
-            <Badge variant="outline" className="text-[10px] font-mono">
+            <Badge variant="outline" className="text-[11px] font-mono">
               score {item.score_curadoria}
             </Badge>
           )}
           {item.pauta_vinculada && (
-            <Badge className="text-[10px] font-mono bg-primary/15 text-primary border-transparent">
+            <Badge className="text-[11px] font-mono bg-primary/25 text-foreground border-transparent">
               virou pauta
             </Badge>
           )}
         </div>
         <h3 className="font-medium text-sm leading-snug">{item.tema ?? "(sem tema)"}</h3>
         {item.gancho && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{item.gancho}</p>}
-        <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground/80">
+        <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
           {item.likes != null && (
             <span className="flex items-center gap-1">
               <Heart className="w-3 h-3" /> {fmtNum(item.likes)}
@@ -235,7 +235,7 @@ function renderHeader(agente: AgenteNome, item: any) {
               <Play className="w-3 h-3" /> {fmtNum(item.views)}
             </span>
           )}
-          <span className="ml-auto font-mono text-[10px]">{fmtDate(item.capturado_em)}</span>
+          <span className="ml-auto font-mono text-[11px]">{fmtDate(item.capturado_em)}</span>
         </div>
       </div>
     );
@@ -246,27 +246,27 @@ function renderHeader(agente: AgenteNome, item: any) {
       <div>
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           {item.perfis?.nome && (
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
               {item.perfis.nome}
             </span>
           )}
           {item.formato_sugerido && (
-            <Badge variant="outline" className="text-[10px] font-mono">
+            <Badge variant="outline" className="text-[11px] font-mono">
               {item.formato_sugerido}
             </Badge>
           )}
           {!item.origem_curadoria_id && (
-            <Badge className="text-[10px] font-mono bg-warning/15 text-warning border-transparent">
+            <Badge className="text-[11px] font-mono bg-warning/15 text-warning border-transparent">
               evergreen
             </Badge>
           )}
-          <Badge variant="outline" className="text-[10px] font-mono">
+          <Badge variant="outline" className="text-[11px] font-mono">
             {item.status}
           </Badge>
         </div>
         <h3 className="font-medium text-sm leading-snug">{item.tema ?? "(sem tema)"}</h3>
         {item.angulo && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{item.angulo}</p>}
-        <div className="text-[10px] font-mono text-muted-foreground/60 mt-2">{fmtDate(item.criado_em)}</div>
+        <div className="text-[11px] font-mono text-muted-foreground mt-2">{fmtDate(item.criado_em)}</div>
       </div>
     );
   }
@@ -277,11 +277,11 @@ function renderHeader(agente: AgenteNome, item: any) {
       <div>
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           {item.pautas_geradas?.perfis?.nome && (
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
               {item.pautas_geradas.perfis.nome}
             </span>
           )}
-          <Badge variant="outline" className="text-[10px] font-mono">
+          <Badge variant="outline" className="text-[11px] font-mono">
             {item.status}
           </Badge>
         </div>
@@ -289,7 +289,7 @@ function renderHeader(agente: AgenteNome, item: any) {
         {c?.gancho_falado && (
           <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5 italic">"{c.gancho_falado}"</p>
         )}
-        <div className="text-[10px] font-mono text-muted-foreground/60 mt-2">{fmtDate(item.criado_em)}</div>
+        <div className="text-[11px] font-mono text-muted-foreground mt-2">{fmtDate(item.criado_em)}</div>
       </div>
     );
   }
@@ -300,11 +300,11 @@ function renderHeader(agente: AgenteNome, item: any) {
       <div>
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           {item.pautas_geradas?.perfis?.nome && (
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
               {item.pautas_geradas.perfis.nome}
             </span>
           )}
-          <Badge variant="outline" className="text-[10px] font-mono">
+          <Badge variant="outline" className="text-[11px] font-mono">
             {item.status}
           </Badge>
         </div>
@@ -312,7 +312,7 @@ function renderHeader(agente: AgenteNome, item: any) {
         {b?.estilo_geral && (
           <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{b.estilo_geral}</p>
         )}
-        <div className="text-[10px] font-mono text-muted-foreground/60 mt-2">{fmtDate(item.criado_em)}</div>
+        <div className="text-[11px] font-mono text-muted-foreground mt-2">{fmtDate(item.criado_em)}</div>
       </div>
     );
   }
@@ -323,12 +323,12 @@ function renderHeader(agente: AgenteNome, item: any) {
     <div>
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         {item.perfis?.nome && (
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
             {item.perfis.nome}
           </span>
         )}
         <Badge
-          className={`text-[10px] font-mono border-transparent ${
+          className={`text-[11px] font-mono border-transparent ${
             item.status === "aprovada"
               ? "bg-success/15 text-success"
               : item.status === "rejeitada"
@@ -343,7 +343,7 @@ function renderHeader(agente: AgenteNome, item: any) {
       {dec?.comentario_livre && (
         <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">"{dec.comentario_livre}"</p>
       )}
-      <div className="text-[10px] font-mono text-muted-foreground/60 mt-2">{fmtDate(item.criado_em)}</div>
+      <div className="text-[11px] font-mono text-muted-foreground mt-2">{fmtDate(item.criado_em)}</div>
     </div>
   );
 }
@@ -369,7 +369,7 @@ function renderDetalhe(agente: AgenteNome, item: any) {
               href={item.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+              className="inline-flex items-center gap-1 text-xs text-foreground underline underline-offset-2 decoration-border hover:decoration-foreground mt-2"
             >
               Abrir no Instagram <ExternalLink className="w-3 h-3" />
             </a>
@@ -411,7 +411,7 @@ function renderDetalhe(agente: AgenteNome, item: any) {
                   href={orig.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                  className="inline-flex items-center gap-1 text-xs text-foreground underline underline-offset-2 decoration-border hover:decoration-foreground mt-1"
                 >
                   Ver post original <ExternalLink className="w-3 h-3" />
                 </a>
@@ -444,25 +444,25 @@ function renderDetalhe(agente: AgenteNome, item: any) {
         <Section label="Roteiro falado">
           {c.gancho_falado && (
             <div className="text-xs mb-2">
-              <span className="text-muted-foreground uppercase text-[10px] font-mono">Gancho</span>
+              <span className="text-muted-foreground uppercase text-[11px] font-mono">Gancho</span>
               <p className="mt-0.5">"{c.gancho_falado}"</p>
             </div>
           )}
           {c.desenvolvimento_falado && (
             <div className="text-xs mb-2">
-              <span className="text-muted-foreground uppercase text-[10px] font-mono">Desenvolvimento</span>
+              <span className="text-muted-foreground uppercase text-[11px] font-mono">Desenvolvimento</span>
               <p className="mt-0.5 whitespace-pre-wrap leading-relaxed">{c.desenvolvimento_falado}</p>
             </div>
           )}
           {c.cta_falado && (
             <div className="text-xs mb-2">
-              <span className="text-muted-foreground uppercase text-[10px] font-mono">CTA</span>
+              <span className="text-muted-foreground uppercase text-[11px] font-mono">CTA</span>
               <p className="mt-0.5">"{c.cta_falado}"</p>
             </div>
           )}
           {c.legenda_sugerida && (
             <div className="text-xs">
-              <span className="text-muted-foreground uppercase text-[10px] font-mono">Legenda sugerida</span>
+              <span className="text-muted-foreground uppercase text-[11px] font-mono">Legenda sugerida</span>
               <p className="mt-0.5">{c.legenda_sugerida}</p>
             </div>
           )}
@@ -485,7 +485,7 @@ function renderDetalhe(agente: AgenteNome, item: any) {
           ) : (
             Object.entries(b).map(([k, v]) => (
               <div key={k} className="text-xs mb-2">
-                <span className="text-muted-foreground uppercase text-[10px] font-mono">{k.replace(/_/g, " ")}</span>
+                <span className="text-muted-foreground uppercase text-[11px] font-mono">{k.replace(/_/g, " ")}</span>
                 <p className="mt-0.5 whitespace-pre-wrap leading-relaxed">
                   {typeof v === "string" ? v : JSON.stringify(v)}
                 </p>
@@ -513,7 +513,7 @@ function renderDetalhe(agente: AgenteNome, item: any) {
           {dec.comentario_livre && (
             <p className="text-xs text-muted-foreground mt-1 italic">"{dec.comentario_livre}"</p>
           )}
-          <div className="text-[10px] font-mono text-muted-foreground/60 mt-1">{fmtDate(dec.criado_em)}</div>
+          <div className="text-[11px] font-mono text-muted-foreground mt-1">{fmtDate(dec.criado_em)}</div>
         </Section>
       ) : (
         <Section label="Decisão">
@@ -527,7 +527,7 @@ function renderDetalhe(agente: AgenteNome, item: any) {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
+      <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
         {label}
       </div>
       <div className="space-y-1">{children}</div>
@@ -618,12 +618,12 @@ function AgenteDetalhePage() {
 
       {/* Critérios */}
       <Card className="p-5 bg-surface border-border mb-4">
-        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-3">
+        <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-3">
           Como este agente decide
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <div className="text-[10px] font-mono uppercase text-muted-foreground/70 mb-1">Fontes de dados</div>
+            <div className="text-[11px] font-mono uppercase text-muted-foreground mb-1">Fontes de dados</div>
             <ul className="text-xs space-y-1 list-disc list-inside text-foreground/80">
               {criterios.fontes.map((f) => (
                 <li key={f}>{f}</li>
@@ -631,7 +631,7 @@ function AgenteDetalhePage() {
             </ul>
           </div>
           <div>
-            <div className="text-[10px] font-mono uppercase text-muted-foreground/70 mb-1">Critérios</div>
+            <div className="text-[11px] font-mono uppercase text-muted-foreground mb-1">Critérios</div>
             <ul className="text-xs space-y-1 list-disc list-inside text-foreground/80">
               {criterios.criterios.map((c) => (
                 <li key={c}>{c}</li>
@@ -640,7 +640,7 @@ function AgenteDetalhePage() {
           </div>
         </div>
         <div className="mt-4 pt-3 border-t border-border text-xs">
-          <span className="text-[10px] font-mono uppercase text-muted-foreground/70 mr-2">Quando roda:</span>
+          <span className="text-[11px] font-mono uppercase text-muted-foreground mr-2">Quando roda:</span>
           <span className="text-foreground/80">{criterios.gatilho}</span>
         </div>
       </Card>
@@ -648,12 +648,12 @@ function AgenteDetalhePage() {
       {/* Estado atual */}
       {status?.ultima_acao && (
         <Card className="p-4 bg-surface border-border mb-6">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+          <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
             Última ação
           </div>
           <div className="text-sm text-foreground/80 leading-relaxed break-words">{status.ultima_acao}</div>
           {status.atualizado_em && (
-            <div className="mt-2 text-[10px] font-mono text-muted-foreground/60">
+            <div className="mt-2 text-[11px] font-mono text-muted-foreground">
               {fmtDate(status.atualizado_em)}
             </div>
           )}
@@ -663,17 +663,17 @@ function AgenteDetalhePage() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <Card className="p-4 bg-surface border-border">
-          <div className="text-[10px] font-mono uppercase text-muted-foreground">Total registrado</div>
+          <div className="text-[11px] font-mono uppercase text-muted-foreground">Total registrado</div>
           <div className="text-2xl font-display mt-1">{total}</div>
         </Card>
         <Card className="p-4 bg-surface border-border">
-          <div className="text-[10px] font-mono uppercase text-muted-foreground">Últimas 24h</div>
+          <div className="text-[11px] font-mono uppercase text-muted-foreground">Últimas 24h</div>
           <div className="text-2xl font-display mt-1">{hoje}</div>
         </Card>
       </div>
 
       {/* Timeline */}
-      <div className="mb-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+      <div className="mb-3 text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
         Execuções (mais recentes primeiro)
       </div>
       {items.length === 0 ? (

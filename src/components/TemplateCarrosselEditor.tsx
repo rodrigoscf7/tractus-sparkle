@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { mensagemErro } from "@/lib/mensagem-erro";
 import { CarrosselSlide } from "@/components/CarrosselSlide";
 import {
   FOTO_BUCKET,
@@ -49,7 +50,7 @@ export function TemplateCarrosselEditor({
       .upload(path, file, { upsert: true, contentType: file.type });
     setUploading(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(mensagemErro(error, "Não consegui enviar a foto."));
       return;
     }
     set("foto_path", path);
@@ -65,7 +66,7 @@ export function TemplateCarrosselEditor({
       .eq("id", perfilId);
     setSaving(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(mensagemErro(error, "Não consegui salvar o template."));
       return;
     }
     toast.success("Template do carrossel salvo.");
@@ -85,7 +86,7 @@ export function TemplateCarrosselEditor({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
             Nome de exibição
           </Label>
           <Input
@@ -96,7 +97,7 @@ export function TemplateCarrosselEditor({
           />
         </div>
         <div>
-          <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
             Arroba
           </Label>
           <Input
@@ -107,7 +108,7 @@ export function TemplateCarrosselEditor({
           />
         </div>
         <div>
-          <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
             Cor de fundo
           </Label>
           <div className="flex gap-2 mt-1">
@@ -121,7 +122,7 @@ export function TemplateCarrosselEditor({
           </div>
         </div>
         <div>
-          <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
             Cor do texto
           </Label>
           <div className="flex gap-2 mt-1">
@@ -135,7 +136,7 @@ export function TemplateCarrosselEditor({
           </div>
         </div>
         <div>
-          <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
             Foto de perfil
           </Label>
           <Input
@@ -156,7 +157,7 @@ export function TemplateCarrosselEditor({
       </div>
 
       <div className="mt-6">
-        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
+        <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
           Prévia
         </div>
         <CarrosselSlide

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Check, ExternalLink } from "lucide-react";
 import { useConta, TIPOS_USO } from "@/hooks/use-conta";
 import { getMinhaAssinatura } from "@/lib/assinatura.functions";
+import { EstadoCarregando, EstadoErro, EstadoVazio } from "@/components/estados";
 
 export const Route = createFileRoute("/_authenticated/assinatura")({
   head: () => ({
@@ -65,18 +66,43 @@ function Linha({ label, usado, limite }: { label: string; usado: number; limite:
 function AssinaturaPage() {
   const { data, isLoading } = useConta();
   const carregar = useServerFn(getMinhaAssinatura);
-  const { data: billing } = useQuery({
+  const {
+    data: billing,
+    isLoading: carregandoBilling,
+    isError: erroBilling,
+    refetch: refetchBilling,
+  } = useQuery({
     queryKey: ["minha-assinatura"],
     queryFn: () => carregar(),
   });
 
-  if (isLoading) {
-    return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
+  // A seção de planos vive nesta segunda consulta: sem esperar por ela, a página
+  // abria com a lista de planos vazia e sem explicação.
+  if (isLoading || carregandoBilling) {
+    return (
+      <div className="p-4 sm:p-8 max-w-[900px]">
+        <EstadoCarregando linhas={2} rotulo="Carregando sua assinatura" />
+      </div>
+    );
+  }
+  if (erroBilling) {
+    return (
+      <div className="p-4 sm:p-8 max-w-[900px]">
+        <EstadoErro
+          titulo="Não consegui carregar sua assinatura"
+          descricao="Seu acesso continua valendo normalmente. É só a tela que não abriu."
+          onTentarDeNovo={() => refetchBilling()}
+        />
+      </div>
+    );
   }
   if (!data) {
     return (
-      <div className="p-8 text-sm text-muted-foreground">
-        Seu usuário ainda não está vinculado a uma conta.
+      <div className="p-4 sm:p-8 max-w-[900px]">
+        <EstadoVazio
+          titulo="Seu usuário ainda não está vinculado a uma conta"
+          descricao="Isso costuma se resolver sozinho em alguns segundos. Se continuar, fale com o suporte."
+        />
       </div>
     );
   }
@@ -206,7 +232,7 @@ function AssinaturaPage() {
               <ul className="mt-4 space-y-2 text-sm flex-1">
                 {(Array.isArray(p.beneficios) ? p.beneficios : []).map((b: string) => (
                   <li key={b} className="flex gap-2">
-                    <Check className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                    <Check className="h-4 w-4 mt-0.5 shrink-0 text-success" />
                     <span>{b}</span>
                   </li>
                 ))}
