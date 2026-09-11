@@ -150,7 +150,7 @@ export function CarrosselPanel({
             {slides.map((s, i) => (
               <div key={i} className="shrink-0">
                 <div className="flex items-center justify-between mb-2 gap-2">
-                  <Badge variant="outline" className="text-[10px] font-mono uppercase">
+                  <Badge variant="outline" className="text-[11px] font-mono uppercase">
                     {s.tipo || `slide ${i + 1}`}
                   </Badge>
                   <button
@@ -176,7 +176,7 @@ export function CarrosselPanel({
           </div>
           {carrossel?.copy?.legenda_sugerida && (
             <div className="mt-4">
-              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+              <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
                 Legenda sugerida
               </div>
               <p className="text-sm">{carrossel.copy.legenda_sugerida}</p>

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import previaLogo from "@/assets/previa-logo.png.asset.json";
+import { mensagemErro } from "@/lib/mensagem-erro";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -26,8 +27,16 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+type Modo = "signin" | "signup" | "recuperar";
+
+const ROTULO: Record<Modo, { acao: string; carregando: string }> = {
+  signin: { acao: "Entrar", carregando: "Entrando…" },
+  signup: { acao: "Criar conta", carregando: "Criando conta…" },
+  recuperar: { acao: "Enviar link de recuperação", carregando: "Enviando…" },
+};
+
 function AuthPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<Modo>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +46,15 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signup") {
+      if (mode === "recuperar") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/redefinir-senha`,
+        });
+        if (error) throw error;
+        // Não confirmamos se o e-mail existe: isso revelaria quem tem conta.
+        toast.success("Se existir uma conta com esse e-mail, o link de recuperação chegou nele.");
+        setMode("signin");
+      } else if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -50,8 +67,8 @@ function AuthPage() {
         if (error) throw error;
         navigate({ to: "/pipeline" });
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Falha na autenticação");
+    } catch (err) {
+      toast.error(mensagemErro(err, "Não consegui completar o acesso. Tente de novo."));
     } finally {
       setLoading(false);
     }
@@ -79,30 +96,62 @@ function AuthPage() {
               autoComplete="email"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <Input
-              id="password"
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
-            />
-          </div>
+          {mode !== "recuperar" && (
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              />
+              {mode === "signup" && (
+                <p className="text-xs text-muted-foreground">Pelo menos 6 caracteres.</p>
+              )}
+            </div>
+          )}
+
+          {mode === "recuperar" && (
+            <p className="text-sm text-muted-foreground">
+              Enviamos um link para você escolher uma senha nova.
+            </p>
+          )}
+
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "..." : mode === "signin" ? "Entrar" : "Criar conta"}
+            {loading ? ROTULO[mode].carregando : ROTULO[mode].acao}
           </Button>
         </form>
 
-        <button
-          type="button"
-          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          className="mt-6 w-full text-sm text-muted-foreground hover:text-foreground transition"
-        >
-          {mode === "signin" ? "Criar nova conta" : "Já tem conta? Entrar"}
-        </button>
+        <div className="mt-6 space-y-2 text-center">
+          <button
+            type="button"
+            onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+            className="w-full min-h-11 rounded-md text-sm text-muted-foreground hover:text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            {mode === "signup" ? "Já tem conta? Entrar" : "Criar nova conta"}
+          </button>
+
+          {mode !== "recuperar" ? (
+            <button
+              type="button"
+              onClick={() => setMode("recuperar")}
+              className="w-full min-h-11 rounded-md text-sm text-muted-foreground hover:text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              Esqueci minha senha
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className="w-full min-h-11 rounded-md text-sm text-muted-foreground hover:text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              Voltar para o acesso
+            </button>
+          )}
+        </div>
       </Card>
     </div>
   );

@@ -6,6 +6,7 @@ import { ArrowRight, Download, Loader2, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { getDna, regerarDna } from "@/lib/onboarding.functions";
 import { ConvitePush } from "@/components/notificacoes/ConvitePush";
+import { mensagemErro } from "@/lib/mensagem-erro";
 
 export const Route = createFileRoute("/_authenticated/dna")({
   head: () => ({
@@ -52,7 +53,7 @@ function DnaPage() {
       await queryClient.invalidateQueries({ queryKey: ["dna"] });
       toast.success("Manual atualizado.");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível gerar o manual.");
+      toast.error(mensagemErro(e, "Não consegui gerar o manual. Tente de novo em instantes."));
     } finally {
       setRegerando(false);
     }

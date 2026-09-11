@@ -64,7 +64,7 @@ function Kpi({
 }) {
   return (
     <Card className="p-4">
-      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+      <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
         {label}
       </div>
       <div
@@ -181,25 +181,25 @@ function AdminPage() {
                   </div>
                   <div className="grid gap-3 mt-3 sm:grid-cols-4 num text-sm">
                     <div>
-                      <div className="text-[10px] font-mono uppercase text-muted-foreground">
+                      <div className="text-[11px] font-mono uppercase text-muted-foreground">
                         Custo no uso máximo
                       </div>
                       {brl(c.custo_max_centavos)}
                     </div>
                     <div>
-                      <div className="text-[10px] font-mono uppercase text-muted-foreground">
+                      <div className="text-[11px] font-mono uppercase text-muted-foreground">
                         Custo real observado
                       </div>
                       {brl(c.custo_observado_centavos)}
                     </div>
                     <div>
-                      <div className="text-[10px] font-mono uppercase text-muted-foreground">
+                      <div className="text-[11px] font-mono uppercase text-muted-foreground">
                         Margem no uso máximo
                       </div>
                       <span className={c.alerta ? "text-destructive" : ""}>{c.margem_max_pct}%</span>
                     </div>
                     <div>
-                      <div className="text-[10px] font-mono uppercase text-muted-foreground">
+                      <div className="text-[11px] font-mono uppercase text-muted-foreground">
                         Margem no uso médio
                       </div>
                       {c.margem_media_pct}%
@@ -280,7 +280,7 @@ function AdminPage() {
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
                     Plano
                   </div>
                   <Select
@@ -311,17 +311,17 @@ function AdminPage() {
 
               <div className="mt-4 grid gap-3 sm:grid-cols-3 num text-sm">
                 <div>
-                  <div className="text-[10px] font-mono uppercase text-muted-foreground">Receita</div>
+                  <div className="text-[11px] font-mono uppercase text-muted-foreground">Receita</div>
                   {brl(conta.receita_centavos)}
                 </div>
                 <div>
-                  <div className="text-[10px] font-mono uppercase text-muted-foreground">
+                  <div className="text-[11px] font-mono uppercase text-muted-foreground">
                     Custo do ciclo
                   </div>
                   {brl(conta.custo_centavos)} · {conta.geracoes} gerações
                 </div>
                 <div>
-                  <div className="text-[10px] font-mono uppercase text-muted-foreground">Margem</div>
+                  <div className="text-[11px] font-mono uppercase text-muted-foreground">Margem</div>
                   <span className={conta.margem_centavos < 0 ? "text-destructive" : ""}>
                     {brl(conta.margem_centavos)}
                   </span>
@@ -717,7 +717,7 @@ function Metrica({ label, usado, limite }: { label: string; usado: number; limit
   const estourou = limite > 0 && usado >= limite;
   return (
     <div>
-      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+      <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
         {label}
       </div>
       <div className={`num mt-1 text-sm ${estourou ? "text-destructive" : ""}`}>

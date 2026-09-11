@@ -5,8 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, X, ExternalLink, Heart, MessageCircle, Play, Loader2 } from "lucide-react";
+import { Check, X, ExternalLink, Heart, MessageCircle, Play } from "lucide-react";
 import { toast } from "sonner";
+import { EstadoCarregando, EstadoErro, EstadoVazio } from "@/components/estados";
+import { mensagemErro } from "@/lib/mensagem-erro";
 
 export const Route = createFileRoute("/_authenticated/curadoria")({
   component: CuradoriaPage,
@@ -58,11 +60,30 @@ const TABS = [
   { id: "descartado", label: "Descartadas" },
 ] as const;
 
+/** Cada aba vazia explica o que vai cair ali — e por quê. */
+const VAZIO: Record<(typeof TABS)[number]["id"], { titulo: string; descricao: string }> = {
+  pendente: {
+    titulo: "Nenhum assunto esperando você",
+    descricao:
+      "Toda manhã a prevIA lê os perfis que você indicou e separa o que teve mais tração. O que combinar com a sua marca aparece aqui.",
+  },
+  aprovado: {
+    titulo: "Você ainda não escolheu nenhum assunto",
+    descricao:
+      "Os assuntos que você aprovar ficam registrados aqui e viram roteiro automaticamente.",
+  },
+  descartado: {
+    titulo: "Nada descartado",
+    descricao:
+      "O que você recusar fica aqui — e ensina a prevIA o que não tem a ver com você.",
+  },
+};
+
 function CuradoriaPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("pendente");
   const queryClient = useQueryClient();
 
-  const { data: itens, isLoading } = useQuery({
+  const { data: itens, isLoading, isError, refetch } = useQuery({
     queryKey: ["curadoria", tab],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -96,7 +117,7 @@ function CuradoriaPage() {
       );
       queryClient.invalidateQueries({ queryKey: ["curadoria"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemErro(e, "Não consegui registrar sua escolha.")),
   });
 
   return (
@@ -109,14 +130,16 @@ function CuradoriaPage() {
         </p>
       </header>
 
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div role="tablist" aria-label="Filtrar referências" className="flex gap-2 mb-6 flex-wrap">
         {TABS.map((t) => (
           <button
             key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
-            className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition ${
+            className={`min-h-11 sm:min-h-9 px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
               tab === t.id
-                ? "bg-primary/15 text-primary"
+                ? "bg-primary/25 text-foreground font-semibold"
                 : "text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
             }`}
           >
@@ -125,27 +148,35 @@ function CuradoriaPage() {
         ))}
       </div>
 
-      {isLoading && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" /> Carregando…
-        </div>
+      {isLoading && <EstadoCarregando linhas={3} rotulo="Carregando as referências" />}
+
+      {isError && (
+        <EstadoErro
+          titulo="Não consegui carregar as referências"
+          descricao="A conexão falhou no meio do caminho. Nada foi perdido."
+          onTentarDeNovo={() => refetch()}
+        />
       )}
 
-      {!isLoading && (itens ?? []).length === 0 && (
-        <p className="text-sm text-muted-foreground italic">Nada aqui ainda.</p>
+      {!isLoading && !isError && (itens ?? []).length === 0 && (
+        <EstadoVazio
+          titulo={VAZIO[tab].titulo}
+          descricao={VAZIO[tab].descricao}
+        />
       )}
 
       <div className="space-y-4">
         {(itens ?? []).map((item) => (
           <Card key={item.id} className="p-4 sm:p-5 bg-surface border-border">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <Badge className="border-0 bg-accent/15 text-accent text-[10px] font-mono uppercase tracking-wider">
+              {/* Era bg-accent/15 text-accent: cinza claro sobre cinza claro, ilegível. */}
+              <Badge className="border-0 bg-muted text-foreground text-[11px] font-mono uppercase tracking-wider">
                 para {item.perfis_referencia?.perfis?.nome ?? "perfil não vinculado"}
               </Badge>
               <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
                 ref @{item.perfis_referencia?.handle ?? "—"}
               </span>
-              <Badge variant="outline" className="text-[10px] font-mono uppercase">
+              <Badge variant="outline" className="text-[11px] font-mono uppercase">
                 foco{" "}
                 {(item.perfis_referencia?.foco_curadoria ??
                   item.perfis_referencia?.perfis?.foco_curadoria ??
@@ -154,17 +185,17 @@ function CuradoriaPage() {
                   : "posicionamento"}
               </Badge>
               {item.formato && (
-                <Badge variant="outline" className="text-[10px] font-mono uppercase">
+                <Badge variant="outline" className="text-[11px] font-mono uppercase">
                   {item.formato}
                 </Badge>
               )}
               {item.score_curadoria != null && (
-                <Badge className="border-0 bg-primary/15 text-primary text-[10px] font-mono">
+                <Badge className="border-0 bg-primary/25 text-foreground text-[11px] font-mono num">
                   score {item.score_curadoria}
                 </Badge>
               )}
               {item.capturado_em && (
-                <span className="text-[11px] text-muted-foreground/70">
+                <span className="text-[11px] text-muted-foreground num">
                   {new Date(item.capturado_em).toLocaleDateString("pt-BR")}
                 </span>
               )}
@@ -195,9 +226,9 @@ function CuradoriaPage() {
                   href={item.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 text-primary hover:underline"
+                  className="flex items-center gap-1 text-foreground underline underline-offset-2 decoration-border hover:decoration-foreground rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" /> ver post
+                  <ExternalLink className="w-3.5 h-3.5" /> Ver post original
                 </a>
               )}
             </div>
@@ -207,7 +238,7 @@ function CuradoriaPage() {
                 <summary className="text-xs text-muted-foreground cursor-pointer">
                   Caption original
                 </summary>
-                <p className="text-xs text-muted-foreground/80 mt-2 whitespace-pre-wrap">
+                <p className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap">
                   {item.texto_original}
                 </p>
               </details>

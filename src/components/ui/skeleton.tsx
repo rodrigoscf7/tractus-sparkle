@@ -1,7 +1,13 @@
 import { cn } from "@/lib/utils";
 
 function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("animate-pulse rounded-md bg-primary/10", className)} {...props} />;
+  // Cinza, não amarelo: o amarelo é reservado para ação e marcador de IA.
+  return (
+    <div
+      className={cn("animate-pulse motion-reduce:animate-none rounded-md bg-muted", className)}
+      {...props}
+    />
+  );
 }
 
 export { Skeleton };

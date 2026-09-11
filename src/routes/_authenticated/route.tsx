@@ -6,7 +6,6 @@ import {
   Users,
   LogOut,
   Menu,
-  X,
   CheckCheck,
   Moon,
   Sun,
@@ -21,6 +20,7 @@ import previaLogo from "@/assets/previa-logo.png.asset.json";
 import previaLogoNegative from "@/assets/previa-logo-negative.png.asset.json";
 import previaIcon from "@/assets/previa-icon.png.asset.json";
 import { SininhoNotificacoes } from "@/components/notificacoes/SininhoNotificacoes";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 /**
  * Onboarding concluído nunca volta a ficar pendente, então basta confirmar uma
@@ -28,6 +28,10 @@ import { SininhoNotificacoes } from "@/components/notificacoes/SininhoNotificaco
  * troca de rota. Só o valor positivo é memorizado.
  */
 let onboardingLiberado = false;
+
+/** Alvo de toque de 44px e foco visível — o padrão que o onboarding já usa. */
+const BOTAO_RODAPE =
+  "w-full flex items-center gap-2 min-h-11 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -81,14 +85,6 @@ function AuthenticatedLayout() {
     return unsub;
   }, [router]);
 
-  // lock body scroll when drawer open
-  useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
-
   async function signOut() {
     await supabase.auth.signOut();
     router.navigate({ to: "/auth" });
@@ -102,7 +98,7 @@ function AuthenticatedLayout() {
           alt="prevIA"
           className="h-7 w-auto"
         />
-        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
+        <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
           Content
         </div>
       </div>
@@ -139,17 +135,11 @@ function AuthenticatedLayout() {
           <div className="px-3 py-2 text-xs text-muted-foreground truncate">{email}</div>
         )}
         <SininhoNotificacoes />
-        <button
-          onClick={toggle}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition"
-        >
+        <button onClick={toggle} className={BOTAO_RODAPE}>
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           {theme === "dark" ? "Tema claro" : "Tema escuro"}
         </button>
-        <button
-          onClick={signOut}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition"
-        >
+        <button onClick={signOut} className={BOTAO_RODAPE}>
           <LogOut className="w-4 h-4" />
           Sair
         </button>
@@ -164,25 +154,19 @@ function AuthenticatedLayout() {
         {sidebar}
       </aside>
 
-      {/* Mobile drawer */}
-      {open && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
-          <div
-            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={() => setOpen(false)}
-          />
-          <aside className="relative w-64 max-w-[80vw] border-r border-border bg-surface flex flex-col animate-in slide-in-from-left">
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Fechar menu"
-              className="absolute top-4 right-3 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            {sidebar}
-          </aside>
-        </div>
-      )}
+      {/*
+       * Drawer mobile via Radix: traz foco preso, fechar no Esc e `role="dialog"`,
+       * que a versão anterior feita à mão não tinha.
+       */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="left"
+          className="w-64 max-w-[80vw] bg-surface border-border p-0 flex flex-col md:hidden"
+        >
+          <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
+          {sidebar}
+        </SheetContent>
+      </Sheet>
 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Mobile top bar */}
@@ -190,7 +174,7 @@ function AuthenticatedLayout() {
           <button
             onClick={() => setOpen(true)}
             aria-label="Abrir menu"
-            className="p-2 -ml-2 rounded-md text-foreground hover:bg-surface-elevated"
+            className="grid place-items-center w-11 h-11 -ml-2 rounded-md text-foreground hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -208,13 +192,23 @@ function AuthenticatedLayout() {
   );
 }
 
+/**
+ * O item ativo usa o amarelo como fundo e marcador lateral, nunca como cor do
+ * texto: sobre o fundo claro o #F4DB0B fica em ~1,4:1 e o rótulo do lugar onde
+ * o usuário está era o menos legível do menu. Ver a regra no topo de styles.css.
+ */
 function NavLink({ to, icon, children }: { to: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <Link
       to={to}
-      activeProps={{ className: "bg-primary/10 text-primary" }}
-      inactiveProps={{ className: "text-muted-foreground hover:text-foreground hover:bg-surface-elevated" }}
-      className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition"
+      activeProps={{
+        className:
+          "bg-primary/20 text-foreground font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-full before:bg-primary",
+      }}
+      inactiveProps={{
+        className: "text-muted-foreground hover:text-foreground hover:bg-surface-elevated",
+      }}
+      className="relative flex items-center gap-3 min-h-11 px-3 py-2 rounded-md text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       {icon}
       {children}

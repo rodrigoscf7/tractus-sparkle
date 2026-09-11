@@ -11,11 +11,14 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { CarrosselPanel } from "@/components/CarrosselPanel";
 import { ArrowLeft, Check, X, Send, Copy } from "lucide-react";
+import { EstadoCarregando, EstadoErro } from "@/components/estados";
+import { mensagemErro } from "@/lib/mensagem-erro";
+import { nomeStatusPauta } from "@/lib/vocabulario";
 
 function copyToClipboard(text: string, label = "Copiado") {
   navigator.clipboard.writeText(text).then(
     () => toast.success(label),
-    () => toast.error("Não foi possível copiar"),
+    () => toast.error("O navegador bloqueou a cópia. Selecione o texto e copie à mão."),
   );
 }
 
@@ -69,7 +72,7 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
       {falaContinua && (
         <section>
           <div className="flex items-center justify-between mb-2">
-            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
               Roteiro para gravar
             </div>
             <Button
@@ -84,7 +87,7 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
 
           {gancho_falado && (
             <div className="mb-3 p-3 rounded border border-primary/40 bg-primary/5">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-primary mb-1">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-foreground mb-1">
                 Gancho (0-3s)
               </div>
               <p className="text-base leading-snug font-medium">{gancho_falado}</p>
@@ -93,7 +96,7 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
 
           {desenvolvimento_falado && (
             <div className="mb-3 p-3 rounded border border-border/60 bg-background/40">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
                 Desenvolvimento
               </div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{desenvolvimento_falado}</p>
@@ -102,7 +105,7 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
 
           {cta_falado && (
             <div className="p-3 rounded border border-border/60 bg-background/40">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
                 Fechamento (CTA)
               </div>
               <p className="text-sm leading-relaxed">{cta_falado}</p>
@@ -113,13 +116,13 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
 
       {corpoSlides && (
         <section>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
-            Corpo (formato antigo em slides)
+          <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+            Corpo em slides
           </div>
           <ol className="space-y-2">
             {corpoSlides.map((slide: any, i: number) => (
               <li key={i} className="p-3 bg-background/40 rounded border border-border/60">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-primary mb-1">
+                <div className="text-[11px] font-mono uppercase tracking-wider text-foreground mb-1">
                   Slide {i + 1}
                 </div>
                 <div className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -134,7 +137,7 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
       {legenda && (
         <section>
           <div className="flex items-center justify-between mb-1.5">
-            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
               Legenda sugerida
             </div>
             <Button
@@ -170,7 +173,7 @@ function Field({ label, value }: { label: string; value: string }) {
   if (!value) return null;
   return (
     <section>
-      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+      <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
         {label}
       </div>
       <p className="text-sm leading-relaxed whitespace-pre-wrap">{value}</p>
@@ -239,7 +242,7 @@ function BriefingView({ briefing }: { briefing: any }) {
           <Field label="Expressão e linguagem corporal" value={expressao} />
           {elementoGancho && (
             <section>
-              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+              <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
                 Elemento visual do gancho (primeiros 3s)
               </div>
               <div className="p-3 rounded border border-primary/40 bg-primary/5 text-sm leading-relaxed">
@@ -249,7 +252,7 @@ function BriefingView({ briefing }: { briefing: any }) {
           )}
           {textoTela && (
             <section>
-              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+              <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
                 Texto em tela (abertura)
               </div>
               <div className="inline-block px-3 py-2 rounded border border-primary/40 bg-primary/5 text-sm font-medium">
@@ -269,7 +272,7 @@ function BriefingView({ briefing }: { briefing: any }) {
           <Field label="Figurino e postura" value={figurino} />
           {textoTela && !hasV2 && (
             <section>
-              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+              <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
                 Texto em tela (abertura)
               </div>
               <div className="inline-block px-3 py-2 rounded border border-primary/40 bg-primary/5 text-sm font-medium">
@@ -280,7 +283,7 @@ function BriefingView({ briefing }: { briefing: any }) {
           {legendaVisual && <Field label="Apoio no meio do vídeo" value={legendaVisual} />}
           {clima && (
             <section>
-              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+              <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
                 Clima
               </div>
               <Badge variant="outline" className="text-xs font-normal">{clima}</Badge>
@@ -291,13 +294,13 @@ function BriefingView({ briefing }: { briefing: any }) {
 
       {hasAntigo && (
         <div className="space-y-4 pt-4 border-t border-border/40">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            Direção (formato antigo)
+          <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
+            Direção visual
           </div>
           {estilo_geral && <Field label="Estilo geral" value={estilo_geral} />}
           {paleta.length > 0 && (
             <section>
-              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">Paleta</div>
+              <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-2">Paleta</div>
               <div className="flex flex-wrap gap-2">
                 {paleta.map((hex: string, i: number) => (
                   <div key={i} className="flex items-center gap-2 p-1.5 pr-3 bg-background/40 rounded border border-border/60">
@@ -310,13 +313,13 @@ function BriefingView({ briefing }: { briefing: any }) {
           )}
           {estrutura.length > 0 && (
             <section>
-              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+              <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
                 Estrutura por slide/frame
               </div>
               <ol className="space-y-2">
                 {estrutura.map((s: any, i: number) => (
                   <li key={i} className="p-3 bg-background/40 rounded border border-border/60">
-                    <div className="text-[10px] font-mono uppercase tracking-wider text-primary mb-1">{i + 1}</div>
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-foreground mb-1">{i + 1}</div>
                     <div className="text-sm leading-relaxed whitespace-pre-wrap">
                       {typeof s === "string" ? s : JSON.stringify(s, null, 2)}
                     </div>
@@ -372,7 +375,7 @@ function AprovacaoPage() {
   const [comentario, setComentario] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const { data, refetch } = useQuery({
+  const { data, refetch, isLoading, isError } = useQuery({
     queryKey: ["aprovacao", pautaId],
     queryFn: async () => {
       const [pautaRes, roteiroRes, arteRes, pubRes] = await Promise.all([
@@ -441,26 +444,53 @@ function AprovacaoPage() {
         });
       }
 
-      toast.success(decision === "aprovar" ? "Aprovado." : "Rejeitado.");
+      toast.success(
+        decision === "aprovar" ? "Aprovado — já pode gravar." : "Recusado. A prevIA anotou o motivo.",
+      );
       navigate({ to: "/pipeline" });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(mensagemErro(err, "Não consegui registrar sua decisão."));
     } finally {
       setSubmitting(false);
     }
   }
 
   async function marcarPostado() {
-    await supabase
+    const { error } = await supabase
       .from("publicacoes")
       .update({ status: "postado", postado_em: new Date().toISOString() })
       .eq("pauta_id", pautaId);
+    if (error) {
+      toast.error(mensagemErro(error, "Não consegui marcar como postado."));
+      return;
+    }
     toast.success("Marcado como postado.");
     refetch();
   }
 
-  if (!data) {
-    return <div className="p-8 text-muted-foreground">Carregando...</div>;
+  if (isLoading) {
+    return (
+      <div className="p-4 sm:p-8 max-w-[1400px]">
+        <EstadoCarregando linhas={2} rotulo="Carregando o roteiro" />
+      </div>
+    );
+  }
+
+  // Antes, `if (!data)` devolvia "Carregando..." para sempre quando a pauta não
+  // existia ou a consulta falhava — a tela nunca saía desse estado.
+  if (isError || !data) {
+    return (
+      <div className="p-4 sm:p-8 max-w-[1400px]">
+        <EstadoErro
+          titulo="Não encontrei esse roteiro"
+          descricao="Ele pode ter sido removido, ou a conexão falhou no caminho."
+          onTentarDeNovo={() => refetch()}
+        />
+        <Button variant="outline" className="mt-4" onClick={() => navigate({ to: "/pipeline" })}>
+          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+        </Button>
+      </div>
+    );
   }
 
   const { pauta, roteiro, arte, publicacao } = data;
@@ -468,28 +498,28 @@ function AprovacaoPage() {
   const isAguardando = pauta.status === "aguardando_aprovacao";
 
   return (
-    <div className="p-8 max-w-[1400px]">
+    <div className="p-4 sm:p-8 max-w-[1400px]">
       <button
         onClick={() => navigate({ to: "/pipeline" })}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+        className="flex items-center gap-2 min-h-11 -ml-2 px-2 rounded-md text-sm text-muted-foreground hover:text-foreground mb-4 sm:mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <ArrowLeft className="w-4 h-4" /> Voltar ao pipeline
+        <ArrowLeft className="w-4 h-4" /> Voltar
       </button>
 
-      <header className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Badge className="bg-primary/20 text-primary border-0 font-mono uppercase">
+      <header className="mb-6 sm:mb-8">
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <Badge className="bg-muted text-foreground border-0 font-mono uppercase text-[11px]">
             {(pauta as any).perfis?.nome}
           </Badge>
-          <Badge variant="outline" className="font-mono uppercase text-xs">
+          <Badge variant="outline" className="font-mono uppercase text-[11px]">
             {pauta.formato_sugerido}
           </Badge>
-          <Badge variant="outline" className="font-mono uppercase text-xs">
-            {pauta.status}
+          <Badge className="bg-primary/25 text-foreground border-0 font-mono uppercase text-[11px]">
+            {nomeStatusPauta(pauta.status)}
           </Badge>
         </div>
-        <h1 className="text-3xl font-display font-bold leading-tight">{pauta.tema}</h1>
-        <p className="text-muted-foreground mt-2">{pauta.angulo}</p>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold leading-tight">{pauta.tema}</h1>
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base">{pauta.angulo}</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -519,7 +549,7 @@ function AprovacaoPage() {
       {isAguardando && (
         <Card className="p-6 bg-surface border-border">
           <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
-            Decisão humana
+            Você aprova?
           </h2>
 
           <div className="flex gap-3 mb-6">
@@ -571,7 +601,7 @@ function AprovacaoPage() {
               <Textarea
                 value={comentario}
                 onChange={(e) => setComentario(e.target.value)}
-                placeholder="O que você quer que os agentes aprendam dessa decisão?"
+                placeholder="O que a prevIA deve aprender com essa decisão?"
                 rows={3}
               />
             </div>
