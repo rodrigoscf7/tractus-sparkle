@@ -162,6 +162,62 @@ export function EscolhaMultipla({
 }
 
 /**
+ * O compromisso de ritmo. É a pergunta mais valiosa do wizard: o produto inteiro
+ * — a pauta da semana, a constância, a cobrança — se apoia nela. Por isso vem em
+ * botões grandes que somam uma frase legível ("3 vezes por semana"), e não num
+ * seletor de número abstrato.
+ */
+export function EscolhaDias({
+  dias,
+  valores,
+  onChange,
+}: {
+  dias: { dow: number; curto: string; longo: string }[];
+  valores: number[];
+  onChange: (valores: number[]) => void;
+}) {
+  function alternar(dow: number) {
+    onChange(
+      valores.includes(dow) ? valores.filter((d) => d !== dow) : [...valores, dow].sort(),
+    );
+  }
+
+  const total = valores.length;
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+        {dias.map((d) => {
+          const ativo = valores.includes(d.dow);
+          return (
+            <button
+              key={d.dow}
+              type="button"
+              aria-pressed={ativo}
+              aria-label={d.longo}
+              onClick={() => alternar(d.dow)}
+              className={`${cartaoBase} flex items-center justify-center h-14 p-0 ${
+                ativo ? cartaoAtivo : cartaoInativo
+              }`}
+            >
+              {ativo && <Marcador />}
+              <span className="text-base font-medium">{d.curto}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-base text-muted-foreground" aria-live="polite">
+        {total === 0
+          ? "Escolha ao menos um dia."
+          : total === 1
+            ? "1 vez por semana."
+            : `${total} vezes por semana.`}
+      </p>
+    </div>
+  );
+}
+
+/**
  * Pergunta 7. O exemplo é a pergunta: quase ninguém descreve o próprio tom de
  * voz, mas todo mundo reconhece a própria abertura numa frase pronta. Por isso
  * a frase vem em tipo de leitura e o rótulo fica subordinado a ela.

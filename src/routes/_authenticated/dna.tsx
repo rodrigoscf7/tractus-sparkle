@@ -124,8 +124,8 @@ function DnaPage() {
             você indicou — os primeiros assuntos aparecem em alguns minutos.
           </p>
           {/*
-           * Leva para `Hoje`, nao para a curadoria: logo apos o onboarding a
-           * curadoria costuma estar vazia, e `Hoje` sempre diz em que pe esta.
+           * Leva para `Hoje`, não para a curadoria: logo após o onboarding a
+           * curadoria costuma estar vazia, e `Hoje` sempre diz em que pé está.
            */}
           <Link
             to="/hoje"

@@ -12,6 +12,7 @@ import {
   AREAS,
   ATRIBUTOS,
   CANAIS,
+  DIAS_DA_SEMANA,
   ESTILOS,
   MAX_ATRIBUTOS,
   MAX_OBJETIVOS,
@@ -19,6 +20,7 @@ import {
   OBJETIVOS,
   ORIGEM,
   PASSOS,
+  RITMO_SUGERIDO,
   SITUACAO,
   TAMANHOS,
   TOTAL_PASSOS,
@@ -28,6 +30,7 @@ import {
   type Respostas,
 } from "@/lib/onboarding-perguntas";
 import {
+  EscolhaDias,
   EscolhaEstilo,
   EscolhaMultipla,
   EscolhaUnica,
@@ -449,7 +452,18 @@ function PassoReferencias({ respostas, definir }: PassoProps) {
 function PassoContexto({ respostas, definir }: PassoProps) {
   return (
     <>
-      <Pergunta titulo="Qual dessas situações mais descreve você hoje?">
+      <Pergunta
+        titulo="Em que dias você vai postar?"
+        apoio="A prevIA garante que sempre exista conteúdo pronto para estes dias — e lembra você neles. Três vezes por semana é um bom começo."
+      >
+        <EscolhaDias
+          dias={DIAS_DA_SEMANA}
+          valores={respostas.ritmo_dias ?? RITMO_SUGERIDO}
+          onChange={(v) => definir("ritmo_dias", v)}
+        />
+      </Pergunta>
+
+      <Pergunta titulo="Qual dessas situações mais descreve você hoje?" apoio="Opcional.">
         <EscolhaUnica
           opcoes={SITUACAO}
           valor={respostas.situacao}
@@ -458,7 +472,7 @@ function PassoContexto({ respostas, definir }: PassoProps) {
         />
       </Pergunta>
 
-      <Pergunta titulo="Quantas pessoas trabalham no seu escritório?">
+      <Pergunta titulo="Quantas pessoas trabalham no seu escritório?" apoio="Opcional.">
         <EscolhaUnica
           opcoes={TAMANHOS}
           valor={respostas.tamanho_escritorio}
@@ -467,7 +481,7 @@ function PassoContexto({ respostas, definir }: PassoProps) {
         />
       </Pergunta>
 
-      <Pergunta titulo="Você investe em tráfego pago?">
+      <Pergunta titulo="Você investe em tráfego pago?" apoio="Opcional.">
         <EscolhaUnica
           opcoes={TRAFEGO}
           valor={respostas.trafego_pago}
@@ -476,7 +490,7 @@ function PassoContexto({ respostas, definir }: PassoProps) {
         />
       </Pergunta>
 
-      <Pergunta titulo="Como você conheceu a prevIA?">
+      <Pergunta titulo="Como você conheceu a prevIA?" apoio="Opcional.">
         <EscolhaUnica
           opcoes={ORIGEM}
           valor={respostas.origem}

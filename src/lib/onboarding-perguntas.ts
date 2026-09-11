@@ -18,8 +18,25 @@ export const PASSOS = [
   { numero: 2, titulo: "Seu público", resumo: "Quem precisa ouvir" },
   { numero: 3, titulo: "Sua voz", resumo: "Como você soa" },
   { numero: 4, titulo: "Suas referências", resumo: "Onde buscar repertório" },
-  { numero: 5, titulo: "Seu contexto", resumo: "Onde você está hoje" },
+  { numero: 5, titulo: "Seu ritmo", resumo: "Com o que você se compromete" },
 ] as const;
+
+/**
+ * O compromisso de publicação. É a pergunta que sustenta o produto inteiro:
+ * o app garante que sempre existe conteúdo pronto para estes dias e cobra neles.
+ * Três vezes por semana é o ritmo recomendado para quem está começando.
+ */
+export const RITMO_SUGERIDO = [1, 3, 5];
+
+export const DIAS_DA_SEMANA: { dow: number; curto: string; longo: string }[] = [
+  { dow: 1, curto: "Seg", longo: "Segunda" },
+  { dow: 2, curto: "Ter", longo: "Terça" },
+  { dow: 3, curto: "Qua", longo: "Quarta" },
+  { dow: 4, curto: "Qui", longo: "Quinta" },
+  { dow: 5, curto: "Sex", longo: "Sexta" },
+  { dow: 6, curto: "Sáb", longo: "Sábado" },
+  { dow: 0, curto: "Dom", longo: "Domingo" },
+];
 
 /** Q2 — área principal de atuação. Também define as referências sugeridas. */
 export const AREAS: Opcao[] = [
@@ -203,6 +220,8 @@ export type Respostas = {
   referencias?: string[];
   canais?: string[];
   // Passo 5
+  /** Dias da semana com que a pessoa se compromete (0=dom … 6=sáb). */
+  ritmo_dias?: number[];
   tamanho_escritorio?: string;
   trafego_pago?: string;
   situacao?: string;
@@ -322,11 +341,13 @@ export function validarPasso(passo: number, r: Respostas): string[] {
     if (!(r.canais ?? []).length) erros.push("Diga onde você publica hoje.");
   }
 
+  // Só o compromisso de ritmo é obrigatório aqui. Tamanho de escritório, tráfego
+  // pago e "como conheceu" são perguntas nossas, de qualificação comercial —
+  // cobrá-las no ponto de maior atrito do funil custa conversão.
   if (passo === 5) {
-    if (!r.tamanho_escritorio) erros.push("Informe o tamanho do escritório.");
-    if (!r.trafego_pago) erros.push("Informe se você investe em tráfego pago.");
-    if (!r.situacao) erros.push("Escolha a situação que mais descreve você hoje.");
-    if (!r.origem) erros.push("Conte como você conheceu a prevIA.");
+    const dias = r.ritmo_dias ?? [];
+    if (!dias.length) erros.push("Escolha ao menos um dia para publicar.");
+    if (dias.some((d) => d < 0 || d > 6)) erros.push("Dia da semana inválido.");
     if (r.origem === "outro" && !r.origem_outro?.trim())
       erros.push("Descreva como você conheceu a prevIA.");
   }
