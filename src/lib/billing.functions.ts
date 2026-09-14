@@ -1,13 +1,7 @@
+import { randomBytes } from "crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import {
-  AREAS,
-  CANAIS,
-  ORIGEM,
-  SITUACAO,
-  TAMANHOS,
-  TRAFEGO,
-} from "@/lib/onboarding-perguntas";
+import { AREAS, CANAIS, ORIGEM, SITUACAO, TAMANHOS, TRAFEGO } from "@/lib/onboarding-perguntas";
 
 const cicloAtual = () => {
   const d = new Date();
@@ -16,9 +10,12 @@ const cicloAtual = () => {
 
 const num = (v: unknown) => (v === null || v === undefined ? 0 : Number(v));
 
-async function assertAdmin(supabase: {
-  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }>;
-}, userId: string) {
+async function assertAdmin(
+  supabase: {
+    rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }>;
+  },
+  userId: string,
+) {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (!data) throw new Error("Acesso restrito à administração da plataforma.");
 }
@@ -73,8 +70,7 @@ async function carregarDashboard(supabase: any) {
     const assinatura = assinaturasData.find((a) => a.conta_id === conta.id) ?? null;
     const econCiclo = economiaData.find((e) => e.conta_id === conta.id && e.ciclo === ciclo);
     const custoCentavos = num(econCiclo?.custo_total_centavos);
-    const receitaCentavos =
-      assinatura?.situacao === "ativa" ? num(assinatura.valor_centavos) : 0;
+    const receitaCentavos = assinatura?.situacao === "ativa" ? num(assinatura.valor_centavos) : 0;
     return {
       id: conta.id as string,
       nome: conta.nome as string,
@@ -134,7 +130,9 @@ async function carregarDashboard(supabase: any) {
     custo_mes_centavos: custoMes,
     margem_centavos: mrr - custoMes,
     margem_pct: mrr > 0 ? Math.round(((mrr - custoMes) / mrr) * 100) : 0,
-    custo_por_conta_centavos: contasDetalhe.length ? Math.round(custoMes / contasDetalhe.length) : 0,
+    custo_por_conta_centavos: contasDetalhe.length
+      ? Math.round(custoMes / contasDetalhe.length)
+      : 0,
   };
 
   // Crescimento médio de contas pagantes por mês desde a primeira assinatura
@@ -142,10 +140,7 @@ async function carregarDashboard(supabase: any) {
     .map((a) => new Date(a.iniciada_em).getTime())
     .filter((t) => !Number.isNaN(t));
   const mesesOperando = primeiras.length
-    ? Math.max(
-        1,
-        Math.round((Date.now() - Math.min(...primeiras)) / (1000 * 60 * 60 * 24 * 30)),
-      )
+    ? Math.max(1, Math.round((Date.now() - Math.min(...primeiras)) / (1000 * 60 * 60 * 24 * 30)))
     : 1;
   const novasPorMes = Math.max(0.5, ativas.length / mesesOperando);
   const custoPorContaMes = resumo.custo_por_conta_centavos || 0;
@@ -262,9 +257,7 @@ function resumirOnboarding(registros: any[], contas: { id: string; nome: string 
     distribuicao((r) => {
       const bruto = r.respostas?.[campo];
       if (!Array.isArray(bruto)) return [];
-      return bruto.map(
-        (v: unknown) => opcoes.find((o) => o.valor === v)?.label ?? String(v ?? ""),
-      );
+      return bruto.map((v: unknown) => opcoes.find((o) => o.valor === v)?.label ?? String(v ?? ""));
     });
 
   const abandonoPorPasso = [1, 2, 3, 4, 5].map((passo) => ({
@@ -275,9 +268,7 @@ function resumirOnboarding(registros: any[], contas: { id: string; nome: string 
   return {
     iniciados: registros.length,
     concluidos: concluidos.length,
-    conversao_pct: registros.length
-      ? Math.round((concluidos.length / registros.length) * 100)
-      : 0,
+    conversao_pct: registros.length ? Math.round((concluidos.length / registros.length) * 100) : 0,
     abandono_por_passo: abandonoPorPasso,
     area: unico("area_atuacao", AREAS),
     origem: unico("origem", ORIGEM),
@@ -328,7 +319,9 @@ async function registrarAcao(
 
 export const salvarPlano = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { codigo: string; novo?: boolean; valores: Record<string, unknown> }) => data)
+  .inputValidator(
+    (data: { codigo: string; novo?: boolean; valores: Record<string, unknown> }) => data,
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as any, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -337,10 +330,16 @@ export const salvarPlano = createServerFn({ method: "POST" })
       ? await (supabaseAdmin as any).from("planos").insert(payload)
       : await (supabaseAdmin as any).from("planos").update(data.valores).eq("codigo", data.codigo);
     if (error) throw new Error(error.message);
-    await registrarAcao(supabaseAdmin, context.userId, null, data.novo ? "plano_criado" : "plano_editado", {
-      codigo: data.codigo,
-      valores: data.valores,
-    });
+    await registrarAcao(
+      supabaseAdmin,
+      context.userId,
+      null,
+      data.novo ? "plano_criado" : "plano_editado",
+      {
+        codigo: data.codigo,
+        valores: data.valores,
+      },
+    );
     return { ok: true };
   });
 
@@ -477,4 +476,110 @@ export const reprocessarEventoKiwify = createServerFn({ method: "POST" })
       resultado,
     });
     return resultado;
+  });
+
+/**
+ * Alfabeto sem caractere ambíguo: nada de O/0, I/l/1, S/5.
+ *
+ * A senha provisória costuma ser lida em voz alta ou copiada à mão de uma tela
+ * para um WhatsApp. Um zero confundido com O vira um chamado de suporte.
+ */
+const ALFABETO_SENHA = "ABCDEFGHJKLMNPQRTUVWXYZabcdefghijkmnpqrtuvwxyz23456789";
+
+function senhaProvisoria(tamanho = 14): string {
+  const bytes = randomBytes(tamanho);
+  let saida = "";
+  for (let i = 0; i < tamanho; i++) {
+    saida += ALFABETO_SENHA[bytes[i]! % ALFABETO_SENHA.length];
+  }
+  return saida;
+}
+
+/**
+ * Cria uma conta de convidado — o acesso de cortesia, feito pelo admin.
+ *
+ * O cadastro público está desligado no Auth do projeto, de propósito: quem
+ * entra ou comprou pela Kiwify, ou é convidado e nasce aqui. Isso mantém a
+ * porta fechada sem impedir demonstração, parceiro e teste.
+ *
+ * O usuário nasce com o e-mail JÁ confirmado. Não é atalho: sem isso ele
+ * receberia a senha e ainda assim esbarraria no aviso de confirmar o e-mail,
+ * que depende de SMTP configurado e transforma uma cortesia em suporte.
+ *
+ * A senha volta em texto puro UMA vez, para o admin repassar. Não fica gravada
+ * em lugar nenhum — nem no log de ações, que guarda só o e-mail e o plano.
+ */
+export const criarContaConvidado = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (data: { email: string; nome?: string; planoCodigo?: string; diasCortesia?: number }) => data,
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase as any, context.userId);
+
+    const email = data.email.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(email) || email.length > 254) {
+      throw new Error("Confira o e-mail digitado.");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+
+    const senha = senhaProvisoria();
+    const { data: criado, error: erroUsuario } = await admin.auth.admin.createUser({
+      email,
+      password: senha,
+      email_confirm: true,
+    });
+
+    if (erroUsuario) {
+      // O Auth responde com mensagem própria quando o e-mail já existe; vale
+      // repassar em vez de mascarar, porque a saída é outra (o admin deve
+      // conceder cortesia à conta existente, não criar uma segunda).
+      const bruto = String(erroUsuario.message ?? "");
+      if (/already (been )?registered|already exists/i.test(bruto)) {
+        throw new Error("Já existe um usuário com esse e-mail. Use as ações da conta dele.");
+      }
+      throw new Error(bruto || "Não foi possível criar o usuário.");
+    }
+
+    const userId = criado?.user?.id as string | undefined;
+    if (!userId) throw new Error("O usuário foi criado sem id. Tente de novo.");
+
+    const nome = data.nome?.trim() || email.split("@")[0] || "Convidado";
+    const plano = data.planoCodigo || "starter";
+
+    // Mesmo caminho que o cadastro normal percorre: cria conta, vincula como
+    // owner e abre a assinatura. Reusar evita que a conta de convidado nasça
+    // diferente da dos outros.
+    const { data: contaId, error: erroConta } = await admin.rpc("iniciar_conta_trial", {
+      _user_id: userId,
+      _nome: nome,
+      _plano: plano,
+    });
+    if (erroConta) throw new Error(erroConta.message);
+
+    // O RPC marca a origem como kiwify, que é o caso comum. Aqui não é venda:
+    // corrigir a origem mantém o painel financeiro honesto.
+    const dias = data.diasCortesia && data.diasCortesia > 0 ? data.diasCortesia : 30;
+    const fim = new Date(Date.now() + dias * 86400000);
+    await admin
+      .from("assinaturas")
+      .update({
+        situacao: "trial",
+        origem: "cortesia",
+        trial_fim: fim.toISOString(),
+        valor_centavos: 0,
+        cancelada_em: null,
+        observacao: `Convidado por admin em ${new Date().toLocaleDateString("pt-BR")}`,
+      })
+      .eq("conta_id", contaId);
+
+    await registrarAcao(supabaseAdmin, context.userId, String(contaId), "convidado_criado", {
+      email,
+      plano,
+      dias,
+    });
+
+    return { contaId: String(contaId), email, senha, dias };
   });

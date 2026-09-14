@@ -655,6 +655,7 @@ export type Database = {
         Row: {
           atualizado_em: string
           comprou_em: string | null
+          conta_criada_em: string | null
           conta_id: string | null
           criado_em: string
           email: string | null
@@ -668,11 +669,13 @@ export type Database = {
           relatorio_gerado_em: string | null
           relatorio_origem: string | null
           respostas: Json
+          senha_definida_em: string | null
           token: string
         }
         Insert: {
           atualizado_em?: string
           comprou_em?: string | null
+          conta_criada_em?: string | null
           conta_id?: string | null
           criado_em?: string
           email?: string | null
@@ -686,11 +689,13 @@ export type Database = {
           relatorio_gerado_em?: string | null
           relatorio_origem?: string | null
           respostas?: Json
+          senha_definida_em?: string | null
           token: string
         }
         Update: {
           atualizado_em?: string
           comprou_em?: string | null
+          conta_criada_em?: string | null
           conta_id?: string | null
           criado_em?: string
           email?: string | null
@@ -704,6 +709,7 @@ export type Database = {
           relatorio_gerado_em?: string | null
           relatorio_origem?: string | null
           respostas?: Json
+          senha_definida_em?: string | null
           token?: string
         }
         Relationships: [

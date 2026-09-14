@@ -3,6 +3,8 @@
  * Server-only: usa o cliente administrativo do banco.
  */
 
+import { randomBytes } from "crypto";
+
 type AnyClient = any;
 
 export type KiwifyEventoRow = {
@@ -76,8 +78,7 @@ async function resolverPlano(admin: AnyClient, evento: KiwifyEventoRow): Promise
       .maybeSingle();
     if (data) return data.codigo;
   }
-  const produtoId =
-    evento.payload?.Product?.product_id ?? evento.payload?.product_id ?? null;
+  const produtoId = evento.payload?.Product?.product_id ?? evento.payload?.product_id ?? null;
   const ofertaId = evento.payload?.Subscription?.plan?.id ?? evento.payload?.offer_id ?? null;
   const { data: planos } = await admin
     .from("planos")
@@ -115,6 +116,148 @@ async function marcarLeadComprou(admin: AnyClient, evento: KiwifyEventoRow) {
   }
 }
 
+/**
+ * Cria a conta de quem comprou, no aviso de pagamento aprovado.
+ *
+ * A senha nasce aleatoria e nao e revelada a ninguem: o comprador define a
+ * dele na tela de boas-vindas, para onde a pagina de obrigado da Kiwify
+ * aponta. O e-mail ja nasce confirmado porque a confirmacao depende de SMTP e
+ * transformaria a primeira impressao pos-compra num chamado de suporte.
+ *
+ * Se o comprador ja tem usuario (comprou de novo, ou foi convidado antes),
+ * reaproveita em vez de criar um segundo.
+ *
+ * Nunca lanca: falhar aqui nao pode derrubar o processamento do pagamento. O
+ * evento fica registrado como nao processado e pode ser reprocessado no painel.
+ */
+async function criarContaDoComprador(
+  admin: AnyClient,
+  evento: KiwifyEventoRow,
+): Promise<string | null> {
+  const email = evento.comprador_email?.trim().toLowerCase();
+  if (!email) return null;
+
+  try {
+    let userId = await acharUsuarioPorEmail(admin, email);
+
+    if (!userId) {
+      const { data: criado, error } = await admin.auth.admin.createUser({
+        email,
+        password: randomBytes(24).toString("base64url"),
+        email_confirm: true,
+      });
+      if (error) {
+        console.error("kiwify: falha ao criar usuario do comprador", error.message);
+        return null;
+      }
+      userId = criado?.user?.id ?? null;
+    }
+
+    if (!userId) return null;
+
+    // Mesmo caminho do cadastro normal, e idempotente: devolve a conta que ja
+    // existir em vez de criar uma segunda.
+    const { data: contaId, error: erroConta } = await admin.rpc("iniciar_conta_trial", {
+      _user_id: userId,
+      _nome: email.split("@")[0] ?? "Minha conta",
+      _plano: evento.plano_codigo ?? "starter",
+    });
+    if (erroConta) {
+      console.error("kiwify: falha ao iniciar conta do comprador", erroConta.message);
+      return null;
+    }
+
+    await prepararAcesso(admin, evento, String(contaId));
+    return String(contaId);
+  } catch (e) {
+    console.error("kiwify: erro ao criar conta do comprador", e);
+    return null;
+  }
+}
+
+async function acharUsuarioPorEmail(admin: AnyClient, email: string): Promise<string | null> {
+  try {
+    const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const user = (data?.users ?? []).find((u: any) => (u.email ?? "").toLowerCase() === email);
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Liga o lead do quiz a conta recem-criada e semeia o onboarding.
+ *
+ * E aqui que a promessa de nao responder duas vezes se cumpre para quem veio
+ * pelo funil: as respostas do quiz viram o onboarding da conta antes mesmo de
+ * a pessoa entrar. Quem comprou sem passar pelo quiz nao tem lead, e este
+ * passo simplesmente nao faz nada.
+ *
+ * O carimbo em conta_criada_em abre a janela em que a tela de boas-vindas
+ * aceita definir a senha.
+ */
+async function prepararAcesso(admin: AnyClient, evento: KiwifyEventoRow, contaId: string) {
+  const agora = new Date().toISOString();
+
+  let lead: { id: string; respostas: Record<string, unknown>; importado_em: string | null } | null =
+    null;
+
+  if (evento.lead_id) {
+    const { data } = await admin
+      .from("oferta_leads")
+      .select("id, respostas, importado_em")
+      .eq("id", evento.lead_id)
+      .maybeSingle();
+    lead = data ?? null;
+  }
+
+  if (!lead && evento.comprador_email) {
+    const { data } = await admin
+      .from("oferta_leads")
+      .select("id, respostas, importado_em")
+      .eq("email", evento.comprador_email.toLowerCase())
+      .is("conta_id", null)
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    lead = data ?? null;
+  }
+
+  if (!lead) return;
+
+  await admin
+    .from("oferta_leads")
+    .update({ conta_id: contaId, conta_criada_em: agora, atualizado_em: agora })
+    .eq("id", lead.id);
+
+  const respostas = (lead.respostas ?? {}) as Record<string, unknown>;
+  if (lead.importado_em || !Object.keys(respostas).length) return;
+
+  // Nao sobrescreve: se a conta ja tem onboarding em andamento, o que a pessoa
+  // fez dentro do app manda.
+  const { data: existente } = await admin
+    .from("onboarding_respostas")
+    .select("conta_id, respostas, concluido_em")
+    .eq("conta_id", contaId)
+    .maybeSingle();
+
+  if (existente?.concluido_em) return;
+  if (existente?.respostas && Object.keys(existente.respostas).length > 0) return;
+
+  if (existente) {
+    await admin
+      .from("onboarding_respostas")
+      .update({ respostas, atualizado_em: agora })
+      .eq("conta_id", contaId);
+  } else {
+    await admin
+      .from("onboarding_respostas")
+      .insert({ conta_id: contaId, respostas, passo_atual: 1 });
+  }
+
+  await admin.from("oferta_leads").update({ importado_em: agora }).eq("id", lead.id);
+}
+
 async function resolverConta(admin: AnyClient, evento: KiwifyEventoRow): Promise<string | null> {
   if (evento.conta_id) return evento.conta_id;
 
@@ -138,9 +281,7 @@ async function resolverConta(admin: AnyClient, evento: KiwifyEventoRow): Promise
 
     // Busca o usuário pelo e-mail e a conta em que ele é membro.
     const { data: lista } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    const user = (lista?.users ?? []).find(
-      (u: any) => (u.email ?? "").toLowerCase() === email,
-    );
+    const user = (lista?.users ?? []).find((u: any) => (u.email ?? "").toLowerCase() === email);
     if (user) {
       const { data: membro } = await admin
         .from("conta_membros")
@@ -168,7 +309,19 @@ export async function aplicarEventoKiwify(admin: AnyClient, evento: KiwifyEvento
   // nunca seria registrada justamente nas compras que deram certo.
   await marcarLeadComprou(admin, evento);
 
-  const contaId = await resolverConta(admin, evento);
+  let contaId = await resolverConta(admin, evento);
+
+  /*
+   * Ninguem se cadastra sozinho neste app: o cadastro publico esta desligado
+   * no Auth. Entao quem acabou de pagar depende de a conta nascer aqui --
+   * antes disto, o pagamento era registrado e o comprador ficava sem
+   * conseguir entrar. Restrito a evento de aprovacao: pix gerado e boleto
+   * emitido ainda nao sao compra.
+   */
+  if (!contaId && APROVA.has(evento.evento.toLowerCase())) {
+    contaId = await criarContaDoComprador(admin, evento);
+  }
+
   if (!contaId) {
     await marcar(admin, evento, false, "Conta não identificada para este pagamento.");
     return { ok: false, motivo: "conta_nao_identificada" as const };
@@ -193,7 +346,10 @@ export async function aplicarEventoKiwify(admin: AnyClient, evento: KiwifyEvento
     if (evento.valor_centavos) patch["valor_centavos"] = evento.valor_centavos;
     if (planoCodigo) patch["plano_codigo"] = planoCodigo;
     if (planoCodigo) {
-      await admin.from("contas").update({ plano_codigo: planoCodigo, status: "ativa" }).eq("id", contaId);
+      await admin
+        .from("contas")
+        .update({ plano_codigo: planoCodigo, status: "ativa" })
+        .eq("id", contaId);
     } else {
       await admin.from("contas").update({ status: "ativa" }).eq("id", contaId);
     }

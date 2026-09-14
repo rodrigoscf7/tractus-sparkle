@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, Copy, UserPlus } from "lucide-react";
 import { useIsPlatformAdmin } from "@/hooks/use-platform-admin";
 import {
   getAdminDashboard,
@@ -24,6 +24,7 @@ import {
   salvarPlano,
   salvarPrecoCusto,
   reprocessarEventoKiwify,
+  criarContaConvidado,
 } from "@/lib/billing.functions";
 import { enviarNotificacaoTeste } from "@/lib/notificacoes.functions";
 
@@ -33,7 +34,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
       { title: "Administração da plataforma | prevIA - CONTENT" },
       {
         name: "description",
-        content: "Receita, contas pagantes, custo real de uso, margem por plano e eventos de cobrança.",
+        content:
+          "Receita, contas pagantes, custo real de uso, margem por plano e eventos de cobrança.",
       },
       { property: "og:title", content: "Administração da plataforma | prevIA - CONTENT" },
       { property: "og:description", content: "Operação e economia do prevIA - CONTENT." },
@@ -67,9 +69,7 @@ function Kpi({
       <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
         {label}
       </div>
-      <div
-        className={`num font-display text-2xl mt-1 ${alerta ? "text-destructive" : ""}`}
-      >
+      <div className={`num font-display text-2xl mt-1 ${alerta ? "text-destructive" : ""}`}>
         {valor}
       </div>
       {detalhe && <div className="num text-xs text-muted-foreground mt-1">{detalhe}</div>}
@@ -137,9 +137,21 @@ function AdminPage() {
         {/* ---------------- FINANCEIRO ---------------- */}
         <TabsContent value="financeiro" className="space-y-6 mt-5">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Kpi label="Receita recorrente (MRR)" valor={brl(r?.mrr_centavos ?? 0)} detalhe={`ARR ${brl(r?.arr_centavos ?? 0)}`} />
-            <Kpi label="Contas pagantes" valor={String(r?.pagantes ?? 0)} detalhe={`${r?.trials ?? 0} em teste · ${r?.gratuitas ?? 0} gratuitas`} />
-            <Kpi label="Ticket médio" valor={brl(r?.ticket_medio_centavos ?? 0)} detalhe={`Conversão de teste ${r?.conversao_trial_pct ?? 0}%`} />
+            <Kpi
+              label="Receita recorrente (MRR)"
+              valor={brl(r?.mrr_centavos ?? 0)}
+              detalhe={`ARR ${brl(r?.arr_centavos ?? 0)}`}
+            />
+            <Kpi
+              label="Contas pagantes"
+              valor={String(r?.pagantes ?? 0)}
+              detalhe={`${r?.trials ?? 0} em teste · ${r?.gratuitas ?? 0} gratuitas`}
+            />
+            <Kpi
+              label="Ticket médio"
+              valor={brl(r?.ticket_medio_centavos ?? 0)}
+              detalhe={`Conversão de teste ${r?.conversao_trial_pct ?? 0}%`}
+            />
             <Kpi
               label="Margem bruta do mês"
               valor={`${r?.margem_pct ?? 0}%`}
@@ -149,9 +161,20 @@ function AdminPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <Kpi label="Custo médio por conta / mês" valor={brl(r?.custo_por_conta_centavos ?? 0)} />
-            <Kpi label="Pagamentos pendentes" valor={String(r?.atrasadas ?? 0)} alerta={(r?.atrasadas ?? 0) > 0} />
-            <Kpi label="Cancelamentos no mês" valor={String(r?.canceladas_mes ?? 0)} alerta={(r?.canceladas_mes ?? 0) > 0} />
+            <Kpi
+              label="Custo médio por conta / mês"
+              valor={brl(r?.custo_por_conta_centavos ?? 0)}
+            />
+            <Kpi
+              label="Pagamentos pendentes"
+              valor={String(r?.atrasadas ?? 0)}
+              alerta={(r?.atrasadas ?? 0) > 0}
+            />
+            <Kpi
+              label="Cancelamentos no mês"
+              valor={String(r?.canceladas_mes ?? 0)}
+              alerta={(r?.canceladas_mes ?? 0) > 0}
+            />
           </div>
 
           <Card className="p-5">
@@ -196,7 +219,9 @@ function AdminPage() {
                       <div className="text-[11px] font-mono uppercase text-muted-foreground">
                         Margem no uso máximo
                       </div>
-                      <span className={c.alerta ? "text-destructive" : ""}>{c.margem_max_pct}%</span>
+                      <span className={c.alerta ? "text-destructive" : ""}>
+                        {c.margem_max_pct}%
+                      </span>
                     </div>
                     <div>
                       <div className="text-[11px] font-mono uppercase text-muted-foreground">
@@ -239,7 +264,12 @@ function AdminPage() {
               <div className="mt-3 space-y-2">
                 {(data?.serie ?? []).map((s) => (
                   <div key={s.ciclo} className="num text-sm flex justify-between gap-3">
-                    <span>{new Date(s.ciclo).toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}</span>
+                    <span>
+                      {new Date(s.ciclo).toLocaleDateString("pt-BR", {
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
                     <span className="text-muted-foreground">
                       IA {brl(s.custo_ia_centavos)} · coleta {brl(s.custo_scraping_centavos)} ·{" "}
                       {s.geracoes} gerações
@@ -254,6 +284,8 @@ function AdminPage() {
 
         {/* ---------------- CONTAS ---------------- */}
         <TabsContent value="contas" className="space-y-3 mt-5">
+          <ConvidarConta planos={data?.planos ?? []} aoCriar={refetch} />
+
           {(data?.contas ?? []).map((conta) => (
             <Card key={conta.id} className="p-4 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -262,7 +294,9 @@ function AdminPage() {
                   <div className="num text-xs text-muted-foreground mt-1">
                     {conta.membros} membro(s) · desde{" "}
                     {new Date(conta.criado_em).toLocaleDateString("pt-BR")}
-                    {conta.assinatura?.comprador_email ? ` · ${conta.assinatura.comprador_email}` : ""}
+                    {conta.assinatura?.comprador_email
+                      ? ` · ${conta.assinatura.comprador_email}`
+                      : ""}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -271,7 +305,9 @@ function AdminPage() {
                       <AlertTriangle className="h-3 w-3" /> consumo alto
                     </Badge>
                   )}
-                  <Badge variant="secondary">{conta.assinatura?.situacao ?? "sem assinatura"}</Badge>
+                  <Badge variant="secondary">
+                    {conta.assinatura?.situacao ?? "sem assinatura"}
+                  </Badge>
                   <Badge variant={conta.status === "ativa" ? "outline" : "destructive"}>
                     {conta.status}
                   </Badge>
@@ -287,7 +323,10 @@ function AdminPage() {
                     value={conta.plano_codigo}
                     onValueChange={(v) =>
                       rodar(
-                        () => executar({ data: { contaId: conta.id, acao: "trocar_plano", planoCodigo: v } }),
+                        () =>
+                          executar({
+                            data: { contaId: conta.id, acao: "trocar_plano", planoCodigo: v },
+                          }),
                         "Plano atualizado.",
                       )
                     }
@@ -304,14 +343,28 @@ function AdminPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Metrica label="Curadorias" usado={conta.uso["curadoria"] ?? 0} limite={conta.limites.curadoria} />
-                <Metrica label="Roteiros" usado={conta.uso["roteiro"] ?? 0} limite={conta.limites.roteiro} />
-                <Metrica label="Carrosséis" usado={conta.uso["carrossel"] ?? 0} limite={conta.limites.carrossel} />
+                <Metrica
+                  label="Curadorias"
+                  usado={conta.uso["curadoria"] ?? 0}
+                  limite={conta.limites.curadoria}
+                />
+                <Metrica
+                  label="Roteiros"
+                  usado={conta.uso["roteiro"] ?? 0}
+                  limite={conta.limites.roteiro}
+                />
+                <Metrica
+                  label="Carrosséis"
+                  usado={conta.uso["carrossel"] ?? 0}
+                  limite={conta.limites.carrossel}
+                />
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-3 num text-sm">
                 <div>
-                  <div className="text-[11px] font-mono uppercase text-muted-foreground">Receita</div>
+                  <div className="text-[11px] font-mono uppercase text-muted-foreground">
+                    Receita
+                  </div>
                   {brl(conta.receita_centavos)}
                 </div>
                 <div>
@@ -321,7 +374,9 @@ function AdminPage() {
                   {brl(conta.custo_centavos)} · {conta.geracoes} gerações
                 </div>
                 <div>
-                  <div className="text-[11px] font-mono uppercase text-muted-foreground">Margem</div>
+                  <div className="text-[11px] font-mono uppercase text-muted-foreground">
+                    Margem
+                  </div>
                   <span className={conta.margem_centavos < 0 ? "text-destructive" : ""}>
                     {brl(conta.margem_centavos)}
                   </span>
@@ -352,7 +407,8 @@ function AdminPage() {
                   size="sm"
                   onClick={() =>
                     rodar(
-                      () => executar({ data: { contaId: conta.id, acao: "conceder_trial", dias: 14 } }),
+                      () =>
+                        executar({ data: { contaId: conta.id, acao: "conceder_trial", dias: 14 } }),
                       "Teste de 14 dias concedido.",
                     )
                   }
@@ -446,7 +502,10 @@ function AdminPage() {
               key={p.chave}
               preco={p}
               onSalvar={(valores) =>
-                rodar(() => gravarPreco({ data: { ...valores, chave: p.chave } }), "Preço atualizado.")
+                rodar(
+                  () => gravarPreco({ data: { ...valores, chave: p.chave } }),
+                  "Preço atualizado.",
+                )
               }
             />
           ))}
@@ -549,8 +608,8 @@ function AdminPage() {
               Notificações push
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Cria um lote de teste na fila e chama o push-agent na hora, sem esperar o cron —
-              use para confirmar que as chaves VAPID estão configuradas.
+              Cria um lote de teste na fila e chama o push-agent na hora, sem esperar o cron — use
+              para confirmar que as chaves VAPID estão configuradas.
             </p>
             <Button
               size="sm"
@@ -628,9 +687,7 @@ function AdminPage() {
                   key={c.conta_id}
                   className="rounded-md border border-border p-3 flex flex-wrap items-center gap-x-4 gap-y-1"
                 >
-                  <span className="font-display font-semibold">
-                    {c.nome_informado ?? c.nome}
-                  </span>
+                  <span className="font-display font-semibold">{c.nome_informado ?? c.nome}</span>
                   {c.concluido_em ? (
                     <Badge variant="outline" className="num text-xs">
                       {new Date(c.concluido_em).toLocaleDateString("pt-BR")}
@@ -653,9 +710,7 @@ function AdminPage() {
                       .join(" · ")}
                   </span>
                   {c.situacao && (
-                    <span className="text-sm text-muted-foreground basis-full">
-                      “{c.situacao}”
-                    </span>
+                    <span className="text-sm text-muted-foreground basis-full">“{c.situacao}”</span>
                   )}
                 </div>
               ))}
@@ -836,7 +891,11 @@ function PlanoEditor({
         >
           Salvar plano
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setForm({ ...form, publico: !form.publico })}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setForm({ ...form, publico: !form.publico })}
+        >
           {form.publico ? "Ocultar da vitrine" : "Publicar na vitrine"}
         </Button>
         <Button
@@ -846,7 +905,11 @@ function PlanoEditor({
         >
           {form.recomendado ? "Remover destaque" : "Marcar como recomendado"}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setForm({ ...form, ativo: !form.ativo })}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setForm({ ...form, ativo: !form.ativo })}
+        >
           {form.ativo ? "Desativar plano" : "Ativar plano"}
         </Button>
       </div>
@@ -895,6 +958,200 @@ function NovoPlano({
           </Button>
         </div>
       </div>
+    </Card>
+  );
+}
+
+/**
+ * Convite de cortesia.
+ *
+ * O cadastro público está desligado no Auth do projeto: quem entra ou comprou
+ * pela Kiwify, ou nasce aqui. Este card é a segunda porta — demonstração,
+ * parceiro, teste — sem reabrir a primeira para a internet inteira.
+ *
+ * A senha aparece UMA vez e some ao fechar. Não é teatro de segurança: ela não
+ * fica gravada em lugar nenhum, nem no log de ações, então esta tela é
+ * literalmente a única chance de copiá-la.
+ */
+function ConvidarConta({
+  planos,
+  aoCriar,
+}: {
+  planos: { codigo: string; nome: string }[];
+  aoCriar: () => void;
+}) {
+  const criar = useServerFn(criarContaConvidado);
+  const [aberto, setAberto] = useState(false);
+  const [email, setEmail] = useState("");
+  const [nome, setNome] = useState("");
+  const [plano, setPlano] = useState("starter");
+  const [dias, setDias] = useState("30");
+  const [salvando, setSalvando] = useState(false);
+  const [criado, setCriado] = useState<{ email: string; senha: string; dias: number } | null>(null);
+  const [copiado, setCopiado] = useState(false);
+
+  async function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    setSalvando(true);
+    try {
+      const r = await criar({
+        data: {
+          email,
+          nome: nome || undefined,
+          planoCodigo: plano,
+          diasCortesia: Number(dias) || 30,
+        },
+      });
+      setCriado({ email: r.email, senha: r.senha, dias: r.dias });
+      setEmail("");
+      setNome("");
+      aoCriar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível criar o convidado.");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  const textoParaEnviar = criado
+    ? `Acesso prevIA
+
+Endereço: ${typeof window !== "undefined" ? window.location.origin : ""}/auth
+E-mail: ${criado.email}
+Senha provisória: ${criado.senha}
+
+Troque a senha depois de entrar.`
+    : "";
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(textoParaEnviar);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      toast.error("Não consegui copiar. Selecione o texto e copie à mão.");
+    }
+  }
+
+  if (criado) {
+    return (
+      <Card className="p-5 sm:p-6 border-primary/40">
+        <div className="font-display text-lg font-semibold">Convidado criado</div>
+        <p className="text-sm text-muted-foreground mt-1">
+          Esta senha aparece só agora — ela não fica guardada em lugar nenhum. Copie antes de
+          fechar.
+        </p>
+
+        <pre className="mt-4 whitespace-pre-wrap rounded-md border border-border bg-surface-elevated p-4 text-sm font-mono">
+          {textoParaEnviar}
+        </pre>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button onClick={copiar} className="gap-2">
+            {copiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copiado ? "Copiado" : "Copiar acesso"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setCriado(null);
+              setAberto(false);
+            }}
+          >
+            Fechar
+          </Button>
+        </div>
+
+        <p className="num text-xs text-muted-foreground mt-4">
+          Cortesia de {criado.dias} dias · o e-mail já nasce confirmado, então dá para entrar
+          imediatamente.
+        </p>
+      </Card>
+    );
+  }
+
+  if (!aberto) {
+    return (
+      <Button variant="outline" className="gap-2" onClick={() => setAberto(true)}>
+        <UserPlus className="h-4 w-4" /> Criar conta de convidado
+      </Button>
+    );
+  }
+
+  return (
+    <Card className="p-5 sm:p-6">
+      <div className="font-display text-lg font-semibold">Conta de convidado</div>
+      <p className="text-sm text-muted-foreground mt-1">
+        Cria o acesso na hora, com senha provisória. Use para demonstração, parceiro ou teste — quem
+        compra pela Kiwify não passa por aqui.
+      </p>
+
+      <form onSubmit={enviar} className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Label htmlFor="convidado-email">E-mail</Label>
+          <Input
+            id="convidado-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="pessoa@escritorio.com.br"
+            autoComplete="off"
+            className="mt-1"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="convidado-nome">Nome da conta</Label>
+          <Input
+            id="convidado-nome"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Opcional — usa o e-mail se vazio"
+            autoComplete="off"
+            className="mt-1"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="convidado-plano">Plano</Label>
+            <Select value={plano} onValueChange={setPlano}>
+              <SelectTrigger id="convidado-plano" className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {planos.map((p) => (
+                  <SelectItem key={p.codigo} value={p.codigo}>
+                    {p.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="convidado-dias">Dias</Label>
+            <Input
+              id="convidado-dias"
+              type="number"
+              min={1}
+              max={365}
+              value={dias}
+              onChange={(e) => setDias(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+        </div>
+
+        <div className="sm:col-span-2 flex flex-wrap gap-2">
+          <Button type="submit" disabled={salvando}>
+            {salvando ? "Criando…" : "Criar acesso"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setAberto(false)}>
+            Cancelar
+          </Button>
+        </div>
+      </form>
     </Card>
   );
 }
