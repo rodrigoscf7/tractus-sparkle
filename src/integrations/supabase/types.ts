@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_acoes: {
@@ -619,6 +644,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "kiwify_eventos_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oferta_leads: {
+        Row: {
+          atualizado_em: string
+          comprou_em: string | null
+          conta_id: string | null
+          criado_em: string
+          email: string | null
+          id: string
+          importado_em: string | null
+          ip_hash: string | null
+          nome: string | null
+          origem: Json
+          pedido_id: string | null
+          relatorio: Json | null
+          relatorio_gerado_em: string | null
+          relatorio_origem: string | null
+          respostas: Json
+          token: string
+        }
+        Insert: {
+          atualizado_em?: string
+          comprou_em?: string | null
+          conta_id?: string | null
+          criado_em?: string
+          email?: string | null
+          id: string
+          importado_em?: string | null
+          ip_hash?: string | null
+          nome?: string | null
+          origem?: Json
+          pedido_id?: string | null
+          relatorio?: Json | null
+          relatorio_gerado_em?: string | null
+          relatorio_origem?: string | null
+          respostas?: Json
+          token: string
+        }
+        Update: {
+          atualizado_em?: string
+          comprou_em?: string | null
+          conta_id?: string | null
+          criado_em?: string
+          email?: string | null
+          id?: string
+          importado_em?: string | null
+          ip_hash?: string | null
+          nome?: string | null
+          origem?: Json
+          pedido_id?: string | null
+          relatorio?: Json | null
+          relatorio_gerado_em?: string | null
+          relatorio_origem?: string | null
+          respostas?: Json
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oferta_leads_conta_id_fkey"
             columns: ["conta_id"]
             isOneToOne: false
             referencedRelation: "contas"
@@ -1253,8 +1343,19 @@ export type Database = {
       }
     }
     Functions: {
+      agent_function_url: { Args: { nome: string }; Returns: string }
       agent_internal_headers: { Args: never; Returns: Json }
+      agent_secret: { Args: { nome: string }; Returns: string }
       contas_do_usuario: { Args: { _user_id: string }; Returns: string[] }
+      despachar_notificacoes_pendentes: {
+        Args: { p_forcar?: boolean }
+        Returns: undefined
+      }
+      enfileirar_cobranca_ritmo: { Args: never; Returns: undefined }
+      enfileirar_notificacao_push: {
+        Args: { p_conta_id: string; p_perfil_id: string; p_tipo: string }
+        Returns: undefined
+      }
       expirar_trials: { Args: never; Returns: number }
       has_role: {
         Args: {
@@ -1408,6 +1509,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "member"],

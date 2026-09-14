@@ -16,6 +16,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { createHash, randomBytes } from "crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import type { Database } from "@/integrations/supabase/types";
 
 import { dnaViralCurado, normalizarDnaViral, type DnaViral } from "@/lib/dna-viral";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -35,21 +38,12 @@ const MAX_BYTES_RESPOSTAS = 16 * 1024;
 
 const TIMEOUT_AGENTE_MS = 45_000;
 
-/**
- * Cliente de service role, destipado.
- *
- * `integrations/supabase/types.ts` é gerado a partir do schema e ainda não
- * conhece `oferta_leads` — só vai conhecer depois de aplicar a migration e
- * regerar os tipos. Até lá o `any` fica confinado a este alias, em vez de
- * espalhado por cada consulta. É o mesmo caminho que `billing.functions.ts`
- * já toma para as tabelas que o gerador não alcança.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+/** Cliente de service role, já tipado contra o schema real. */
+type Db = SupabaseClient<Database>;
 
 async function admin(): Promise<Db> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as Db;
+  return supabaseAdmin;
 }
 
 /**
