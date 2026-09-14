@@ -31,10 +31,16 @@ export const Route = createFileRoute("/oferta/processando")({
  */
 const DURACAO_MINIMA_MS = 2_500;
 
+/*
+ * Os tempos vêm de medição, não de chute: a geração real levou ~44s com as
+ * respostas de um quiz completo. Fases que terminassem antes disso deixariam
+ * a tela parada na última por meio minuto, que é exatamente a sensação de
+ * travado que faz a pessoa fechar a aba.
+ */
 const FASES = [
-  { ate: 4, texto: "Lendo suas respostas" },
-  { ate: 10, texto: "Mapeando o seu posicionamento" },
-  { ate: 18, texto: "Identificando o que trava a sua constância" },
+  { ate: 6, texto: "Lendo suas respostas" },
+  { ate: 16, texto: "Mapeando o seu posicionamento" },
+  { ate: 30, texto: "Identificando o que trava a sua constância" },
   { ate: Infinity, texto: "Escrevendo os seus ganchos" },
 ];
 
@@ -117,7 +123,7 @@ function Processando() {
           <h1 className="font-display text-2xl font-semibold leading-snug tracking-tight sm:text-3xl">
             Montando o seu DNA Viral
           </h1>
-          <p className="num text-sm text-muted-foreground">Isso leva alguns segundos.</p>
+          <p className="num text-sm text-muted-foreground">Leva menos de um minuto.</p>
         </div>
 
         <ul className="space-y-3" aria-live="polite">

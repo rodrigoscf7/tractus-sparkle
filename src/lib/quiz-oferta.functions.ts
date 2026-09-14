@@ -36,7 +36,7 @@ const LIMITE_GERACOES_POR_HORA = 8;
 /** Teto do JSON de respostas. O quiz cheio não passa de alguns KB. */
 const MAX_BYTES_RESPOSTAS = 16 * 1024;
 
-const TIMEOUT_AGENTE_MS = 45_000;
+const TIMEOUT_AGENTE_MS = 90_000;
 
 /** Cliente de service role, já tipado contra o schema real. */
 type Db = SupabaseClient<Database>;
@@ -407,4 +407,138 @@ async function acharLead(db: Db, leadId: string | undefined, email: string | und
   }
 
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Acesso pós-compra — a tela de boas-vindas
+// ---------------------------------------------------------------------------
+
+/**
+ * Quanto tempo depois da compra a tela aceita definir a senha.
+ *
+ * O identificador do lead viaja na query do checkout, então fica no histórico
+ * do navegador e a Kiwify o enxerga. Sozinho ele não pode valer acesso para
+ * sempre. Duas horas cobrem com folga quem paga no cartão (aprovação na hora)
+ * e quem fecha a aba e volta; quem passar disso usa "esqueci minha senha",
+ * que é o caminho normal e passa pelo e-mail.
+ */
+const JANELA_SENHA_MS = 2 * 3600_000;
+
+export type EstadoCompra =
+  | { estado: "processando" }
+  | { estado: "pronto"; email: string }
+  | { estado: "ja_configurado"; email: string }
+  | { estado: "expirado"; email: string }
+  | { estado: "sem_compra" };
+
+/**
+ * O que a tela de boas-vindas deve mostrar.
+ *
+ * `processando` é o caso comum nos primeiros segundos: a pessoa chega na
+ * página de obrigado antes de o aviso da Kiwify ter sido entregue. A tela
+ * espera em vez de dizer que deu errado.
+ */
+export const statusDaCompra = createServerFn({ method: "GET" })
+  .inputValidator((data: { leadId: string }) => data)
+  .handler(async ({ data }): Promise<EstadoCompra> => {
+    if (!/^[0-9a-f-]{36}$/i.test(data.leadId)) return { estado: "sem_compra" };
+
+    const db = await admin();
+    const { data: lead } = await db
+      .from("oferta_leads")
+      .select("comprou_em, conta_criada_em, senha_definida_em, conta_id")
+      .eq("id", data.leadId)
+      .maybeSingle();
+
+    if (!lead?.comprou_em) return { estado: "sem_compra" };
+
+    const email = await emailDaConta(db, lead.conta_id as string | null);
+
+    if (!lead.conta_criada_em || !lead.conta_id) return { estado: "processando" };
+    if (lead.senha_definida_em) return { estado: "ja_configurado", email };
+
+    const criadaEm = new Date(lead.conta_criada_em as string).getTime();
+    if (Date.now() - criadaEm > JANELA_SENHA_MS) return { estado: "expirado", email };
+
+    return { estado: "pronto", email };
+  });
+
+/**
+ * Define a senha inicial de quem acabou de comprar.
+ *
+ * Uso único e dentro da janela — as duas condições são checadas aqui, no
+ * servidor, e a marcação é feita antes de responder para uma segunda chamada
+ * não pegar o convite ainda aberto.
+ */
+export const definirSenhaInicial = createServerFn({ method: "POST" })
+  .inputValidator((data: { leadId: string; senha: string }) => data)
+  .handler(async ({ data }) => {
+    if (!/^[0-9a-f-]{36}$/i.test(data.leadId)) throw new Error("Link inválido.");
+    if (typeof data.senha !== "string" || data.senha.length < 8) {
+      throw new Error("A senha precisa de pelo menos 8 caracteres.");
+    }
+    if (data.senha.length > 72) throw new Error("A senha é longa demais.");
+
+    const db = await admin();
+    const { data: lead } = await db
+      .from("oferta_leads")
+      .select("id, comprou_em, conta_criada_em, senha_definida_em, conta_id")
+      .eq("id", data.leadId)
+      .maybeSingle();
+
+    if (!lead?.comprou_em || !lead.conta_id || !lead.conta_criada_em) {
+      throw new Error("Ainda não encontramos a sua compra. Aguarde um instante.");
+    }
+    if (lead.senha_definida_em) {
+      throw new Error("Esta senha já foi definida. Use a tela de entrar.");
+    }
+    if (Date.now() - new Date(lead.conta_criada_em as string).getTime() > JANELA_SENHA_MS) {
+      throw new Error("O prazo deste link acabou. Use 'esqueci minha senha' para entrar.");
+    }
+
+    const { data: membro } = await db
+      .from("conta_membros")
+      .select("user_id")
+      .eq("conta_id", lead.conta_id)
+      .order("criado_em")
+      .limit(1)
+      .maybeSingle();
+
+    if (!membro?.user_id) throw new Error("Conta sem usuário vinculado. Fale com o suporte.");
+
+    // Fecha o convite ANTES de trocar a senha: se duas abas chegarem juntas, a
+    // segunda encontra o convite consumido em vez de trocar a senha de novo.
+    const { data: fechado } = await db
+      .from("oferta_leads")
+      .update({ senha_definida_em: new Date().toISOString() })
+      .eq("id", lead.id)
+      .is("senha_definida_em", null)
+      .select("id")
+      .maybeSingle();
+
+    if (!fechado) throw new Error("Esta senha já foi definida. Use a tela de entrar.");
+
+    const { error } = await db.auth.admin.updateUserById(membro.user_id as string, {
+      password: data.senha,
+    });
+    if (error) throw new Error("Não foi possível salvar a senha. Tente de novo.");
+
+    const email = await emailDaConta(db, lead.conta_id as string);
+    return { ok: true as const, email };
+  });
+
+/** E-mail do dono da conta, para a tela dizer em qual endereço ela vai entrar. */
+async function emailDaConta(db: Db, contaId: string | null): Promise<string> {
+  if (!contaId) return "";
+  const { data: membro } = await db
+    .from("conta_membros")
+    .select("user_id")
+    .eq("conta_id", contaId)
+    .order("criado_em")
+    .limit(1)
+    .maybeSingle();
+  if (!membro?.user_id) return "";
+
+  const { data } = await db.auth.admin.getUserById(membro.user_id as string);
+  return data?.user?.email ?? "";
 }

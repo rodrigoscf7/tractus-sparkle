@@ -138,9 +138,16 @@ Deno.serve(async (req) => {
       tipo: "lead_magnet",
     });
 
-    // Teto baixo de proposito: o contrato tem 5 blocos curtos e alguem esta
-    // esperando na tela. O manual completo, pos-compra, e que usa 4000.
-    const text = await callModelo(system, "Escreva o DNA Viral agora.", 1500);
+    /*
+     * 4000, e nao um teto apertado.
+     *
+     * A primeira versao pedia 1500 por ser um contrato curto. Na producao isso
+     * devolveu conteudo VAZIO depois de 25 segundos: o orcamento se esgota
+     * antes de sair texto, e o relatorio caia no fallback curado sem ninguem
+     * perceber. Economizar token aqui custa a personalizacao inteira, que e a
+     * unica razao de existir desta funcao.
+     */
+    const text = await callModelo(system, "Escreva o DNA Viral agora.", 4000);
     const relatorio = extractJson<Record<string, unknown>>(text);
 
     return new Response(JSON.stringify({ ok: true, relatorio }), {
