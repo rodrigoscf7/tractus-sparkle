@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { ArrowRight, Check, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import previaLogo from "@/assets/previa-logo.png.asset.json";
+import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { Input } from "@/components/ui/input";
 import { getDnaViral, getOfertaPublica, salvarEmailLead } from "@/lib/quiz-oferta.functions";
 import { capturarOrigem, obterLeadId } from "@/lib/oferta-variante";
@@ -176,7 +176,7 @@ function Relatorio() {
       <GuardarPorEmail token={Route.useParams().token} jaTemEmail={temEmail} />
 
       <footer className="mt-16 border-t border-border pt-6" data-print-hide>
-        <img src={previaLogo.url} alt="prevIA" className="h-6 w-auto opacity-60" />
+        <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-6 w-auto opacity-60" />
       </footer>
     </div>
   );
@@ -367,7 +367,7 @@ function GuardarPorEmail({ token, jaTemEmail }: { token: string; jaTemEmail: boo
 function NaoEncontrado() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-5 px-5 text-center">
-      <img src={previaLogo.url} alt="prevIA" className="h-8 w-auto" />
+      <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-8 w-auto" />
       <div className="space-y-2">
         <h1 className="font-display text-2xl font-semibold tracking-tight">
           Este relatório não está aqui

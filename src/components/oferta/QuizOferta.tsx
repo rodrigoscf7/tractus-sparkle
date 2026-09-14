@@ -17,7 +17,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import previaLogo from "@/assets/previa-logo.png.asset.json";
+import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -140,7 +140,7 @@ export function QuizOferta({ passo }: { passo: number }) {
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur">
         <TrilhoProgresso atual={passo} total={TOTAL_PERGUNTAS} />
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <img src={previaLogo.url} alt="prevIA" className="h-6 w-auto" />
+          <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-6 w-auto" />
           {/*
            * Antecipação em vez de contabilidade: "faltam 3" diz o que a pessoa
            * ganha ao continuar, "passo 9 de 12" só diz onde ela está.
@@ -344,7 +344,7 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-5 py-16 sm:px-8">
       <div className="w-full max-w-xl space-y-8">
-        <img src={previaLogo.url} alt="prevIA" className="h-8 w-auto" />
+        <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-8 w-auto" />
 
         <div className="space-y-5">
           <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">

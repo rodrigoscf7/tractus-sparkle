@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import previaLogo from "@/assets/previa-logo.png.asset.json";
+import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { mensagemErro } from "@/lib/mensagem-erro";
 
 export const Route = createFileRoute("/redefinir-senha")({
@@ -61,7 +61,7 @@ function RedefinirSenhaPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <Card className="w-full max-w-md p-6 sm:p-8 bg-surface border-border">
         <div className="mb-8 flex flex-col items-center text-center">
-          <img src={previaLogo.url} alt="prevIA" className="h-11 w-auto max-w-full sm:h-14" />
+          <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-11 w-auto max-w-full sm:h-14" />
           <p className="text-[11px] text-muted-foreground mt-3 font-mono uppercase tracking-widest">
             Content
           </p>

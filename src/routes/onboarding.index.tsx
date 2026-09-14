@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import previaLogo from "@/assets/previa-logo.png.asset.json";
+import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { getOnboarding, salvarPasso } from "@/lib/onboarding.functions";
 import { importarQuizParaOnboarding } from "@/lib/quiz-oferta.functions";
 import { passosPendentes } from "@/lib/quiz-oferta";
@@ -255,7 +255,7 @@ function OnboardingWizard() {
 function BoasVindas({ onComecar }: { onComecar: () => void }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-16">
-      <img src={previaLogo.url} alt="prevIA" className="h-10 w-auto self-start sm:h-12" />
+      <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-10 w-auto self-start sm:h-12" />
       <h1 className="mt-10 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
         Vamos ensinar a prevIA a criar como você.
       </h1>
@@ -297,7 +297,7 @@ function Continuidade({
 }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-16">
-      <img src={previaLogo.url} alt="prevIA" className="h-10 w-auto self-start sm:h-12" />
+      <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-10 w-auto self-start sm:h-12" />
 
       <h1 className="mt-10 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
         Você já nos contou quase tudo.

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
-import previaLogo from "@/assets/previa-logo.png.asset.json";
+import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { gerarDnaViral } from "@/lib/quiz-oferta.functions";
 import { obterLeadId } from "@/lib/oferta-variante";
 
@@ -81,7 +81,7 @@ function Processando() {
   if (erro) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-5 px-5 text-center">
-        <img src={previaLogo.url} alt="prevIA" className="h-8 w-auto" />
+        <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-8 w-auto" />
         <div className="space-y-2">
           <h1 className="font-display text-2xl font-semibold tracking-tight">
             Travou no último passo
@@ -111,7 +111,7 @@ function Processando() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-5 py-16 sm:px-8">
       <div className="w-full max-w-md space-y-8">
-        <img src={previaLogo.url} alt="prevIA" className="h-8 w-auto" />
+        <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-8 w-auto" />
 
         <div className="space-y-2">
           <h1 className="font-display text-2xl font-semibold leading-snug tracking-tight sm:text-3xl">

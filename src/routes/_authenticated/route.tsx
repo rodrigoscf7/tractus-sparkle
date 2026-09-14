@@ -17,9 +17,7 @@ import {
 import { useEffect, useState } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIsPlatformAdmin } from "@/hooks/use-platform-admin";
-import previaLogo from "@/assets/previa-logo.png.asset.json";
-import previaLogoNegative from "@/assets/previa-logo-negative.png.asset.json";
-import previaIcon from "@/assets/previa-icon.png.asset.json";
+import { ICONE_MARCA, LOGO_FUNDO_CLARO, LOGO_FUNDO_ESCURO, MARCA_ALT } from "@/lib/marca";
 import { SininhoNotificacoes } from "@/components/notificacoes/SininhoNotificacoes";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
@@ -95,8 +93,8 @@ function AuthenticatedLayout() {
     <>
       <div className="px-6 py-6 border-b border-border">
         <img
-          src={theme === "dark" ? previaLogoNegative.url : previaLogo.url}
-          alt="prevIA"
+          src={theme === "dark" ? LOGO_FUNDO_ESCURO : LOGO_FUNDO_CLARO}
+          alt={MARCA_ALT}
           className="h-7 w-auto"
         />
         <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
@@ -137,9 +135,7 @@ function AuthenticatedLayout() {
       </nav>
 
       <div className="border-t border-border p-3">
-        {email && (
-          <div className="px-3 py-2 text-xs text-muted-foreground truncate">{email}</div>
-        )}
+        {email && <div className="px-3 py-2 text-xs text-muted-foreground truncate">{email}</div>}
         <SininhoNotificacoes />
         <button onClick={toggle} className={BOTAO_RODAPE}>
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -184,7 +180,7 @@ function AuthenticatedLayout() {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <img src={previaIcon.url} alt="" className="h-6 w-auto rounded-md" />
+          <img src={ICONE_MARCA} alt="" className="h-6 w-auto rounded-md" />
           <div className="font-display text-base font-semibold leading-none tracking-tight">
             prevIA <span className="text-muted-foreground">- CONTENT</span>
           </div>
@@ -203,7 +199,15 @@ function AuthenticatedLayout() {
  * texto: sobre o fundo claro o #F4DB0B fica em ~1,4:1 e o rótulo do lugar onde
  * o usuário está era o menos legível do menu. Ver a regra no topo de styles.css.
  */
-function NavLink({ to, icon, children }: { to: string; icon: React.ReactNode; children: React.ReactNode }) {
+function NavLink({
+  to,
+  icon,
+  children,
+}: {
+  to: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <Link
       to={to}
