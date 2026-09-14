@@ -1,15 +1,14 @@
 /**
- * Onde as respostas do quiz da oferta ficam entre um passo e outro.
+ * Cache local das respostas do quiz, entre uma pergunta e outra.
  *
- * Hoje: só localStorage. De propósito — o quiz é público e anônimo, e nenhuma
- * tabela do app serve: todas são por `conta_id` com RLS, e a pessoa aqui ainda
- * não tem conta.
+ * NÃO é a fonte da verdade — essa é `oferta_leads` no banco, escrita por
+ * `quiz-oferta.functions.ts`. O que mora aqui serve para a tela responder na
+ * hora: ler do localStorage é instantâneo, e o wizard não pode esperar um
+ * round-trip para pintar a resposta que a pessoa acabou de marcar.
  *
- * Quando o lead for para o banco, é este arquivo que muda (vira
- * `quiz-oferta.functions.ts`, no padrão dos outros server functions do app).
- * A gravação precisa ser via server function com service role — nunca abrir
- * insert público numa tabela. A tela e o wizard não mudam: só consomem
- * `lerRespostas` / `gravarRespostas`.
+ * A gravação no servidor acontece em paralelo, a cada avanço, e o objeto
+ * inteiro é reenviado na última pergunta — então uma gravação parcial perdida
+ * no meio do caminho não deixa o lead incompleto.
  */
 
 import type { Respostas } from "@/lib/quiz-oferta";

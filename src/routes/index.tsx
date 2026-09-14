@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { QuizOferta } from "@/components/oferta/QuizOferta";
-import { TOTAL_PASSOS } from "@/lib/quiz-oferta";
+import { TOTAL_PERGUNTAS } from "@/lib/quiz-oferta";
 import { VARIANTE_ATIVA } from "@/lib/oferta-variante";
 
 /**
@@ -25,15 +25,18 @@ export const Route = createFileRoute("/")({
       // Sobrescreve o title/description de produto que o __root define. O que
       // está lá descreve a ferramenta para quem já é cliente; aqui a leitora
       // ainda não sabe o que é isto.
-      { title: "prevIA — título provisório da oferta" },
+      { title: "Descubra o DNA Viral do seu conteúdo | prevIA" },
       {
         name: "description",
-        content: "Descrição provisória da oferta. Entra junto com a copy.",
+        content:
+          "Diagnóstico de conteúdo para advogados: o que trava a sua constância, seus três " +
+          "pilares de autoridade e três ganchos prontos para gravar. Leva 2 minutos.",
       },
-      { property: "og:title", content: "prevIA — título provisório da oferta" },
+      { property: "og:title", content: "Descubra o DNA Viral do seu conteúdo" },
       {
         property: "og:description",
-        content: "Descrição provisória da oferta. Entra junto com a copy.",
+        content:
+          "Doze perguntas sobre como você trabalha hoje. No fim, um diagnóstico escrito para o seu caso.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -44,7 +47,7 @@ export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): { passo?: number } => {
     const bruto = Number(search.passo ?? 0);
     const passo = Number.isFinite(bruto) ? Math.trunc(bruto) : 0;
-    const limitado = Math.min(TOTAL_PASSOS, Math.max(0, passo));
+    const limitado = Math.min(TOTAL_PERGUNTAS, Math.max(0, passo));
     return limitado === 0 ? {} : { passo: limitado };
   },
   component: Oferta,
