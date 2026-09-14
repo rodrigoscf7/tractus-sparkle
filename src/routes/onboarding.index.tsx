@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import previaLogo from "@/assets/previa-logo.png.asset.json";
 import { getOnboarding, salvarPasso } from "@/lib/onboarding.functions";
+import { importarQuizParaOnboarding } from "@/lib/quiz-oferta.functions";
+import { passosPendentes } from "@/lib/quiz-oferta";
+import { obterLeadId } from "@/lib/oferta-variante";
 import {
   AREAS,
   ATRIBUTOS,
@@ -71,14 +74,30 @@ function OnboardingWizard() {
   const navigate = useNavigate({ from: Route.fullPath });
   const carregar = useServerFn(getOnboarding);
   const salvar = useServerFn(salvarPasso);
+  const importar = useServerFn(importarQuizParaOnboarding);
 
   const [respostas, setRespostas] = useState<Respostas>({});
   const [salvando, setSalvando] = useState(false);
   const [hidratado, setHidratado] = useState(false);
+  /*
+   * Quais passos esta pessoa ainda precisa responder.
+   *
+   * Quem chegou pelo quiz da oferta já respondeu 1, 2, 3 e 5 — cobrar de novo
+   * é exatamente o castigo por ter comprado que este fluxo existe para acabar.
+   * O roteiro é fixado uma vez, na hidratação: recalcular a cada resposta
+   * faria o passo sumir debaixo da pessoa enquanto ela ainda o preenche.
+   */
+  const [roteiro, setRoteiro] = useState<number[]>([]);
 
   const { data: estado, isLoading } = useQuery({
     queryKey: ["onboarding"],
-    queryFn: () => carregar(),
+    queryFn: async () => {
+      // Antes de ler, traz o que o quiz da oferta já coletou. Inofensivo
+      // quando não há lead: devolve importado: false e o wizard segue igual.
+      const trazido = await importar({ data: { leadId: obterLeadId() } }).catch(() => null);
+      const atual = await carregar();
+      return { ...atual, importado: trazido?.importado ?? false, resumo: trazido?.resumo ?? [] };
+    },
     refetchOnWindowFocus: false,
   });
 
@@ -86,7 +105,11 @@ function OnboardingWizard() {
   // Quem fecha a aba no meio volta na mesma pergunta, não na primeira.
   useEffect(() => {
     if (!estado || hidratado) return;
-    setRespostas(estado.respostas ?? {});
+    const vindas = estado.respostas ?? {};
+    setRespostas(vindas);
+    // Sem nada respondido, o roteiro é o wizard inteiro.
+    const pendentes = passosPendentes(vindas);
+    setRoteiro(pendentes.length ? pendentes : [1, 2, 3, 4, 5]);
     setHidratado(true);
     if (passo === 0 && estado.passoAtual > 1) {
       navigate({ search: { passo: estado.passoAtual }, replace: true });
@@ -112,15 +135,14 @@ function OnboardingWizard() {
     setSalvando(true);
     try {
       await salvar({ data: { passo, respostas } });
-      if (passo === TOTAL_PASSOS) {
+      const proximo = roteiro[roteiro.indexOf(passo) + 1];
+      if (proximo === undefined) {
         navigate({ to: "/onboarding/processando" });
         return;
       }
-      irPara(passo + 1);
+      irPara(proximo);
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Não foi possível salvar. Tente novamente.",
-      );
+      toast.error(e instanceof Error ? e.message : "Não foi possível salvar. Tente novamente.");
     } finally {
       setSalvando(false);
     }
@@ -143,23 +165,31 @@ function OnboardingWizard() {
     );
   }
 
-  if (passo === 0) return <BoasVindas onComecar={() => irPara(1)} />;
+  const comecar = () => irPara(roteiro[0] ?? 1);
+  if (passo === 0) {
+    return estado?.importado ? (
+      <Continuidade resumo={estado.resumo} restantes={roteiro.length} onComecar={comecar} />
+    ) : (
+      <BoasVindas onComecar={comecar} />
+    );
+  }
+
+  const posicao = Math.max(1, roteiro.indexOf(passo) + 1);
+  const totalVisivel = roteiro.length || TOTAL_PASSOS;
 
   const meta = PASSOS[passo - 1]!;
 
   return (
     <div className="min-h-screen">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur">
-        <TrilhoProgresso atual={passo} total={TOTAL_PASSOS} />
+        <TrilhoProgresso atual={posicao} total={totalVisivel} />
         <div className="mx-auto flex max-w-2xl items-center justify-between px-5 py-4 sm:px-8">
           <div>
-            <div className="font-display text-base font-semibold tracking-tight">
-              {meta.titulo}
-            </div>
+            <div className="font-display text-base font-semibold tracking-tight">{meta.titulo}</div>
             <div className="text-sm text-muted-foreground">{meta.resumo}</div>
           </div>
           <div className="num text-sm text-muted-foreground">
-            Passo {passo} de {TOTAL_PASSOS}
+            Passo {posicao} de {totalVisivel}
           </div>
         </div>
       </div>
@@ -186,7 +216,7 @@ function OnboardingWizard() {
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
             <button
               type="button"
-              onClick={() => irPara(passo - 1)}
+              onClick={() => irPara(roteiro[roteiro.indexOf(passo) - 1] ?? 0)}
               className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-base text-muted-foreground
                 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2
                 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -205,7 +235,7 @@ function OnboardingWizard() {
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" /> Salvando
                 </>
-              ) : passo === TOTAL_PASSOS ? (
+              ) : passo === roteiro[roteiro.length - 1] ? (
                 <>
                   Montar meu manual <ArrowRight className="h-4 w-4" />
                 </>
@@ -230,8 +260,8 @@ function BoasVindas({ onComecar }: { onComecar: () => void }) {
         Vamos ensinar a prevIA a criar como você.
       </h1>
       <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-        Responda algumas perguntas rápidas. Com elas a prevIA encontra referências, adapta ideias
-        e escreve roteiros alinhados ao seu posicionamento, ao seu público e à sua personalidade.
+        Responda algumas perguntas rápidas. Com elas a prevIA encontra referências, adapta ideias e
+        escreve roteiros alinhados ao seu posicionamento, ao seu público e à sua personalidade.
       </p>
       <p className="mt-3 text-base text-muted-foreground">Leva cerca de cinco minutos.</p>
       <button
@@ -243,6 +273,64 @@ function BoasVindas({ onComecar }: { onComecar: () => void }) {
           focus-visible:ring-offset-background"
       >
         Começar <ArrowRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * A tela de quem chegou pelo quiz da oferta.
+ *
+ * Substitui as boas-vindas e é a virada do fluxo inteiro: em vez de recomeçar
+ * um questionário, a pessoa VÊ o que a compra aproveitou. Mostrar o resumo (e
+ * não pular em silêncio) é o ponto — economia invisível não é percebida como
+ * economia, e respostas erradas entrariam sem ninguém conferir.
+ */
+function Continuidade({
+  resumo,
+  restantes,
+  onComecar,
+}: {
+  resumo: { rotulo: string; valor: string }[];
+  restantes: number;
+  onComecar: () => void;
+}) {
+  return (
+    <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-16">
+      <img src={previaLogo.url} alt="prevIA" className="h-10 w-auto self-start sm:h-12" />
+
+      <h1 className="mt-10 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+        Você já nos contou quase tudo.
+      </h1>
+      <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+        Trouxemos as suas respostas do diagnóstico. Confira se continua valendo — dá para mudar
+        qualquer coisa depois, em Minha marca.
+      </p>
+
+      <dl className="mt-8 divide-y divide-divider border-y border-border">
+        {resumo.map((item) => (
+          <div key={item.rotulo} className="flex flex-wrap gap-x-4 gap-y-1 py-3">
+            <dt className="w-44 shrink-0 text-sm text-muted-foreground">{item.rotulo}</dt>
+            <dd className="min-w-0 flex-1 text-base">{item.valor}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <p className="mt-8 text-base text-muted-foreground">
+        {restantes <= 1
+          ? "Falta uma coisa só: quais perfis você quer que a prevIA acompanhe."
+          : `Faltam ${restantes} passos para a prevIA começar.`}
+      </p>
+
+      <button
+        type="button"
+        onClick={onComecar}
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-6 py-3.5
+          text-base font-medium text-primary-foreground transition hover:bg-primary/90 sm:w-auto sm:self-start
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+          focus-visible:ring-offset-background"
+      >
+        Está certo, continuar <ArrowRight className="h-4 w-4" />
       </button>
     </div>
   );
@@ -291,7 +379,9 @@ function PassoVoce({ respostas, definir }: PassoProps) {
       >
         <EscolhaUnica
           opcoes={SIM_NAO}
-          valor={respostas.tem_nicho === undefined ? undefined : respostas.tem_nicho ? "sim" : "nao"}
+          valor={
+            respostas.tem_nicho === undefined ? undefined : respostas.tem_nicho ? "sim" : "nao"
+          }
           onChange={(v) => definir("tem_nicho", v === "sim")}
         />
         {respostas.tem_nicho && (

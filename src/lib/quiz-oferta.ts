@@ -31,6 +31,7 @@ import {
   SITUACAO,
   TAMANHOS,
   TRAFEGO,
+  labelArea,
   validarPasso,
   type Opcao,
   type Respostas,
@@ -324,4 +325,42 @@ export function passosPendentes(r: Respostas): number[] {
     if (validarPasso(passo, r).length > 0) pendentes.push(passo);
   }
   return pendentes;
+}
+
+/**
+ * O que mostrar na tela de continuidade, depois da compra.
+ *
+ * A pessoa precisa VER o que foi aproveitado — é o que transforma "não
+ * perguntamos de novo" em uma economia perceptível em vez de um silêncio.
+ * Só campos que ela reconhece como tendo respondido.
+ */
+export function resumoDoQuiz(r: Respostas): { rotulo: string; valor: string }[] {
+  const itens: { rotulo: string; valor: string }[] = [];
+
+  const area = r.area_atuacao === "outro" ? r.area_outro : labelArea(r.area_atuacao);
+  if (area) itens.push({ rotulo: "Sua área", valor: area });
+  if (r.nicho?.trim()) itens.push({ rotulo: "Seu recorte", valor: r.nicho.trim() });
+
+  const objetivos = (r.objetivos ?? []).map((v) => rotulo(OBJETIVOS, v)).filter(Boolean);
+  if (objetivos.length) itens.push({ rotulo: "O que você busca", valor: objetivos.join(", ") });
+
+  const atributos = (r.atributos ?? []).map((v) => rotulo(ATRIBUTOS, v)).filter(Boolean);
+  if (atributos.length) itens.push({ rotulo: "Como quer ser lido", valor: atributos.join(", ") });
+
+  const estilo = ESTILOS.find((e) => e.valor === r.estilo_narrativo);
+  if (estilo) itens.push({ rotulo: "Seu estilo de abertura", valor: estilo.label });
+
+  const dias = r.ritmo_dias ?? [];
+  if (dias.length) {
+    itens.push({
+      rotulo: "Seu ritmo",
+      valor: dias.length === 1 ? "1 vez por semana" : `${dias.length} vezes por semana`,
+    });
+  }
+
+  return itens;
+}
+
+function rotulo(opcoes: Opcao[], valor: string): string {
+  return opcoes.find((o) => o.valor === valor)?.label ?? "";
 }

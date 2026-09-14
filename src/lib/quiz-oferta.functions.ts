@@ -18,7 +18,8 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createHash, randomBytes } from "crypto";
 
 import { dnaViralCurado, normalizarDnaViral, type DnaViral } from "@/lib/dna-viral";
-import { PERGUNTAS, validarPergunta, type Respostas } from "@/lib/quiz-oferta";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { PERGUNTAS, resumoDoQuiz, validarPergunta, type Respostas } from "@/lib/quiz-oferta";
 
 /**
  * Quantos relatórios uma mesma origem pode gerar por hora.
@@ -308,3 +309,108 @@ export const getOfertaPublica = createServerFn({ method: "GET" }).handler(async 
     checkoutUrl: plano.checkout_url as string,
   };
 });
+
+// ---------------------------------------------------------------------------
+// A costura pós-compra — a única função autenticada deste arquivo
+// ---------------------------------------------------------------------------
+
+/**
+ * Traz as respostas do quiz para o onboarding da conta recém-criada.
+ *
+ * POR QUE AQUI E NÃO NO WEBHOOK DA KIWIFY: o webhook não cria contas. O
+ * `resolverConta` de `kiwify.server.ts` só encontra conta que já existe, e na
+ * hora em que o aviso de pagamento chega a pessoa normalmente ainda nem se
+ * cadastrou. Quem cria a conta é `iniciarConta`, quando ela entra no
+ * onboarding — então é aqui, e não lá, que dá para costurar com segurança.
+ *
+ * Duas formas de achar o lead, nesta ordem:
+ *   1. O id que veio do navegador. É o caminho normal: quem comprou voltou
+ *      para o app na mesma sessão, e o id continua no localStorage.
+ *   2. O e-mail do usuário, contra o e-mail que ela deixou no relatório.
+ *      Cobre quem respondeu o quiz no celular e se cadastrou no computador.
+ *
+ * Nunca sobrescreve: se o onboarding já foi concluído ou já tem respostas, sai
+ * sem tocar em nada. E marca `importado_em` no lead, então reprocessar é
+ * inofensivo.
+ */
+export const importarQuizParaOnboarding = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { leadId?: string }) => data)
+  .handler(async ({ data, context }) => {
+    const vazio = { importado: false as const, resumo: [] as ReturnType<typeof resumoDoQuiz> };
+
+    const { data: membro } = await context.supabase
+      .from("conta_membros")
+      .select("conta_id")
+      .eq("user_id", context.userId)
+      .order("criado_em")
+      .limit(1)
+      .maybeSingle();
+    if (!membro?.conta_id) return vazio;
+
+    const db = await admin();
+
+    const { data: existente } = await db
+      .from("onboarding_respostas")
+      .select("respostas, concluido_em")
+      .eq("conta_id", membro.conta_id)
+      .maybeSingle();
+
+    // Onboarding fechado ou já em andamento: o que a pessoa fez no app manda.
+    if (existente?.concluido_em) return vazio;
+    if (existente?.respostas && Object.keys(existente.respostas).length > 0) return vazio;
+
+    const lead = await acharLead(db, data.leadId, context.claims?.email as string | undefined);
+    if (!lead) return vazio;
+
+    const respostas = (lead.respostas ?? {}) as Respostas;
+    if (!Object.keys(respostas).length) return vazio;
+
+    const agora = new Date().toISOString();
+
+    if (existente) {
+      await db
+        .from("onboarding_respostas")
+        .update({ respostas, atualizado_em: agora })
+        .eq("conta_id", membro.conta_id);
+    } else {
+      await db
+        .from("onboarding_respostas")
+        .insert({ conta_id: membro.conta_id, respostas, passo_atual: 1 });
+    }
+
+    await db
+      .from("oferta_leads")
+      .update({ conta_id: membro.conta_id, importado_em: agora, atualizado_em: agora })
+      .eq("id", lead.id);
+
+    return {
+      importado: true as const,
+      resumo: resumoDoQuiz(respostas),
+    };
+  });
+
+async function acharLead(db: Db, leadId: string | undefined, email: string | undefined) {
+  if (leadId && /^[0-9a-f-]{36}$/i.test(leadId)) {
+    const { data } = await db
+      .from("oferta_leads")
+      .select("id, respostas")
+      .eq("id", leadId)
+      .maybeSingle();
+    if (data) return data;
+  }
+
+  if (email) {
+    const { data } = await db
+      .from("oferta_leads")
+      .select("id, respostas")
+      .eq("email", email.toLowerCase())
+      .is("conta_id", null)
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) return data;
+  }
+
+  return null;
+}

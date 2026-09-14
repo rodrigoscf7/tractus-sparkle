@@ -43,10 +43,18 @@ CREATE TABLE public.oferta_leads (
   -- utm_*, fbclid, gclid capturados na chegada do anuncio.
   origem jsonb NOT NULL DEFAULT '{}'::jsonb,
 
-  -- Preenchido pelo webhook da Kiwify quando a compra e casada.
+  -- Marcado pelo webhook da Kiwify quando este lead vira compra. E o numero
+  -- que fecha o funil: quantos dos que responderam o quiz compraram. Fica
+  -- separado de conta_id porque o aviso de pagamento costuma chegar ANTES de
+  -- a pessoa se cadastrar -- nesse instante a conta ainda nao existe.
+  comprou_em timestamptz,
+  pedido_id text,
+
+  -- Preenchido quando a conta finalmente existe e o quiz e importado.
   conta_id uuid REFERENCES public.contas(id) ON DELETE SET NULL,
-  -- Marcado quando as respostas ja foram copiadas para o onboarding,
-  -- para o webhook ser idempotente em reentrega.
+  -- Marcado quando as respostas ja foram copiadas para o onboarding, o que
+  -- acontece em importarQuizParaOnboarding (e NAO no webhook: la a conta
+  -- normalmente ainda nem existe). Torna o import idempotente.
   importado_em timestamptz,
 
   criado_em timestamptz NOT NULL DEFAULT now(),
@@ -73,3 +81,7 @@ CREATE INDEX idx_oferta_leads_conta ON public.oferta_leads(conta_id) WHERE conta
 -- Sustenta a contagem por origem na janela do limite de geracoes.
 CREATE INDEX idx_oferta_leads_ip_janela ON public.oferta_leads(ip_hash, criado_em DESC)
   WHERE ip_hash IS NOT NULL;
+
+-- Funil: quantos leads viraram compra, por janela.
+CREATE INDEX idx_oferta_leads_conversao ON public.oferta_leads(comprou_em DESC)
+  WHERE comprou_em IS NOT NULL;
