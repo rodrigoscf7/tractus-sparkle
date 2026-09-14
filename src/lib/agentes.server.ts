@@ -24,6 +24,7 @@ const AGENTES = [
   "revisor-agent",
   "carrossel-agent",
   "dna-agent",
+  "dna-viral-agent",
   "push-agent",
 ] as const;
 

@@ -22,6 +22,8 @@ import { Route as AuthenticatedDnaRouteImport } from './routes/_authenticated/dn
 import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
 import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
+import { Route as DnaViralTokenRouteImport } from './routes/dna-viral.$token'
+import { Route as OfertaProcessandoRouteImport } from './routes/oferta.processando'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
 import { Route as OnboardingProcessandoRouteImport } from './routes/onboarding.processando'
 import { Route as AuthenticatedAgentesIndexRouteImport } from './routes/_authenticated/agentes.index'
@@ -93,6 +95,16 @@ const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
   path: '/pipeline',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const DnaViralTokenRoute = DnaViralTokenRouteImport.update({
+  id: '/dna-viral/$token',
+  path: '/dna-viral/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfertaProcessandoRoute = OfertaProcessandoRouteImport.update({
+  id: '/oferta/processando',
+  path: '/oferta/processando',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -140,6 +152,8 @@ export interface FileRoutesByFullPath {
   '/hoje': typeof AuthenticatedHojeRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
+  '/dna-viral/$token': typeof DnaViralTokenRoute
+  '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
@@ -158,6 +172,8 @@ export interface FileRoutesByTo {
   '/hoje': typeof AuthenticatedHojeRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
+  '/dna-viral/$token': typeof DnaViralTokenRoute
+  '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
@@ -180,6 +196,8 @@ export interface FileRoutesById {
   '/_authenticated/hoje': typeof AuthenticatedHojeRoute
   '/_authenticated/perfis': typeof AuthenticatedPerfisRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
+  '/dna-viral/$token': typeof DnaViralTokenRoute
+  '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/_authenticated/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
@@ -202,6 +220,8 @@ export interface FileRouteTypes {
     | '/hoje'
     | '/perfis'
     | '/pipeline'
+    | '/dna-viral/$token'
+    | '/oferta/processando'
     | '/onboarding/processando'
     | '/onboarding/'
     | '/agentes/$agente'
@@ -220,6 +240,8 @@ export interface FileRouteTypes {
     | '/hoje'
     | '/perfis'
     | '/pipeline'
+    | '/dna-viral/$token'
+    | '/oferta/processando'
     | '/onboarding/processando'
     | '/onboarding'
     | '/agentes/$agente'
@@ -241,6 +263,8 @@ export interface FileRouteTypes {
     | '/_authenticated/hoje'
     | '/_authenticated/perfis'
     | '/_authenticated/pipeline'
+    | '/dna-viral/$token'
+    | '/oferta/processando'
     | '/onboarding/processando'
     | '/onboarding/'
     | '/_authenticated/agentes/$agente'
@@ -255,6 +279,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  DnaViralTokenRoute: typeof DnaViralTokenRoute
+  OfertaProcessandoRoute: typeof OfertaProcessandoRoute
   ApiPublicWebhooksKiwifyRoute: typeof ApiPublicWebhooksKiwifyRoute
 }
 
@@ -350,6 +376,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/pipeline'
       preLoaderRoute: typeof AuthenticatedPipelineRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/dna-viral/$token': {
+      id: '/dna-viral/$token'
+      path: '/dna-viral/$token'
+      fullPath: '/dna-viral/$token'
+      preLoaderRoute: typeof DnaViralTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oferta/processando': {
+      id: '/oferta/processando'
+      path: '/oferta/processando'
+      fullPath: '/oferta/processando'
+      preLoaderRoute: typeof OfertaProcessandoRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/onboarding/': {
       id: '/onboarding/'
@@ -456,6 +496,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  DnaViralTokenRoute: DnaViralTokenRoute,
+  OfertaProcessandoRoute: OfertaProcessandoRoute,
   ApiPublicWebhooksKiwifyRoute: ApiPublicWebhooksKiwifyRoute,
 }
 export const routeTree = rootRouteImport

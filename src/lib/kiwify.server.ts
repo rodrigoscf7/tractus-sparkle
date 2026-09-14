@@ -12,6 +12,8 @@ export type KiwifyEventoRow = {
   assinatura_externa_id: string | null;
   comprador_email: string | null;
   conta_id: string | null;
+  /** Lead do quiz da oferta, se a compra veio de la. */
+  lead_id: string | null;
   plano_codigo: string | null;
   valor_centavos: number | null;
   payload: Record<string, any>;
@@ -56,6 +58,9 @@ export function normalizarEventoKiwify(payload: Record<string, any>): KiwifyEven
     comprador_email:
       payload?.Customer?.email ?? payload?.customer?.email ?? payload?.buyer_email ?? null,
     conta_id: tracking?.s1 && String(tracking.s1).length === 36 ? String(tracking.s1) : null,
+    // s3 e o lead do quiz da oferta. Nao pode ser s1: aquele campo vira
+    // conta_id sempre que tem 36 caracteres, e um randomUUID tem exatamente 36.
+    lead_id: tracking?.s3 && String(tracking.s3).length === 36 ? String(tracking.s3) : null,
     plano_codigo: tracking?.s2 ? String(tracking.s2) : null,
     valor_centavos: centavos(payload),
     payload,
@@ -84,6 +89,30 @@ async function resolverPlano(admin: AnyClient, evento: KiwifyEventoRow): Promise
       (produtoId && p.kiwify_produto_id && p.kiwify_produto_id === String(produtoId)),
   );
   return match?.codigo ?? null;
+}
+
+/**
+ * Fecha o funil: carimba o lead do quiz que virou compra.
+ *
+ * Idempotente (so escreve se ainda nao comprou) e silenciosa: falhar aqui nao
+ * pode derrubar o processamento de um pagamento.
+ */
+async function marcarLeadComprou(admin: AnyClient, evento: KiwifyEventoRow) {
+  if (!evento.lead_id) return;
+  if (!APROVA.has(evento.evento.toLowerCase())) return;
+  try {
+    await admin
+      .from("oferta_leads")
+      .update({
+        comprou_em: new Date().toISOString(),
+        pedido_id: evento.pedido_id,
+        atualizado_em: new Date().toISOString(),
+      })
+      .eq("id", evento.lead_id)
+      .is("comprou_em", null);
+  } catch (e) {
+    console.error("kiwify: falha ao marcar lead como comprado", e);
+  }
 }
 
 async function resolverConta(admin: AnyClient, evento: KiwifyEventoRow): Promise<string | null> {
@@ -131,6 +160,14 @@ async function resolverConta(admin: AnyClient, evento: KiwifyEventoRow): Promise
  * Idempotente — reprocessar o mesmo evento leva ao mesmo estado final.
  */
 export async function aplicarEventoKiwify(admin: AnyClient, evento: KiwifyEventoRow) {
+  // Antes de qualquer coisa: registrar que este lead comprou.
+  //
+  // Vem primeiro porque a funcao desiste logo abaixo quando nao acha a conta,
+  // e nao achar e o caso NORMAL -- o aviso de pagamento chega antes de a
+  // pessoa se cadastrar. Se a marcacao ficasse depois, a conversao do funil
+  // nunca seria registrada justamente nas compras que deram certo.
+  await marcarLeadComprou(admin, evento);
+
   const contaId = await resolverConta(admin, evento);
   if (!contaId) {
     await marcar(admin, evento, false, "Conta não identificada para este pagamento.");
