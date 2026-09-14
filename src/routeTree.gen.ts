@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as ResultadoRouteImport } from './routes/resultado'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
@@ -51,6 +52,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResultadoRoute = ResultadoRouteImport.update({
+  id: '/resultado',
+  path: '/resultado',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/resultado': typeof ResultadoRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/assinatura': typeof AuthenticatedAssinaturaRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/resultado': typeof ResultadoRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/resultado': typeof ResultadoRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/redefinir-senha'
+    | '/resultado'
     | '/admin'
     | '/agentes'
     | '/assinatura'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/redefinir-senha'
+    | '/resultado'
     | '/admin'
     | '/assinatura'
     | '/curadoria'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/redefinir-senha'
+    | '/resultado'
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
     | '/_authenticated/assinatura'
@@ -255,6 +267,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  ResultadoRoute: typeof ResultadoRoute
   ApiPublicWebhooksKiwifyRoute: typeof ApiPublicWebhooksKiwifyRoute
 }
 
@@ -293,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resultado': {
+      id: '/resultado'
+      path: '/resultado'
+      fullPath: '/resultado'
+      preLoaderRoute: typeof ResultadoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -456,6 +476,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  ResultadoRoute: ResultadoRoute,
   ApiPublicWebhooksKiwifyRoute: ApiPublicWebhooksKiwifyRoute,
 }
 export const routeTree = rootRouteImport
