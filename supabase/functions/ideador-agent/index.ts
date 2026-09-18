@@ -121,7 +121,7 @@ async function gerarPautaFocada(supabase: SupabaseClient, conteudoId: string) {
 
   const { data: curadoria } = await supabase
     .from("conteudos_curados")
-    .select("id, tema, gancho, score_curadoria, formato, texto_original, likes, comentarios, views, perfil_referencia_id")
+    .select("id, tema, gancho, score_curadoria, formato, texto_original, transcricao, likes, comentarios, views, perfil_referencia_id")
     .eq("id", conteudoId)
     .maybeSingle();
   if (!curadoria) return 0;
@@ -158,7 +158,11 @@ async function gerarPautaFocada(supabase: SupabaseClient, conteudoId: string) {
       score: curadoria.score_curadoria,
       formato: curadoria.formato,
       metricas: { likes: curadoria.likes, comentarios: curadoria.comentarios, views: curadoria.views },
-      trecho: (curadoria.texto_original ?? "").slice(0, 400),
+      trecho: (
+        (curadoria as { transcricao?: string | null }).transcricao ||
+        curadoria.texto_original ||
+        ""
+      ).slice(0, 800),
     }));
 
   setCustoContexto({

@@ -6,6 +6,7 @@
 //   com Claude e insere em conteudos_curados. O ideador roda em cron separado
 //   depois da curadoria para evitar estouro de limite por paralelismo.
 import {
+  alertarAdminFalha,
   callModelo,
   corsHeaders,
   extractJson,
@@ -54,12 +55,32 @@ const RUBRICA_POSICIONAMENTO =
 IGNORE visualizações e engajamento no julgamento: post com pouca tração pode ter score alto.`;
 
 const APIFY_TIMEOUT_MS = 60_000;
+const TRANSCRIPT_TIMEOUT_MS = 120_000;
 const CLAUDE_TIMEOUT_MS = 30_000;
 const APIFY_RESULTS_LIMIT = 12;
 const MAX_NEW_POSTS_TO_SCORE = 5;
-const MIN_SCORE_TO_SAVE = 6;
+/** Quantos itens gravar por ref/ciclo (sempre o de maior score). */
+const TOP_SAVE_PER_REF = 1;
+/** JSON de score (tema + gancho + motivo); 220 truncava; 500 ainda estourava em alguns posts. */
+const SCORE_MAX_TOKENS = 800;
+const TRANSCRIPT_ACTOR =
+  "scraping_solutions~instagram-reels-transcript-scraper-audio-to-text";
 
 type Foco = "viral" | "posicionamento";
+
+type ScoreParsed = {
+  score_curadoria: number;
+  tema: string;
+  gancho_identificado: string;
+  motivo_score: string;
+  aproveitavel: boolean;
+};
+
+type Candidato = {
+  post: Record<string, unknown>;
+  parsed: ScoreParsed;
+  textoRico: string;
+};
 
 function normalizeFoco(v: unknown): Foco {
   return String(v ?? "").toLowerCase() === "viral" ? "viral" : "posicionamento";
@@ -85,6 +106,41 @@ function ordenarPorFoco(posts: Record<string, unknown>[], foco: Foco) {
   );
 }
 
+/** Legenda + alt + textos/alt dos slides do carrossel. */
+function textoRicoDoPost(post: Record<string, unknown>): string {
+  const parts: string[] = [];
+  const caption = String(post.caption ?? "").trim();
+  if (caption) parts.push(`Legenda:\n${caption}`);
+  const alt = String(post.alt ?? "").trim();
+  if (alt) parts.push(`Alt:\n${alt}`);
+  const children = Array.isArray(post.childPosts) ? post.childPosts : [];
+  children.forEach((raw, i) => {
+    const child = (raw ?? {}) as Record<string, unknown>;
+    const cCap = String(child.caption ?? "").trim();
+    const cAlt = String(child.alt ?? "").trim();
+    if (!cCap && !cAlt) return;
+    const bloco = [
+      `Slide ${i + 1}:`,
+      cCap ? cCap : null,
+      cAlt ? `Alt: ${cAlt}` : null,
+    ].filter(Boolean).join("\n");
+    parts.push(bloco);
+  });
+  return parts.join("\n\n");
+}
+
+function isReel(post: Record<string, unknown>): boolean {
+  const url = String(post.url ?? "").toLowerCase();
+  const type = String(post.type ?? "").toLowerCase();
+  const product = String(post.productType ?? "").toLowerCase();
+  return (
+    url.includes("/reel/") ||
+    product.includes("reel") ||
+    product === "clips" ||
+    (type === "video" && url.includes("/reel/"))
+  );
+}
+
 async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return await Promise.race([
     p,
@@ -92,6 +148,46 @@ async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise
       setTimeout(() => rej(new Error(`timeout ${label} após ${ms}ms`)), ms),
     ),
   ]);
+}
+
+async function buscarTranscriptReel(
+  apifyToken: string,
+  reelUrl: string,
+): Promise<string | null> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), TRANSCRIPT_TIMEOUT_MS);
+  try {
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/${TRANSCRIPT_ACTOR}/run-sync-get-dataset-items?token=${apifyToken}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reelUrls: [reelUrl],
+          transcriptionMode: "captions-first",
+          language: "auto",
+          translateToEnglish: false,
+          includeMetadata: false,
+        }),
+        signal: ctrl.signal,
+      },
+    );
+    if (!res.ok) {
+      const body = (await res.text().catch(() => "")).slice(0, 300);
+      throw new Error(`apify transcript ${res.status}${body ? `: ${body}` : ""}`);
+    }
+    const items = await res.json();
+    const row = Array.isArray(items) ? items[0] : null;
+    if (!row || typeof row !== "object") return null;
+    const transcript = String(
+      (row as Record<string, unknown>).transcript ??
+        (row as Record<string, unknown>).fullText ??
+        "",
+    ).trim();
+    return transcript || null;
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 async function processRef(refId: string) {
@@ -127,29 +223,11 @@ async function processRef(refId: string) {
 
   let posts: any[] = [];
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), APIFY_TIMEOUT_MS);
-    const apifyRes = await fetch(
-      `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${apifyToken}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          directUrls: [`https://www.instagram.com/${ref.handle}/`],
-          resultsType: "posts",
-          resultsLimit: APIFY_RESULTS_LIMIT,
-        }),
-        signal: ctrl.signal,
-      },
-    );
-    clearTimeout(t);
-    if (!apifyRes.ok) {
-      // 5xx/429 do Apify são transitórios: uma nova tentativa antes de desistir.
-      if (apifyRes.status >= 500 || apifyRes.status === 429) {
-        await new Promise((r) => setTimeout(r, 4000));
-        const retryCtrl = new AbortController();
-        const t2 = setTimeout(() => retryCtrl.abort(), APIFY_TIMEOUT_MS);
-        const retryRes = await fetch(
+    const runApify = async () => {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), APIFY_TIMEOUT_MS);
+      try {
+        return await fetch(
           `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${apifyToken}`,
           {
             method: "POST",
@@ -159,22 +237,35 @@ async function processRef(refId: string) {
               resultsType: "posts",
               resultsLimit: APIFY_RESULTS_LIMIT,
             }),
-            signal: retryCtrl.signal,
+            signal: ctrl.signal,
           },
         );
-        clearTimeout(t2);
-        if (!retryRes.ok) {
-          console.error("Apify failed (retry)", ref.handle, retryRes.status);
-          return { ref: ref.handle, curados: 0, error: `apify ${retryRes.status}` };
-        }
-        posts = await retryRes.json();
-      } else {
-        console.error("Apify failed", ref.handle, apifyRes.status);
-        return { ref: ref.handle, curados: 0, error: `apify ${apifyRes.status}` };
+      } finally {
+        clearTimeout(t);
       }
-    } else {
-      posts = await apifyRes.json();
+    };
+
+    const summarizeApifyError = async (res: Response) => {
+      const body = (await res.text().catch(() => "")).slice(0, 300);
+      console.error("Apify failed", ref.handle, res.status, body);
+      // 402 costuma ser limite mensal / hard cap — não necessariamente "saldo zerado" na UI.
+      return `apify ${res.status}${body ? `: ${body}` : ""}`;
+    };
+
+    let apifyRes = await runApify();
+    if (!apifyRes.ok) {
+      // 5xx/429 do Apify são transitórios: uma nova tentativa antes de desistir.
+      if (apifyRes.status >= 500 || apifyRes.status === 429) {
+        await new Promise((r) => setTimeout(r, 4000));
+        apifyRes = await runApify();
+        if (!apifyRes.ok) {
+          return { ref: ref.handle, curados: 0, error: await summarizeApifyError(apifyRes) };
+        }
+      } else {
+        return { ref: ref.handle, curados: 0, error: await summarizeApifyError(apifyRes) };
+      }
     }
+    posts = await apifyRes.json();
   } catch (e) {
     console.error("Apify error", ref.handle, e);
     return { ref: ref.handle, curados: 0, error: String(e).slice(0, 200) };
@@ -192,12 +283,14 @@ async function processRef(refId: string) {
   let curados = 0;
   let duplicados = 0;
   let avaliados = 0;
+  const candidatos: Candidato[] = [];
 
   // Viral: melhores por tração primeiro. Posicionamento: mais recentes primeiro.
   posts = ordenarPorFoco(posts as Record<string, unknown>[], foco);
 
-  for (const post of posts) {
+  for (const raw of posts) {
     if (avaliados >= MAX_NEW_POSTS_TO_SCORE) break;
+    const post = raw as Record<string, unknown>;
 
     if (post.url) {
       const { data: existing } = await supabase
@@ -213,9 +306,11 @@ async function processRef(refId: string) {
     }
 
     avaliados++;
+    const textoRico = textoRicoDoPost(post);
 
     const userPrompt = `Post para análise:
-- caption: ${post.caption ?? ""}
+- texto:
+${textoRico || "(sem texto de legenda/alt/slides)"}
 - likes: ${post.likesCount ?? 0}
 - comentários: ${post.commentsCount ?? 0}
 - views: ${post.videoPlayCount ?? "n/a"}
@@ -231,40 +326,78 @@ async function processRef(refId: string) {
 
     try {
       const text = await withTimeout(
-        callModelo(system, userPrompt, 220),
+        callModelo(system, userPrompt, SCORE_MAX_TOKENS),
         CLAUDE_TIMEOUT_MS,
         `claude ${ref.handle}`,
       );
-      const parsed = extractJson<{
-        score_curadoria: number;
-        tema: string;
-        gancho_identificado: string;
-        motivo_score: string;
-        aproveitavel: boolean;
-      }>(text);
+      const parsed = extractJson<ScoreParsed>(text);
+      if (typeof parsed.score_curadoria !== "number") continue;
+      candidatos.push({ post, parsed, textoRico });
+    } catch (e) {
+      console.error("Curador item error", ref.handle, e);
+    }
+  }
 
-      if (parsed.score_curadoria < MIN_SCORE_TO_SAVE) continue;
+  // Sempre grava o(s) top-N por score — limiar ≥5 não bloqueia a entrega.
+  candidatos.sort((a, b) => b.parsed.score_curadoria - a.parsed.score_curadoria);
+  const vencedores = candidatos.slice(0, TOP_SAVE_PER_REF);
 
-      await supabase.from("conteudos_curados").insert({
+  for (const cand of vencedores) {
+    const { post, parsed, textoRico } = cand;
+    const { data: inserted, error: insertError } = await supabase
+      .from("conteudos_curados")
+      .insert({
         perfil_referencia_id: ref.id,
         url: post.url ?? null,
         formato: post.type ?? "post",
         tema: parsed.tema,
         gancho: parsed.gancho_identificado,
         score_curadoria: parsed.score_curadoria,
-        texto_original: post.caption ?? null,
+        texto_original: textoRico || String(post.caption ?? "") || null,
         likes: typeof post.likesCount === "number" ? post.likesCount : null,
         comentarios: typeof post.commentsCount === "number" ? post.commentsCount : null,
         views: typeof post.videoPlayCount === "number" ? post.videoPlayCount : null,
         postado_em: post.timestamp ?? post.taken_at_timestamp ?? null,
-      });
-      curados++;
-    } catch (e) {
-      console.error("Curador item error", ref.handle, e);
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !inserted?.id) {
+      console.error("Curador insert error", ref.handle, insertError);
+      continue;
+    }
+    curados++;
+
+    const url = typeof post.url === "string" ? post.url : "";
+    if (url && isReel(post)) {
+      try {
+        const transcript = await buscarTranscriptReel(apifyToken, url);
+        await registrarCustoScraping(contaId, perfil.id, 1);
+        if (transcript) {
+          await supabase
+            .from("conteudos_curados")
+            .update({ transcricao: transcript })
+            .eq("id", inserted.id);
+        }
+      } catch (e) {
+        console.error("Curador transcript error", ref.handle, e);
+        await alertarAdminFalha(
+          "curador",
+          `transcript @${ref.handle}: ${formatAgentError(e)}`,
+        );
+      }
     }
   }
 
-  return { ref: ref.handle, foco, curados, avaliados, duplicados, encontrados: posts.length };
+  return {
+    ref: ref.handle,
+    foco,
+    curados,
+    avaliados,
+    duplicados,
+    encontrados: posts.length,
+    topScore: vencedores[0]?.parsed.score_curadoria ?? null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -280,8 +413,18 @@ Deno.serve(async (req) => {
   if (refId) {
     try {
       const result = await processRef(refId);
-      await setStatus("curador", "idle", `worker ok: @${result.ref} (${result.curados})`);
-      return new Response(JSON.stringify({ ok: true, result }), {
+      const detalhe = result.error
+        ? `falha @${result.ref}: ${result.error}`
+        : `worker ok: @${result.ref} (${result.curados} novas, ${result.duplicados ?? 0} dup, ${result.avaliados ?? 0} avaliadas${
+            result.topScore != null ? `, top ${result.topScore}` : ""
+          })`;
+      await setStatus(
+        "curador",
+        result.error ? "error" : "idle",
+        detalhe.slice(0, 180),
+      );
+      return new Response(JSON.stringify({ ok: !result.error, result }), {
+        status: result.error ? 502 : 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (e) {

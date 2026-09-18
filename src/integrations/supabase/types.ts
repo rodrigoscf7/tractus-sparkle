@@ -359,6 +359,7 @@ export type Database = {
           score_curadoria: number | null
           tema: string | null
           texto_original: string | null
+          transcricao: string | null
           url: string | null
           views: number | null
         }
@@ -377,6 +378,7 @@ export type Database = {
           score_curadoria?: number | null
           tema?: string | null
           texto_original?: string | null
+          transcricao?: string | null
           url?: string | null
           views?: number | null
         }
@@ -395,6 +397,7 @@ export type Database = {
           score_curadoria?: number | null
           tema?: string | null
           texto_original?: string | null
+          transcricao?: string | null
           url?: string | null
           views?: number | null
         }

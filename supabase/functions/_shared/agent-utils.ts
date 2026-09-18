@@ -1,5 +1,6 @@
 // Shared utilities for all agent edge functions
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import webpush from "npm:web-push@3.6.7";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,6 +66,111 @@ export async function requireAgentAuth(req: Request): Promise<Response | null> {
   return null;
 }
 
+function chaveAlertaAdmin(agente: string, mensagem: string): string {
+  const m = mensagem.toLowerCase();
+  if (m.includes("apify")) return `${agente}:apify`;
+  if (
+    m.includes("openrouter") ||
+    m.includes("claude") ||
+    m.includes("modelo") ||
+    m.includes("timeout") ||
+    m.includes("json")
+  ) {
+    return `${agente}:modelo`;
+  }
+  if (m.includes("transcript")) return `${agente}:transcript`;
+  if (m.includes("limite")) return `${agente}:limite`;
+  return `${agente}:outro`;
+}
+
+function diaSaoPaulo(): string {
+  // en-CA → YYYY-MM-DD
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+/**
+ * Push imediato aos admins da plataforma (com inscrição PWA), no máximo 1×
+ * por chave/dia. Falha de envio não propaga — só log.
+ */
+export async function alertarAdminFalha(agente: string, mensagem: string) {
+  try {
+    const supabase = getServiceClient();
+    const chave = chaveAlertaAdmin(agente, mensagem);
+    const dia = diaSaoPaulo();
+
+    const { error: dedupeError } = await supabase
+      .from("admin_alertas_push")
+      .insert({ chave, dia });
+    if (dedupeError) {
+      // unique_violation = já alertamos hoje nesta chave
+      if ((dedupeError as { code?: string }).code === "23505") return;
+      console.error("alertarAdminFalha dedupe", dedupeError);
+      return;
+    }
+
+    const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
+    const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
+    const vapidSubject = Deno.env.get("VAPID_SUBJECT");
+    if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
+      console.error("alertarAdminFalha: VAPID ausente");
+      return;
+    }
+    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+
+    const { data: admins, error: adminsError } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+    if (adminsError || !admins?.length) {
+      if (adminsError) console.error("alertarAdminFalha admins", adminsError);
+      return;
+    }
+
+    const userIds = admins.map((a) => a.user_id);
+    const { data: inscricoes } = await supabase
+      .from("push_subscriptions")
+      .select("id, endpoint, p256dh, auth_key")
+      .in("user_id", userIds);
+
+    const corpo = `${agente}: ${mensagem}`.slice(0, 180);
+    const payload = JSON.stringify({
+      title: "prevIA · falha",
+      body: corpo,
+      url: "/agentes",
+    });
+
+    for (const inscricao of inscricoes ?? []) {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: inscricao.endpoint,
+            keys: { p256dh: inscricao.p256dh, auth: inscricao.auth_key },
+          },
+          payload,
+        );
+        await supabase
+          .from("push_subscriptions")
+          .update({ ultimo_uso_em: new Date().toISOString() })
+          .eq("id", inscricao.id);
+      } catch (e) {
+        const status = (e as { statusCode?: number }).statusCode;
+        if (status === 404 || status === 410) {
+          await supabase.from("push_subscriptions").delete().eq("id", inscricao.id);
+        } else {
+          console.error("alertarAdminFalha push", inscricao.id, e);
+        }
+      }
+    }
+  } catch (e) {
+    console.error("alertarAdminFalha", e);
+  }
+}
+
 export async function setStatus(
   agente: string,
   estado: "idle" | "working" | "waiting" | "error",
@@ -77,6 +183,9 @@ export async function setStatus(
     ultima_acao: ultimaAcao ?? null,
     atualizado_em: new Date().toISOString(),
   });
+  if (estado === "error") {
+    await alertarAdminFalha(agente, ultimaAcao ?? "erro desconhecido");
+  }
 }
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
