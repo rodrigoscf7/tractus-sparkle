@@ -390,15 +390,15 @@ export function validarPergunta(indice: number, r: Respostas): string | null {
  */
 const RECONHECIMENTO_SITUACAO: Record<string, string> = {
   ideias_sem_conteudo:
-    "Anotado. O gargalo não é repertório — é o caminho entre a ideia e o roteiro.",
+    "Anotado. O gargalo não é repertório: é o caminho entre a ideia e o roteiro.",
   nao_sei_postar: "Anotado. Costuma ser falta de pauta, não falta de assunto.",
   demoro_roteiro: "Anotado. Isso é gargalo de processo, não de ideia.",
   sem_constancia:
-    "Anotado. Gravar sem sistema vira esforço esporádico — e autoridade precisa de presença.",
+    "Anotado. Gravar sem sistema vira esforço esporádico, e autoridade precisa de presença.",
   poucas_views: "Anotado. A abertura entra como prioridade no seu diagnóstico.",
   views_sem_cliente: "Anotado. Alcance sem posicionamento traz audiência, não cliente.",
   sem_tempo: "Anotado. Então o seu plano precisa caber na semana real, não numa ideal.",
-  escalar: "Anotado. Volume sem constância vira esforço sem efeito — seu DNA parte daí.",
+  escalar: "Anotado. Volume sem constância vira esforço sem efeito. Seu DNA parte daí.",
 };
 
 const RECONHECIMENTO_FREQUENCIA: Record<string, string> = {

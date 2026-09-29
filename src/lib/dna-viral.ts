@@ -78,14 +78,33 @@ export function temSubsidioArquetipo(r: Respostas): boolean {
   return Boolean(areaOk && situacaoOk && especificidadeOk);
 }
 
+/**
+ * Remove travessão tipográfico (— e –).
+ *
+ * Modelos usam isso o tempo todo; em português de profissional soa artificial.
+ * Troca por ponto e capitaliza a sequência. Aplicado na normalização e no
+ * fallback curado, para a tela nunca entregar esse traço.
+ */
+export function limparTravessao(entrada: string): string {
+  return entrada
+    .replace(/\s*[—–]\s*/g, ". ")
+    .replace(/\.\s+([a-záàâãéêíóôõúç])/gi, (_m, letra: string) => `. ${letra.toUpperCase()}`)
+    .replace(/\.\s*\./g, ".")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 /** Leitura defensiva: o JSON vem de um modelo, então nada é garantido. */
 function texto(v: unknown): string | null {
-  return typeof v === "string" && v.trim() ? v.trim() : null;
+  if (typeof v !== "string" || !v.trim()) return null;
+  return limparTravessao(v.trim());
 }
 
 function lista(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
-  return v.map((i) => (typeof i === "string" ? i.trim() : "")).filter(Boolean);
+  return v
+    .map((i) => (typeof i === "string" ? limparTravessao(i.trim()) : ""))
+    .filter(Boolean);
 }
 
 /**
@@ -128,13 +147,13 @@ export function normalizarDnaViral(bruto: unknown): DnaViral | null {
   const gargalos = lerGargalos(o);
   if (!gargalos.length) return null;
 
-  return {
+  return limparRelatorio({
     arquetipo,
     gargalos,
     pilares,
     roteiros,
     o_que_falta: texto(o.o_que_falta) ?? "",
-  };
+  });
 }
 
 /** Preferência: `roteiros[]`. Fallback: `ganchos[]` antigo → roteiro só com gancho. */
@@ -196,12 +215,67 @@ function lerGargalos(o: Record<string, unknown>): Gargalo[] {
   return [];
 }
 
+function palavras(s: string): number {
+  return s.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * Piso de profundidade dos roteiros, aplicado só na hora de GERAR.
+ *
+ * O contrato pede de 110 a 150 palavras por peça (30 a 50 segundos de fala).
+ * Quando o modelo devolve três frases soltas, o relatório passa em todas as
+ * validações de forma e chega raso na tela de quem acabou de clicar num
+ * anúncio. Aqui é melhor cair no fallback curado, que é mais curto em nuance
+ * mas é texto gravável.
+ *
+ * Não roda em `normalizarDnaViral` de propósito: leads já gravados (inclusive
+ * os do formato antigo `ganchos`) continuam precisando abrir.
+ */
+export function roteirosTemProfundidade(relatorio: DnaViral): boolean {
+  if (relatorio.roteiros.length < 3) return false;
+  return relatorio.roteiros.every(
+    (r) =>
+      palavras(r.desenvolvimento) >= 45 &&
+      palavras(`${r.gancho} ${r.desenvolvimento} ${r.fecho}`) >= 80,
+  );
+}
+
 /**
  * Injeta o score calculado no relatório. Chamado em `gerarComFallback`
- * antes de gravar — nunca confia no modelo para os percentuais.
+ * antes de gravar. Nunca confia no modelo para os percentuais.
  */
 export function comScore(relatorio: DnaViral, r: Respostas): DnaViral {
-  return { ...relatorio, score: calcularScore(r) };
+  return limparRelatorio({ ...relatorio, score: calcularScore(r) });
+}
+
+/** Garante que nenhum campo de texto do relatório leve travessão à tela. */
+function limparRelatorio(relatorio: DnaViral): DnaViral {
+  return {
+    ...relatorio,
+    arquetipo: relatorio.arquetipo
+      ? {
+          nome: limparTravessao(relatorio.arquetipo.nome),
+          uma_linha: limparTravessao(relatorio.arquetipo.uma_linha),
+          descricao: limparTravessao(relatorio.arquetipo.descricao),
+        }
+      : null,
+    gargalos: relatorio.gargalos.map((g) => ({
+      titulo: limparTravessao(g.titulo),
+      texto: limparTravessao(g.texto),
+    })),
+    pilares: relatorio.pilares.map((p) => ({
+      nome: limparTravessao(p.nome),
+      por_que: limparTravessao(p.por_que),
+      exemplos_de_tema: p.exemplos_de_tema.map(limparTravessao),
+    })),
+    roteiros: relatorio.roteiros.map((rt) => ({
+      formato: limparTravessao(rt.formato),
+      gancho: limparTravessao(rt.gancho),
+      desenvolvimento: limparTravessao(rt.desenvolvimento),
+      fecho: limparTravessao(rt.fecho),
+    })),
+    o_que_falta: limparTravessao(relatorio.o_que_falta),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -406,61 +480,213 @@ const PILAR_PADRAO: Pilar = {
 };
 
 /**
- * Três roteiros no estilo escolhido, já na área da pessoa.
+ * Quem assiste o conteúdo desta pessoa.
  *
- * Não dá para reusar o `exemplo` de `ESTILOS` aqui: aqueles textos são todos
- * de previdenciário, porque servem para a pessoa RECONHECER um tom. Entregar
- * um deles como roteiro para quem trabalha com criminal denuncia prateleira.
- *
- * Cada peça tem gancho + desenvolvimento + fecho — a promessa da abertura.
+ * Existe porque roteiro é escrito para uma audiência, não para uma área. Quem
+ * faz mentoria para advogados fala com colegas: um roteiro sobre "a Justiça
+ * não funciona como deveria" não diz nada para esse público. Errar isso é o
+ * que faz o relatório parecer de prateleira.
  */
-function roteirosPara(estilo: string, area: string, cliente: string): Roteiro[] {
-  const a = area.toLowerCase();
-  const c = cliente || "quem precisa do seu serviço";
+type Publico = "cliente" | "colega" | "empresa";
 
-  const aberturas: Record<string, string> = {
-    A: `Se você está passando por isso em ${a}, nunca assine nenhum documento antes de checar o que eu vou falar agora.`,
-    B: `Esses dias me perguntaram uma coisa sobre ${a} que eu escuto praticamente toda semana…`,
-    C: `Talvez tenham te contado errado sobre como ${a} funciona na prática.`,
-    D: `Existem três situações em ${a} que mudam completamente o caminho — e a maioria conhece só uma.`,
-    E: `Semana passada chegou uma pessoa aqui no escritório convencida de que não tinha direito a nada.`,
-  };
+function publicoDe(r: Respostas): Publico {
+  if (r.area_atuacao === "mentora") return "colega";
+  if (r.area_atuacao === "empresarial" || r.area_atuacao === "tributario") return "empresa";
+
+  // Quem marcou "Outro" escreveu a área à mão; o cliente ideal confirma.
+  const livre = `${r.area_outro ?? ""} ${r.cliente_ideal ?? ""}`.toLowerCase();
+  if (/advogad|escrit[óo]rio|coleg|mentoria|banca/.test(livre)) return "colega";
+  if (/empres|cnpj|gestor|s[óo]cio|startup|neg[óo]cio|ind[úu]stria/.test(livre)) return "empresa";
+  return "cliente";
+}
+
+/**
+ * Aberturas do roteiro 1, por público e por estilo de narrativa.
+ *
+ * A área NÃO entra interpoladada no meio da frase. Texto de usuário colado
+ * dentro de uma oração pronta quebra a concordância ("em mentoria para
+ * advogados que mudam o caminho") e denuncia máquina na primeira linha.
+ */
+const ABERTURAS: Record<Publico, Record<string, string>> = {
+  cliente: {
+    A: "Tem um erro que eu vejo praticamente toda semana no atendimento, e ele custa caro. Presta atenção nos próximos trinta segundos.",
+    B: "Semana passada me perguntaram uma coisa que eu escuto quase todo mês. E a resposta pega muita gente de surpresa.",
+    C: "Se te disseram que é só entrar com o pedido e esperar, te contaram a versão fácil da história.",
+    D: "Existem três momentos em que uma decisão errada muda todo o resultado. Vou te mostrar os três.",
+    E: "Uma pessoa chegou aqui achando que já tinha perdido o prazo. Não tinha. Mas quase desistiu por causa disso.",
+  },
+  colega: {
+    A: "Tem um erro que eu vejo em quase todo escritório que me procura, e ele cobra faturamento todo mês.",
+    B: "Um advogado me disse uma frase semana passada que eu escuto o tempo todo. Ela explica por que o escritório não cresce.",
+    C: "Se te disseram que é só trabalhar mais para o escritório crescer, te venderam a parte confortável da história.",
+    D: "Existem três gargalos que travam o faturamento de um escritório. Vou te mostrar os três.",
+    E: "Um escritório chegou aqui faturando bem num mês e quase nada no seguinte. O problema não era captação.",
+  },
+  empresa: {
+    A: "Tem um erro que eu vejo em quase toda empresa que me procura, e ele só aparece quando já virou custo.",
+    B: "Um gestor me perguntou uma coisa semana passada que eu escuto praticamente todo mês.",
+    C: "Se te disseram que isso é só burocracia, te contaram justamente a versão que sai cara.",
+    D: "Existem três pontos que mudam completamente o resultado de uma operação. Vou te mostrar os três.",
+    E: "Uma empresa chegou aqui achando que estava tudo em ordem. Estava, no papel.",
+  },
+};
+
+/**
+ * Corpo dos três roteiros por público.
+ *
+ * Cada peça soma de 110 a 140 palavras, que é o que cabe em 30 a 50 segundos
+ * de fala. O gancho do primeiro vem de `ABERTURAS`; os outros dois já nascem
+ * completos porque o formato deles não depende do estilo de abertura.
+ */
+const CORPO_ROTEIROS: Record<
+  Publico,
+  [
+    { formato: string; desenvolvimento: string; fecho: string },
+    Roteiro,
+    Roteiro,
+  ]
+> = {
+  cliente: [
+    {
+      formato: "Curiosidade e alerta",
+      desenvolvimento:
+        "O que acontece é quase sempre a mesma coisa: a pessoa só procura orientação depois que o problema virou urgência. " +
+        "Aí o que seria uma conversa de dez minutos vira uma discussão longa, com menos caminhos disponíveis. " +
+        "E, na prática, o que atrapalha raramente é falta de direito. É falta de informação no momento certo. " +
+        "Quando você entende o que está em jogo antes de assinar, antes do prazo e antes de aceitar a primeira proposta, " +
+        "você decide com clareza em vez de decidir no susto.",
+      fecho:
+        "Se você está passando por algo parecido, salva este vídeo para não perder. " +
+        "E me conta nos comentários em que ponto você está: eu respondo com o que a prática mostra, sem juridiquês.",
+    },
+    {
+      formato: "Quebra de mito",
+      gancho: "O maior mito sobre isso é achar que basta estar com a razão. Estar certo é só metade do caminho.",
+      desenvolvimento:
+        "Quem vai decidir o seu caso não acompanhou a sua vida. Essa pessoa olha documento, prazo e prova. " +
+        "É por isso que duas situações praticamente iguais terminam diferente: uma chegou organizada e a outra chegou no limite. " +
+        "O que muda o resultado quase nunca é um argumento genial. É ter reunido a coisa certa, no tempo certo, " +
+        "e ter entendido desde o começo qual é a régua que está sendo aplicada. " +
+        "Quem entende a régua joga o jogo. Quem não entende só torce.",
+      fecho:
+        "Se isso fez sentido, compartilha com quem está vivendo essa situação agora. " +
+        "E se você quer que eu detalhe algum desses pontos, escreve nos comentários qual deles.",
+    },
+    {
+      formato: "O que ninguém te conta",
+      gancho: "Três coisas que a maioria das pessoas só descobre tarde demais. A número dois é a que mais aparece aqui.",
+      desenvolvimento:
+        "A primeira: prazo corre mesmo quando ninguém te avisa que ele começou. " +
+        "A segunda: aquele documento parado no seu e-mail ou na galeria do celular vale muito mais do que a sua memória, " +
+        "e é justamente o que quase todo mundo apaga. " +
+        "A terceira: a primeira proposta que te oferecem raramente é a última. " +
+        "Nenhuma dessas três exige conhecimento técnico. Exige só saber que elas existem antes de você precisar delas.",
+      fecho:
+        "Salva este vídeo para consultar quando precisar. " +
+        "E se você quer que eu aprofunde uma dessas três, me diz o número nos comentários.",
+    },
+  ],
+  colega: [
+    {
+      formato: "Curiosidade e alerta",
+      desenvolvimento:
+        "O escritório que não cresce raramente tem problema de competência técnica. Tem problema de previsibilidade. " +
+        "Entra cliente por indicação, o mês fecha bem, e no mês seguinte ninguém sabe de onde vem o próximo. " +
+        "Sem um canal que traga demanda de forma constante, o faturamento vira sorte. " +
+        "E aí a agenda enche de trabalho operacional, sobra pouco tempo para construir presença, e o ciclo se repete no mês seguinte. " +
+        "Previsibilidade não nasce de esforço. Nasce de sistema.",
+      fecho:
+        "Se o seu mês ainda depende de indicação, comenta a palavra previsibilidade aqui embaixo. " +
+        "Eu abro esse ponto com detalhe no próximo vídeo.",
+    },
+    {
+      formato: "Quebra de mito",
+      gancho: "O maior mito da advocacia é achar que bom técnico atrai cliente sozinho. Não atrai.",
+      desenvolvimento:
+        "Quem te contrata não tem como avaliar a sua técnica antes de te contratar. " +
+        "Essa pessoa avalia o que consegue perceber: clareza, segurança e a sensação de que você já resolveu um caso parecido com o dela. " +
+        "É por isso que advogado excelente fica invisível enquanto advogado mediano e comunicativo lota a agenda. " +
+        "Isso não é injustiça do mercado. É que competência que ninguém enxerga simplesmente não entra na conta de quem está decidindo.",
+      fecho:
+        "Se você se reconheceu nisso, marca um colega que precisa ouvir. " +
+        "E me diz nos comentários qual parte é mais difícil para você hoje: começar a aparecer ou manter constância.",
+    },
+    {
+      formato: "Os três gargalos",
+      gancho: "Três coisas travam o crescimento de um escritório. A número dois é a mais comum e a mais silenciosa.",
+      desenvolvimento:
+        "A primeira: não existe critério para dizer não, então o escritório aceita qualquer causa e perde foco. " +
+        "A segunda: tudo passa pelo sócio, e o teto de faturamento vira exatamente o tamanho da agenda dele. " +
+        "A terceira: a presença digital depende de inspiração, então acontece em rajadas e some por semanas. " +
+        "As três têm a mesma raiz, que é ausência de processo. " +
+        "E nenhuma delas se resolve trabalhando mais horas.",
+      fecho:
+        "Se alguma dessas três te descreveu, comenta o número aqui embaixo. " +
+        "Eu aprofundo a mais citada no próximo vídeo.",
+    },
+  ],
+  empresa: [
+    {
+      formato: "Curiosidade e alerta",
+      desenvolvimento:
+        "A maior parte das empresas trata a parte jurídica como algo que se resolve depois, quando o problema aparecer. " +
+        "O detalhe é que, quando ele aparece, as opções já diminuíram. " +
+        "Contrato mal redigido, prazo perdido, obrigação acessória esquecida: nenhum desses custa caro no dia em que acontece. " +
+        "Custa caro meses depois, com juros, multa ou um contrato que não protege quem deveria proteger. " +
+        "Estrutura preventiva não é gasto. É exatamente o que evita o gasto maior.",
+      fecho:
+        "Se a sua empresa está nessa situação, salva este vídeo e revisa o que já está assinado. " +
+        "Me conta nos comentários qual é a sua maior dúvida hoje.",
+    },
+    {
+      formato: "Quebra de mito",
+      gancho: "O maior mito é achar que contrato modelo baixado da internet protege a sua operação. Não protege.",
+      desenvolvimento:
+        "Modelo genérico foi escrito para um negócio que não é o seu. " +
+        "Ele cobre o caso comum e ignora justamente o ponto em que a sua operação é diferente. " +
+        "E é sempre nesse ponto que o conflito nasce. " +
+        "Quando a discussão chega, o que vale não é a intenção das partes: é o que está escrito. " +
+        "Um contrato bem feito não serve para você ganhar a discussão. Serve para que ela não precise acontecer.",
+      fecho:
+        "Se você usa modelo pronto hoje, comenta aqui embaixo. " +
+        "No próximo vídeo eu mostro as três cláusulas que mais geram problema na prática.",
+    },
+    {
+      formato: "Passivo silencioso",
+      gancho: "Três pontos geram passivo sem ninguém perceber. O número dois aparece em quase toda empresa que analiso.",
+      desenvolvimento:
+        "O primeiro: acordo verbal com fornecedor ou com sócio que nunca virou documento. " +
+        "O segundo: obrigação acessória entregue no automático, sem ninguém conferir se ela ainda corresponde à operação real. " +
+        "O terceiro: contrato antigo que continua valendo enquanto o negócio já mudou de modelo. " +
+        "Os três são silenciosos. Aparecem numa fiscalização, na saída de um sócio ou na ruptura com um cliente grande, " +
+        "e nesse momento o custo já está formado.",
+      fecho:
+        "Se algum desses três existe na sua empresa hoje, comenta o número. " +
+        "Eu detalho o mais citado no próximo vídeo.",
+    },
+  ],
+};
+
+/**
+ * Três roteiros completos de 30 a 50 segundos, para o público certo.
+ *
+ * O estilo escolhido define só a abertura do primeiro; o resto é estrutura
+ * fechada e revisada à mão. É o que garante que a versão sem IA continue
+ * sendo algo que a pessoa grava hoje sem editar.
+ */
+function roteirosPara(estilo: string, publico: Publico): Roteiro[] {
+  const aberturas = ABERTURAS[publico];
+  const [primeiro, segundo, terceiro] = CORPO_ROTEIROS[publico];
 
   return [
     {
-      formato: "Curiosidade & Alerta",
+      formato: primeiro.formato,
       gancho: aberturas[estilo] ?? aberturas["A"]!,
-      desenvolvimento:
-        `O que ${c} quase nunca sabe é que o detalhe que parece burocrático é, na prática, ` +
-        `o que define se o caso anda ou trava. Em ${a}, esse ponto aparece cedo — e quem ignora ` +
-        `só descobre quando o prazo ou a prova já complicou.`,
-      fecho:
-        "Se isso te descreveu, salva este vídeo e revisa o que você já tem em mãos antes do próximo passo. " +
-        "Dúvida específica? Deixa nos comentários — respondo com o que a prática mostra, não com teoria.",
+      desenvolvimento: primeiro.desenvolvimento,
+      fecho: primeiro.fecho,
     },
-    {
-      formato: "Quebra de Mito",
-      gancho: `O maior erro que as pessoas cometem ao lidar com ${a} é achar que a Justiça funciona do jeito que deveria. Na prática…`,
-      desenvolvimento:
-        `O senso comum promete um caminho linear. O que ${c} encontra é outro: prazos, documentos e ` +
-        `interpretações que mudam o resultado sem aviso. Quem entende isso cedo evita decisões caras ` +
-        `tomadas no escuro.`,
-      fecho:
-        "Se você já ouviu o contrário disso, marca alguém que precisa ouvir. " +
-        "E se quiser o próximo vídeo sobre o seu caso concreto, comenta a situação em uma frase.",
-    },
-    {
-      formato: "Autoridade & Proteção",
-      gancho:
-        "Três direitos que a maioria das pessoas perde simplesmente porque não sabe que eles existem — e o número 2 é o mais comum.",
-      desenvolvimento:
-        `Em ${a}, esses direitos não são detalhe: são o que separa quem chega preparado de quem ` +
-        `improvisa. O segundo, em especial, é o que ${c} deixa passar com mais frequência — ` +
-        `porque parece óbvio demais para checar.`,
-      fecho:
-        "Anota os três. Na dúvida, volta neste vídeo antes de qualquer assinatura ou prazo. " +
-        "Quer que eu aprofunde um deles? Diz qual nos comentários.",
-    },
+    segundo,
+    terceiro,
   ];
 }
 
@@ -531,28 +757,30 @@ export function dnaViralCurado(r: Respostas): DnaViral {
   let arquetipo: Arquetipo | null = null;
   if (temSubsidioArquetipo(r)) {
     const arq = ARQUETIPO_POR_SITUACAO[situacao] ?? ARQUETIPO_POR_SITUACAO["nao_sei_postar"]!;
+    // O cliente ideal entra como citação, nunca como sujeito de uma oração
+    // pronta: texto livre colado no meio de frase quebra a concordância.
     const clienteTrecho = cliente
-      ? ` O cliente que você descreveu — ${cliente} — é o filtro: cada peça precisa falar com essa pessoa, não com “o jurídico” em geral.`
+      ? ` Você descreveu o seu público assim: "${cliente}". É esse o filtro de cada peça.`
       : "";
     arquetipo = {
       nome: arq.nome,
       uma_linha: arq.uma_linha,
       descricao:
-        `Em ${area.toLowerCase()}, o seu diferencial não vai vir de publicar mais que os outros — vai vir de ` +
+        `Você atua com ${area}. Nesse terreno, o diferencial não vem de publicar mais que os outros. Vem de ` +
         `publicar com uma posição reconhecível.${clienteTrecho} O caminho mais curto é escolher poucos temas e ` +
         `voltar neles com constância, até que o seu nome e o assunto passem a andar juntos na cabeça de quem assiste.`,
     };
   }
 
-  return {
+  return limparRelatorio({
     arquetipo,
     gargalos: gargalosCurados(r, score),
     pilares: pilares.slice(0, 3),
-    roteiros: roteirosPara(estilo.valor, area, cliente),
+    roteiros: roteirosPara(estilo.valor, publicoDe(r)),
     o_que_falta:
       "Este diagnóstico é uma fotografia. O que ele não faz é o trabalho de toda semana: descobrir o que " +
       "está performando agora na sua área, transformar isso em pauta com a sua voz e ter o roteiro pronto " +
       "nos dias em que você se comprometeu a publicar. É essa parte que a prevIA assume.",
     score,
-  };
+  });
 }

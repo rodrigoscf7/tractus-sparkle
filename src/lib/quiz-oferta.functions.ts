@@ -24,6 +24,7 @@ import {
   comScore,
   dnaViralCurado,
   normalizarDnaViral,
+  roteirosTemProfundidade,
   temSubsidioArquetipo,
   type DnaViral,
 } from "@/lib/dna-viral";
@@ -239,14 +240,19 @@ async function gerarComFallback(
 
     if (resposta.ok) {
       const normalizado = normalizarDnaViral(resposta.data?.relatorio);
-      if (normalizado) {
+      if (normalizado && !roteirosTemProfundidade(normalizado)) {
+        // Passa no contrato de forma mas chega raso na tela. Melhor o curado,
+        // que tem menos nuance mas é texto que a pessoa grava hoje.
+        console.error("dna-viral: roteiros rasos, servindo curado");
+      } else if (normalizado) {
         // Sem base concreta, arquétipo some — evita rótulo de prateleira.
         if (!temSubsidioArquetipo(respostas)) {
           normalizado.arquetipo = null;
         }
         return { conteudo: comScore(normalizado, respostas), origem: "ia" };
+      } else {
+        console.error("dna-viral: agente respondeu fora do contrato");
       }
-      console.error("dna-viral: agente respondeu fora do contrato");
     } else {
       console.error("dna-viral: agente falhou", resposta.status, resposta.erro);
     }

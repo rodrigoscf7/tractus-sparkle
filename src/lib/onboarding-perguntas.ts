@@ -318,7 +318,7 @@ export function tomDeVoz(respostas: Respostas): string {
   const partes: string[] = [];
   if (atributos.length) partes.push(atributos.join(", "));
   if (estilo) partes.push(`abertura no estilo ${estilo.label.toLowerCase()}`);
-  return partes.join(" — ");
+  return partes.join(". ");
 }
 
 /** Respostas → `perfis.diretrizes`. É o que todos os agentes leem. */

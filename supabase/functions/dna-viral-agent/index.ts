@@ -19,7 +19,7 @@ import {
 
 type Payload = {
   respostas?: Record<string, unknown>;
-  /** Score ja calculado no app — os gargalos precisam concordar com as barras. */
+  /** Score ja calculado no app. Os gargalos precisam concordar com as barras. */
   score?: Array<{ chave: string; rotulo: string; valor: number; faixa: string }>;
 };
 
@@ -55,6 +55,36 @@ const ESTILOS: Record<string, { nome: string; exemplo: string; comoSoa: string }
   },
 };
 
+// Quem assiste o conteudo. O modelo erra isso sozinho: ele le "mentoria para
+// advogados" e escreve roteiro para o cliente final do direito, quando o
+// publico e o proprio advogado. Entao a inferencia vem pronta no prompt.
+function publicoDe(r: Record<string, unknown>): string {
+  const area = String(r["area_atuacao"] ?? "");
+  const livre = `${r["area_outro"] ?? ""} ${r["cliente_ideal"] ?? ""}`.toLowerCase();
+
+  if (area === "mentora" || /advogad|escrit[óo]rio|coleg|mentoria|banca/.test(livre)) {
+    return [
+      "OUTROS ADVOGADOS E DONOS DE ESCRITÓRIO (público B2B, colegas de profissão).",
+      "Os roteiros falam de gestão, captação, previsibilidade de faturamento, posicionamento e rotina de escritório.",
+      "É ERRADO escrever sobre direitos do cliente final, prazos processuais ou 'como a Justiça funciona'. Esse público já sabe.",
+    ].join(" ");
+  }
+
+  if (area === "empresarial" || area === "tributario" || /empres|cnpj|gestor|s[óo]cio|startup|ind[úu]stria/.test(livre)) {
+    return [
+      "EMPRESAS E GESTORES (público B2B).",
+      "Os roteiros falam de risco contratual, passivo silencioso, custo de decisão mal tomada e estrutura preventiva.",
+      "Fale a língua de quem decide por números e por risco, não a língua do foro.",
+    ].join(" ");
+  }
+
+  return [
+    "PESSOAS FÍSICAS que podem virar clientes (público B2C, leigas em direito).",
+    "Os roteiros explicam o que essa pessoa precisa saber antes de decidir, sem juridiquês e sem citar artigo de lei.",
+    "Zero vocabulário técnico: se a palavra não é usada numa conversa de mesa de bar, não entra.",
+  ].join(" ");
+}
+
 const SYSTEM = `Você lê as respostas de um profissional da advocacia a um diagnóstico de conteúdo e escreve o "DNA Viral": um documento curto que a pessoa recebe na hora, de graça, antes de contratar qualquer coisa.
 
 A pessoa acabou de responder e está esperando na tela. O documento precisa fazer duas coisas ao mesmo tempo: ser genuinamente útil sozinho, e deixar visível o trabalho que um diagnóstico único não faz.
@@ -65,21 +95,35 @@ RESPOSTAS:
 ESTILO NARRATIVO (derivado de como quer ser percebido):
 {{estilo}}
 
-SCORE JÁ CALCULADO (não invente outros números — os três gargalos precisam concordar com estas barras):
+SCORE JÁ CALCULADO (não invente outros números; os três gargalos precisam concordar com estas barras):
 {{score}}
+
+QUEM ASSISTE OS VÍDEOS DESTA PESSOA:
+{{publico}}
+
+Escreva PARA esse público. Roteiro é escrito para uma audiência, não para uma área. Quem faz mentoria para advogados fala com colegas de profissão: um roteiro sobre "a Justiça não funciona como deveria" não diz absolutamente nada para esse público. Errar isso invalida o documento inteiro.
 
 COMO ESCREVER:
 - Fale na segunda pessoa. "Você trava na abertura", não "O usuário apresenta dificuldade".
-- Gênero neutro: "você", "a pessoa", "quem assiste" — nunca force flexões de gênero.
-- Seja específico da área de atuação e do cliente ideal descrito. Um texto que serviria para qualquer advogado não serve para nenhum — e a pessoa vai perceber na primeira linha.
+- Gênero neutro: "você", "a pessoa", "quem assiste". Nunca force flexões de gênero.
 - Nada de linguagem motivacional, nada de "revolucionário", "poderoso", "descomplicado", "destravar seu potencial". Profissional falando com profissional.
 - Nada de elogio vazio. Se o diagnóstico é desconfortável, diga com respeito e sem suavizar.
-- Os três ROTEIROS precisam estar prontos para gravar hoje: cada um tem gancho (abertura), desenvolvimento (2–4 frases do miolo) e fecho (CTA editorial, sem mercantilizar). Na área da pessoa, com o vocabulário do cliente — não o do foro. São a prova de que isto funciona.
-- Os roteiros precisam soar como o estilo indicado. Se o estilo é Storytelling, não entregue abertura de Professor.
-- Arquétipo: só inclua se as respostas derem base concreta (área + situação + cliente ou percepção). Nome curto reconhecível do padrão — não é elogio nem rótulo de personalidade. Se não houver substância, omita o campo arquetipo ou deixe null.
+- PROIBIDO o caractere travessão (—) e o traço médio (–) em qualquer campo do JSON. Não use. Prefira ponto, vírgula ou dois-pontos. Esse traço denuncia texto de modelo.
+- Arquétipo: só inclua se as respostas derem base concreta (área + situação + cliente ou percepção). Nome curto reconhecível do padrão; não é elogio nem rótulo de personalidade. Se não houver substância, omita o campo arquetipo ou deixe null.
 - Os três gargalos: o primeiro deriva da situação atual (o que acontece quando senta pra gravar); os outros dois reforçam as dimensões do score com menor pontuação. Título curto + parágrafo de causa, não só sintoma.
 
-RESTRIÇÕES DE PUBLICIDADE (advocacia) — não negociáveis:
+COMO ESCREVER OS TRÊS ROTEIROS (esta é a parte que a pessoa julga o documento inteiro):
+- Cada roteiro é um vídeo falado de 30 a 50 SEGUNDOS. Some gancho + desenvolvimento + fecho e você precisa ter entre 110 e 150 palavras. Menos que isso é esboço, não roteiro.
+- Tem que estar pronto para gravar HOJE, lendo em voz alta, sem editar nada. Leia mentalmente antes de devolver: se travar na leitura, reescreva.
+- Gancho: 1 ou 2 frases, até 25 palavras, ditas nos 3 primeiros segundos.
+- Desenvolvimento: 5 a 8 frases curtas e conectadas, defendendo UMA tese só. Tem que ter conteúdo real: um mecanismo, uma consequência concreta, um exemplo. Frase genérica que serviria para qualquer profissão está proibida.
+- Fecho: 1 ou 2 frases. Convite editorial (salvar, comentar, marcar alguém). Sem preço, sem promessa de resultado.
+- NÃO repita o nome da área de atuação dentro das frases. Escrever "em mentoria para advogados que mudam o caminho" é erro de concordância e denuncia preenchimento automático. A especificidade vem do CONTEÚDO (o problema real, o mecanismo, a consequência), não de citar o nome da área. No máximo uma menção à área nos três roteiros somados, e só se couber naturalmente.
+- NÃO use o texto do "cliente ideal" como sujeito de frase. Ele foi escrito em linguagem de briefing ("advogados sem previsibilidade comercial"), não em linguagem falada. Use-o para entender com quem se fala e escreva com palavras suas.
+- Os três roteiros têm que ser diferentes entre si em estrutura, não só no tema. Sugestão: um que alerta sobre um erro, um que quebra uma crença, um que enumera três pontos.
+- Os roteiros precisam soar como o estilo indicado. Se o estilo é Storytelling, não entregue abertura de Professor.
+
+RESTRIÇÕES DE PUBLICIDADE (advocacia), não negociáveis:
 - Nenhum exemplo pode prometer ou insinuar resultado ("garanto seu benefício", "ganhe sua causa").
 - Nenhum exemplo pode mercantilizar o serviço (preço, promoção, "consulta grátis") nem captar clientela de forma direta.
 - Gancho, retenção e opinião defensável são bem-vindos: o vedado é promessa de resultado e mercantilização, não ser interessante.
@@ -91,7 +135,7 @@ SOBRE O CAMPO "o_que_falta":
 Retorne APENAS JSON, sem cercas de código, neste formato exato:
 {
   "arquetipo": {
-    "nome": "nome curto do padrão, 2 a 4 palavras — ou omita se não houver base",
+    "nome": "nome curto do padrão, 2 a 4 palavras (ou omita se não houver base)",
     "uma_linha": "1 frase que a pessoa leria e reconheceria como verdade sobre si",
     "descricao": "1 parágrafo específico da área e do cliente descritos"
   },
@@ -103,18 +147,19 @@ Retorne APENAS JSON, sem cercas de código, neste formato exato:
   ],
   "roteiros": [
     {
-      "formato": "nome curto do formato (ex.: Curiosidade & Alerta)",
-      "gancho": "abertura pronta, palavra por palavra",
-      "desenvolvimento": "2 a 4 frases do miolo, prontas para gravar",
+      "formato": "nome curto do formato (ex.: Curiosidade e alerta)",
+      "gancho": "abertura pronta, palavra por palavra, até 25 palavras",
+      "desenvolvimento": "5 a 8 frases curtas do miolo, prontas para gravar lendo",
       "fecho": "fecho/CTA editorial, sem preço nem promessa de resultado"
     }
   ],
   "o_que_falta": "2 a 3 frases"
 }
 
-Entregue exatamente 3 gargalos, exatamente 3 pilares e exatamente 3 roteiros (cada um com gancho, desenvolvimento e fecho).
-NÃO inclua campo de score no JSON — ele já foi calculado fora.
-NÃO use o campo "ganchos" — o contrato é "roteiros".`;
+Entregue exatamente 3 gargalos, exatamente 3 pilares e exatamente 3 roteiros (cada um com gancho, desenvolvimento e fecho, somando de 110 a 150 palavras por roteiro).
+NÃO inclua campo de score no JSON; ele já foi calculado fora.
+NÃO use o campo "ganchos"; o contrato é "roteiros".
+NÃO use travessão (—) nem traço médio (–) em lugar nenhum do JSON.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -137,7 +182,7 @@ Deno.serve(async (req) => {
     const estilo = ESTILOS[estiloId];
     const estiloTexto = estilo
       ? `${estilo.nome}\nComo soa: ${estilo.comoSoa}\nExemplo de referência: "${estilo.exemplo}"`
-      : "Não informado — derive a voz dos atributos de percepção escolhidos.";
+      : "Não informado. Derive a voz dos atributos de percepção escolhidos.";
 
     const scoreTexto = Array.isArray(payload.score) && payload.score.length
       ? payload.score
@@ -148,7 +193,8 @@ Deno.serve(async (req) => {
     const system = SYSTEM
       .replace("{{respostas}}", JSON.stringify(respostas, null, 2))
       .replace("{{estilo}}", estiloTexto)
-      .replace("{{score}}", scoreTexto);
+      .replace("{{score}}", scoreTexto)
+      .replace("{{publico}}", publicoDe(respostas));
 
     // Sem conta: o custo do funil de aquisicao entra com conta_id nulo e
     // aparece no painel financeiro separado do consumo dos clientes.

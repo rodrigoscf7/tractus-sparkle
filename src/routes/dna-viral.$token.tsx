@@ -203,8 +203,8 @@ function Relatorio() {
 
       {(relatorio.roteiros?.length ?? 0) > 0 && (
         <Secao
-          titulo="Aqui estão os 03 roteiros prontos para gravar hoje"
-          apoio="Para destravar as gravações, aqui estão 3 estruturas validadas adaptadas para a advocacia:"
+          titulo="Seus 3 roteiros prontos para gravar hoje"
+          apoio="Cada um tem de 30 a 50 segundos e está escrito palavra por palavra, na ordem em que você fala: abertura, miolo e fecho. É para abrir, ler e gravar."
         >
           <div className="space-y-6">
             {relatorio.roteiros.map((roteiro, i) => (
@@ -246,7 +246,8 @@ function Relatorio() {
             ))}
           </div>
           <p className="mt-6 text-base leading-relaxed text-muted-foreground">
-            Estes são 3 roteiros que já vão destravar as suas gravações desta semana.
+            Ajuste as palavras ao seu jeito de falar. A estrutura é o que sustenta a retenção, e ela
+            já está montada.
           </p>
         </Secao>
       )}
@@ -257,7 +258,7 @@ function Relatorio() {
         </Secao>
       )}
 
-      <Oferta oferta={oferta} relatorio={relatorio} />
+      <Oferta oferta={oferta} />
 
       <footer className="mt-16 border-t border-border pt-6" data-print-hide>
         <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-6 w-auto opacity-60" />
@@ -309,7 +310,7 @@ function PainelScore({ score }: { score: DimensaoScore[] }) {
           {statusDoScore(score)}
         </p>
         <p className="mt-4 text-sm text-muted-foreground">
-          Seu potencial nas redes sociais — leitura das suas respostas, não auditoria do perfil:
+          Seu potencial nas redes sociais (leitura das suas respostas, não auditoria do perfil):
         </p>
         <ul className="mt-6 space-y-4">
           {score.map((dim) => (
@@ -345,7 +346,7 @@ function VideoPlaceholder() {
         flex-col items-center justify-center rounded-xl border border-border bg-surface text-center"
       data-print-hide
       role="img"
-      aria-label="Vídeo do diagnóstico — em breve"
+      aria-label="Vídeo do diagnóstico, em breve"
     >
       <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
         Vídeo
@@ -420,13 +421,7 @@ function formatarPreco(centavos: number): string {
  * prometido. Fora da impressão — o PDF que ela guarda é o diagnóstico, não o
  * anúncio.
  */
-function Oferta({
-  oferta,
-  relatorio,
-}: {
-  oferta: OfertaPublica;
-  relatorio: DnaViral;
-}) {
+function Oferta({ oferta }: { oferta: OfertaPublica }) {
   if (!oferta) return null;
 
   const preco = oferta.precoCentavos != null ? formatarPreco(oferta.precoCentavos) : null;
@@ -439,14 +434,17 @@ function Oferta({
       data-print-hide
     >
       <h2 className="font-display text-xl font-semibold leading-snug tracking-tight sm:text-2xl">
-        Mas a questão é: como manter esse fluxo todas as semanas?
+        Você tem três roteiros. O problema começa na quarta semana.
       </h2>
       <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-        {relatorio.o_que_falta
-          ? "É esse trabalho que a prevIA Viral assume:"
-          : "A prevIA assume o trabalho que se repete:"}{" "}
-        ela acompanha o que está performando na sua área, transforma isso em pauta com a sua voz e
-        deixa o roteiro pronto nos dias em que você se comprometeu a publicar.
+        Gravar os três primeiros é fácil, porque alguém já escreveu por você. O que trava todo mundo
+        é a segunda-feira seguinte: a tela em branco, a dúvida sobre o tema e a hora que você não
+        tem. É por isso que quase todo perfil jurídico começa bem e para no primeiro mês.
+      </p>
+      <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+        A prevIA existe para essa parte. Ela acompanha o que está performando na sua área, transforma
+        isso em pauta na sua voz e deixa o roteiro pronto nos dias em que você se comprometeu a
+        publicar. Você abre, lê e grava.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-4">
@@ -469,10 +467,7 @@ function Oferta({
       </div>
 
       <p className="mt-4 text-sm text-muted-foreground">
-        {preco && precoDe
-          ? `O bônus é este preço: de ${precoDe} por ${preco}/mês. `
-          : ""}
-        Suas respostas já vão com você — o cadastro começa do ponto onde este diagnóstico parou.
+        Suas respostas já vão com você. O cadastro começa do ponto onde este diagnóstico parou.
       </p>
     </section>
   );

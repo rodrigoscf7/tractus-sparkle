@@ -50,7 +50,7 @@ const ESTILOS: Record<string, { nome: string; exemplo: string; comoSoa: string }
 
 const SYSTEM = `Você escreve manuais de marca para advogados que estão construindo presença e posicionamento nas redes sociais.
 
-Recebeu as respostas do onboarding de um advogado. Sua tarefa é escrever o manual de marca dele — um documento que ele vai baixar, guardar e usar como referência ao produzir conteúdo.
+Recebeu as respostas do onboarding de um advogado. Sua tarefa é escrever o manual de marca dele: um documento que ele vai baixar, guardar e usar como referência ao produzir conteúdo.
 
 RESPOSTAS DO ONBOARDING:
 {{respostas}}
@@ -62,8 +62,9 @@ COMO ESCREVER:
 - Fale com ele, na segunda pessoa. "Você abre seus vídeos nomeando o erro…", não "O usuário deve…".
 - Seja específico da área de atuação e do nicho dele. Um manual que serviria para qualquer advogado não serve para nenhum.
 - Nada de linguagem motivacional, nada de "revolucionário", "poderoso", "descomplicado". Profissional falando com profissional.
+- PROIBIDO o caractere travessão (—) e o traço médio (–) em qualquer campo do JSON. Prefira ponto, vírgula ou dois-pontos.
 - As fórmulas de gancho precisam soar como o estilo escolhido. Se ele escolheu Storytelling, não entregue gancho de Professor.
-- Os exemplos de tema e de gancho precisam ser sobre o direito que ele pratica, com o vocabulário do cliente dele — não o vocabulário do foro.
+- Os exemplos de tema e de gancho precisam ser sobre o direito que ele pratica, com o vocabulário do cliente dele, não o vocabulário do foro.
 - Respeite a lista proibida: nada do que ele pediu para evitar pode aparecer nos seus exemplos.
 - Se ele informou bordões, use-os nos exemplos de fechamento.
 

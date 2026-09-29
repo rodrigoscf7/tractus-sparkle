@@ -429,7 +429,7 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
 
           <img
             src="/gif.gif"
-            alt="Advogado perdido em frente ao computador — o meme de quem trava na hora de gravar"
+            alt="Advogado perdido em frente ao computador: o meme de quem trava na hora de gravar"
             className="w-full max-w-md rounded-lg border border-border"
             width={480}
             height={480}
@@ -441,15 +441,15 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
           <ul className="space-y-2.5 text-base leading-relaxed text-muted-foreground">
             <li className="flex gap-2.5">
               <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              Seu principal gargalo — o que está travando sua produção de conteúdo
+              Seu principal gargalo: o que está travando sua produção de conteúdo
             </li>
             <li className="flex gap-2.5">
               <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              Seus 3 pilares de autoridade — o que você precisa fortalecer no posicionamento
+              Seus 3 pilares de autoridade: o que você precisa fortalecer no posicionamento
             </li>
             <li className="flex gap-2.5">
               <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              3 roteiros prontos — para você gravar ainda hoje
+              3 roteiros prontos para você gravar ainda hoje
             </li>
           </ul>
         </div>
