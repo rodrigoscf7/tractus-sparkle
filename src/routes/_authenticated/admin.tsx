@@ -791,6 +791,7 @@ function Metrica({ label, usado, limite }: { label: string; usado: number; limit
 const CAMPOS_PLANO: { campo: string; label: string; tipo: "texto" | "numero" | "bool" }[] = [
   { campo: "nome", label: "Nome", tipo: "texto" },
   { campo: "preco_mensal_centavos", label: "Preço mensal (centavos)", tipo: "numero" },
+  { campo: "preco_de_centavos", label: "Preço âncora / DE (centavos)", tipo: "numero" },
   { campo: "preco_anual_centavos", label: "Preço anual (centavos)", tipo: "numero" },
   { campo: "trial_dias", label: "Dias de teste", tipo: "numero" },
   { campo: "limite_perfis", label: "Perfis", tipo: "numero" },

@@ -56,22 +56,30 @@ export const AREAS: Opcao[] = [
   { valor: "outro", label: "Outro" },
 ];
 
-/** Q5 — objetivo do conteúdo. Até 2. Define o foco da curadoria. */
+/** Q5 — objetivo do conteúdo. Até 3. Define o foco da curadoria. */
 export const OBJETIVOS: Opcao[] = [
   { valor: "seguidores", label: "Atrair novos seguidores" },
   { valor: "leads", label: "Gerar mais leads" },
   { valor: "clientes", label: "Conseguir clientes" },
+  { valor: "contratos", label: "Fechar mais contratos" },
   { valor: "autoridade", label: "Construir autoridade" },
   { valor: "engajamento", label: "Aumentar engajamento" },
   { valor: "frequencia", label: "Criar conteúdo com mais frequência" },
+  { valor: "tudo", label: "Tudo isso junto" },
   { valor: "outro", label: "Outro" },
 ];
 
-export const MAX_OBJETIVOS = 2;
+export const MAX_OBJETIVOS = 3;
 
 /** Objetivos que puxam a curadoria para tração em vez de posicionamento. */
 const OBJETIVOS_DE_ALCANCE = new Set(["seguidores", "engajamento"]);
-const OBJETIVOS_DE_POSICIONAMENTO = new Set(["autoridade", "clientes", "leads"]);
+const OBJETIVOS_DE_POSICIONAMENTO = new Set([
+  "autoridade",
+  "clientes",
+  "leads",
+  "contratos",
+  "tudo",
+]);
 
 /** Q6 — como quer ser percebido. Até 3. */
 export const ATRIBUTOS: Opcao[] = [
@@ -188,10 +196,58 @@ export const SITUACAO: Opcao[] = [
   { valor: "ideias_sem_conteudo", label: "Tenho ideias, mas não consigo transformar em conteúdo" },
   { valor: "nao_sei_postar", label: "Não sei o que postar" },
   { valor: "demoro_roteiro", label: "Demoro muito para criar roteiros" },
+  { valor: "sem_constancia", label: "Gravo, mas não tenho constância" },
   { valor: "poucas_views", label: "Posto, mas meus conteúdos têm poucas visualizações" },
   { valor: "views_sem_cliente", label: "Tenho visualizações, mas não atraio clientes" },
   { valor: "sem_tempo", label: "Minha rotina não me permite produzir conteúdo" },
   { valor: "escalar", label: "Quero aumentar muito minha produção de conteúdo" },
+];
+
+/**
+ * Frequência atual de publicação — diagnóstico do presente, não compromisso.
+ * Usada pelo quiz da oferta e pelo score do DNA Viral.
+ */
+export const FREQUENCIA: Opcao[] = [
+  { valor: "diaria", label: "Todos os dias (com um esforço gigante)" },
+  { valor: "3_5", label: "3 a 5 vezes por semana" },
+  { valor: "1_2", label: "1 a 2 vezes por semana" },
+  { valor: "raramente", label: "Raramente (só quando dá tempo entre um prazo e outro)" },
+  { valor: "parado", label: "Quase nunca / Meu perfil está praticamente parado" },
+];
+
+/**
+ * Tempo gasto por peça. Qualificação do quiz da oferta;
+ * alimenta o score de potencial viral.
+ */
+export const TEMPO_PRODUCAO: Opcao[] = [
+  { valor: "ate_15", label: "Menos de 15 minutos (já tenho um processo fácil)" },
+  { valor: "15_30", label: "Entre 15 e 30 minutos" },
+  { valor: "30_60", label: "Entre 30 minutos e 1 hora" },
+  { valor: "mais_2h", label: "Mais de 2 horas (e no fim o resultado ainda não convence)" },
+  { valor: "travo", label: "Travo olhando para a tela em branco e desisto de postar" },
+];
+
+/**
+ * Como o escritório quer ser percebido no digital.
+ * No quiz da oferta, deriva `atributos` e `estilo_narrativo`.
+ */
+export const PERCEPCOES: Opcao[] = [
+  {
+    valor: "A",
+    label: "Uma referência de alta autoridade e sofisticação no meu segmento",
+  },
+  {
+    valor: "B",
+    label: "Acolhedor, humano e extremamente acessível",
+  },
+  {
+    valor: "C",
+    label: "Direto ao ponto e técnico",
+  },
+  {
+    valor: "D",
+    label: "Moderno e bem-humorado, que simplifica o Direito",
+  },
 ];
 
 /** Forma das respostas gravadas em `onboarding_respostas.respostas`. */
@@ -227,6 +283,12 @@ export type Respostas = {
   situacao?: string;
   origem?: string;
   origem_outro?: string;
+  // Campos do quiz da oferta (qualificação + contato pré-resultado)
+  percepcao?: string;
+  frequencia_atual?: string;
+  tempo_producao?: string;
+  email?: string;
+  whatsapp?: string;
 };
 
 function label(opcoes: Opcao[], valor?: string) {

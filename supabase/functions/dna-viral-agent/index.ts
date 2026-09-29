@@ -19,10 +19,13 @@ import {
 
 type Payload = {
   respostas?: Record<string, unknown>;
+  /** Score ja calculado no app — os gargalos precisam concordar com as barras. */
+  score?: Array<{ chave: string; rotulo: string; valor: number; faixa: string }>;
 };
 
 // Os mesmos cinco estilos da pergunta de abertura. O exemplo e o que a pessoa
-// reconheceu ao escolher, entao e ele que orienta os ganchos.
+// reconheceu ao escolher (ou que foi derivado da percepcao), entao e ele que
+// orienta os ganchos.
 const ESTILOS: Record<string, { nome: string; exemplo: string; comoSoa: string }> = {
   A: {
     nome: "Direto ao ponto",
@@ -52,24 +55,29 @@ const ESTILOS: Record<string, { nome: string; exemplo: string; comoSoa: string }
   },
 };
 
-const SYSTEM = `Você lê as respostas de um advogado a um diagnóstico de conteúdo e escreve o "DNA Viral" dele: um documento curto que ele recebe na hora, de graça, antes de contratar qualquer coisa.
+const SYSTEM = `Você lê as respostas de um profissional da advocacia a um diagnóstico de conteúdo e escreve o "DNA Viral": um documento curto que a pessoa recebe na hora, de graça, antes de contratar qualquer coisa.
 
-Ele acabou de responder e está esperando na tela. O documento precisa fazer duas coisas ao mesmo tempo: ser genuinamente útil sozinho, e deixar visível o trabalho que um diagnóstico único não faz.
+A pessoa acabou de responder e está esperando na tela. O documento precisa fazer duas coisas ao mesmo tempo: ser genuinamente útil sozinho, e deixar visível o trabalho que um diagnóstico único não faz.
 
 RESPOSTAS:
 {{respostas}}
 
-ESTILO NARRATIVO ESCOLHIDO:
+ESTILO NARRATIVO (derivado de como quer ser percebido):
 {{estilo}}
 
+SCORE JÁ CALCULADO (não invente outros números — os três gargalos precisam concordar com estas barras):
+{{score}}
+
 COMO ESCREVER:
-- Fale com ele, na segunda pessoa. "Você trava na abertura", não "O usuário apresenta dificuldade".
-- Seja específico da área de atuação e do cliente ideal que ele descreveu. Um texto que serviria para qualquer advogado não serve para nenhum — e ele vai perceber na primeira linha.
+- Fale na segunda pessoa. "Você trava na abertura", não "O usuário apresenta dificuldade".
+- Gênero neutro: "você", "a pessoa", "quem assiste" — nunca force flexões de gênero.
+- Seja específico da área de atuação e do cliente ideal descrito. Um texto que serviria para qualquer advogado não serve para nenhum — e a pessoa vai perceber na primeira linha.
 - Nada de linguagem motivacional, nada de "revolucionário", "poderoso", "descomplicado", "destravar seu potencial". Profissional falando com profissional.
-- Nada de elogio vazio. Se o diagnóstico dele é desconfortável, diga com respeito e sem suavizar.
-- Os três ganchos precisam estar prontos para gravar hoje, na área dele, com o vocabulário do cliente dele — não o vocabulário do foro. São a prova de que isto funciona.
-- Os ganchos precisam soar como o estilo que ele escolheu. Se ele escolheu Storytelling, não entregue gancho de Professor.
-- O arquétipo é um nome curto e reconhecível para o padrão dele. Não é elogio nem rótulo de personalidade: é a descrição de onde ele está.
+- Nada de elogio vazio. Se o diagnóstico é desconfortável, diga com respeito e sem suavizar.
+- Os três ROTEIROS precisam estar prontos para gravar hoje: cada um tem gancho (abertura), desenvolvimento (2–4 frases do miolo) e fecho (CTA editorial, sem mercantilizar). Na área da pessoa, com o vocabulário do cliente — não o do foro. São a prova de que isto funciona.
+- Os roteiros precisam soar como o estilo indicado. Se o estilo é Storytelling, não entregue abertura de Professor.
+- Arquétipo: só inclua se as respostas derem base concreta (área + situação + cliente ou percepção). Nome curto reconhecível do padrão — não é elogio nem rótulo de personalidade. Se não houver substância, omita o campo arquetipo ou deixe null.
+- Os três gargalos: o primeiro deriva da situação atual (o que acontece quando senta pra gravar); os outros dois reforçam as dimensões do score com menor pontuação. Título curto + parágrafo de causa, não só sintoma.
 
 RESTRIÇÕES DE PUBLICIDADE (advocacia) — não negociáveis:
 - Nenhum exemplo pode prometer ou insinuar resultado ("garanto seu benefício", "ganhe sua causa").
@@ -77,30 +85,36 @@ RESTRIÇÕES DE PUBLICIDADE (advocacia) — não negociáveis:
 - Gancho, retenção e opinião defensável são bem-vindos: o vedado é promessa de resultado e mercantilização, não ser interessante.
 
 SOBRE O CAMPO "o_que_falta":
-- Diga, em 2 ou 3 frases, o que este documento NÃO faz: ele é uma fotografia de hoje, não resolve o trabalho de toda semana (descobrir o que está performando agora na área dele, virar pauta na voz dele, ter roteiro pronto nos dias em que ele se comprometeu).
+- Diga, em 2 ou 3 frases, o que este documento NÃO faz: ele é uma fotografia de hoje, não resolve o trabalho de toda semana (descobrir o que está performando agora na área, virar pauta na voz da pessoa, ter roteiro pronto nos dias em que se comprometeu).
 - Seja factual. Não venda, não use superlativo, não prometa resultado. Descrever o trabalho que continua sendo necessário já é suficiente.
 
 Retorne APENAS JSON, sem cercas de código, neste formato exato:
 {
   "arquetipo": {
-    "nome": "nome curto do padrão dele, 2 a 4 palavras",
-    "uma_linha": "1 frase que ele leria e reconheceria como verdade sobre si",
-    "descricao": "1 parágrafo sobre onde ele está e qual espaço pode ocupar na área dele"
+    "nome": "nome curto do padrão, 2 a 4 palavras — ou omita se não houver base",
+    "uma_linha": "1 frase que a pessoa leria e reconheceria como verdade sobre si",
+    "descricao": "1 parágrafo específico da área e do cliente descritos"
   },
-  "diagnostico": {
-    "o_que_trava": "1 frase nomeando o gargalo real, derivado do que ele respondeu",
-    "por_que": "1 parágrafo explicando a causa, não o sintoma"
-  },
-  "pilares": [
-    { "nome": "nome curto", "por_que": "1 frase", "exemplos_de_tema": ["3 temas específicos da área dele"] }
+  "gargalos": [
+    { "titulo": "nome curto do gargalo", "texto": "1 parágrafo explicando a causa" }
   ],
-  "ganchos": [
-    { "formato": "nome curto do formato", "texto": "o gancho pronto, palavra por palavra" }
+  "pilares": [
+    { "nome": "nome curto", "por_que": "1 frase", "exemplos_de_tema": ["3 temas específicos da área"] }
+  ],
+  "roteiros": [
+    {
+      "formato": "nome curto do formato (ex.: Curiosidade & Alerta)",
+      "gancho": "abertura pronta, palavra por palavra",
+      "desenvolvimento": "2 a 4 frases do miolo, prontas para gravar",
+      "fecho": "fecho/CTA editorial, sem preço nem promessa de resultado"
+    }
   ],
   "o_que_falta": "2 a 3 frases"
 }
 
-Entregue exatamente 3 pilares e exatamente 3 ganchos.`;
+Entregue exatamente 3 gargalos, exatamente 3 pilares e exatamente 3 roteiros (cada um com gancho, desenvolvimento e fecho).
+NÃO inclua campo de score no JSON — ele já foi calculado fora.
+NÃO use o campo "ganchos" — o contrato é "roteiros".`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -122,12 +136,19 @@ Deno.serve(async (req) => {
     const estiloId = String(respostas["estilo_narrativo"] ?? "").toUpperCase();
     const estilo = ESTILOS[estiloId];
     const estiloTexto = estilo
-      ? `${estilo.nome}\nComo soa: ${estilo.comoSoa}\nExemplo que ele reconheceu: "${estilo.exemplo}"`
+      ? `${estilo.nome}\nComo soa: ${estilo.comoSoa}\nExemplo de referência: "${estilo.exemplo}"`
       : "Não informado — derive a voz dos atributos de percepção escolhidos.";
+
+    const scoreTexto = Array.isArray(payload.score) && payload.score.length
+      ? payload.score
+          .map((s) => `- ${s.rotulo}: ${s.valor}% (${s.faixa})`)
+          .join("\n")
+      : "Não informado.";
 
     const system = SYSTEM
       .replace("{{respostas}}", JSON.stringify(respostas, null, 2))
-      .replace("{{estilo}}", estiloTexto);
+      .replace("{{estilo}}", estiloTexto)
+      .replace("{{score}}", scoreTexto);
 
     // Sem conta: o custo do funil de aquisicao entra com conta_id nulo e
     // aparece no painel financeiro separado do consumo dos clientes.

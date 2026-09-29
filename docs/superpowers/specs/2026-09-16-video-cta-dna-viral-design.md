@@ -2,17 +2,24 @@
 
 ## Contexto
 
-Na página pública `/dna-viral/$token`, o lead recebe o relatório completo e só depois vê o bloco de oferta (“A parte que continua toda semana”) com CTA para o checkout Kiwify.
+Na página pública `/dna-viral/$token`, a ordem da reunião de conversão é:
 
-O pedido é inserir **um vídeo** entre o fim do relatório e o CTA. O vídeo tem dois trabalhos na mesma peça:
+1. Cabeçalho de obrigado + **vídeo vertical** + **CTA de checkout** (topo)
+2. Arquétipo, score, gargalos, pilares e roteiros (o diagnóstico)
+3. Bloco de oferta com preço âncora (fim)
+
+O vídeo tem dois trabalhos na mesma peça:
 
 1. **Ativar** o uso do DNA Viral (gravar a partir de um gancho do relatório).
 2. **Converter** para a assinatura da prevIA (experiência completa: curadoria → pauta na voz → ritmo semanal).
 
-A página continua se lendo como parecer; o vídeo é a ponte persuasiva. O PDF impresso não inclui o vídeo nem o CTA (`data-print-hide`).
+O PDF impresso não inclui o vídeo nem os CTAs (`data-print-hide`) — continua lendo-se como parecer.
+
+> **Atualização (2026-09-28):** a decisão anterior (“entregar o documento inteiro e só depois vender”) foi revertida na reunião da LP/quiz. Vídeo + CTA ficam no **topo**; o CTA se repete no fim com o bloco de oferta.
 
 ## Decisões validadas
 
+- **Posição na página:** vídeo + CTA no topo (antes do corpo do diagnóstico); CTA repetido no fim.
 - **Formato:** um vídeo só (não série), que faz ativação + pitch.
 - **Abordagem de conteúdo:** **1 + demo** — ativar com o relatório → trecho de screen recording da plataforma → fechar na assinatura.
 - **Duração-alvo:** ~80–90s (cheia); existe variante curta ~55–65s.
@@ -201,11 +208,11 @@ Seu nome merecia circular. Vamos fazer isso acontecer.
 
 ## Escopo de implementação (fora deste spec de roteiro)
 
-Inserir o player na página `dna-viral.$token.tsx` entre o corpo do relatório e o componente `Oferta`, com `data-print-hide`. Hosting do arquivo (Mux, Cloudflare Stream, storage + poster, etc.) e métricas de play/CTA ficam para o plano de implementação quando houver asset gravado.
+Inserir o player na página `dna-viral.$token.tsx` no topo (após o cabeçalho de obrigado, antes do corpo do diagnóstico), com `data-print-hide`. Há um placeholder vertical até o asset existir. Hosting do arquivo (Mux, Cloudflare Stream, storage + poster, etc.) e métricas de play/CTA ficam para quando houver asset gravado.
 
 ## Fora de escopo deste doc
 
-- Copy rewrite do bloco `Oferta` em si.
+- Copy rewrite do bloco `Oferta` em si (já atualizado na implementação da LP/quiz).
 - Vídeos personalizados por lead/token.
 - Teste A/B quiz vs LP (`oferta-variante.ts`).
-- Sequência de e-mail pós-`salvarEmailLead`.
+- Sequência de e-mail pós-contato do quiz (e-mail/WhatsApp agora são obrigatórios antes do resultado).

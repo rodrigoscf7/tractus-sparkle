@@ -66,9 +66,20 @@ export function QuizOferta({ passo }: { passo: number }) {
     obterLeadId();
   }, []);
 
-  function definir<K extends keyof Respostas>(chave: K, valor: Respostas[K]) {
+  /**
+   * Grava o campo e, se a pergunta tem `derivar`, aplica os campos derivados
+   * no mesmo update (percepção → atributos + estilo; "tudo" exclusivo).
+   */
+  function definir<K extends keyof Respostas>(
+    chave: K,
+    valor: Respostas[K],
+    pergunta?: Pergunta,
+  ) {
     setRespostas((r) => {
-      const proximo = { ...r, [chave]: valor };
+      let proximo: Respostas = { ...r, [chave]: valor };
+      if (pergunta?.derivar) {
+        proximo = { ...proximo, ...pergunta.derivar(valor, proximo) };
+      }
       gravarRespostas(proximo);
       return proximo;
     });
@@ -143,10 +154,10 @@ export function QuizOferta({ passo }: { passo: number }) {
           <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-6 w-auto" />
           {/*
            * Antecipação em vez de contabilidade: "faltam 3" diz o que a pessoa
-           * ganha ao continuar, "passo 9 de 12" só diz onde ela está.
+           * ganha ao continuar, "passo 9 de 11" só diz onde ela está.
            */}
           <div className="num text-sm text-muted-foreground">
-            {faltam === 0 ? "Última pergunta" : `Faltam ${faltam} para o seu DNA Viral`}
+            {faltam === 0 ? "Última pergunta" : `Faltam ${faltam} para o seu diagnóstico`}
           </div>
         </div>
       </div>
@@ -210,7 +221,7 @@ export function QuizOferta({ passo }: { passo: number }) {
                   focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 {enviando && <Loader2 className="h-4 w-4 animate-spin" />}
-                {passo === TOTAL_PERGUNTAS ? "Ver meu DNA Viral" : "Continuar"}
+                {passo === TOTAL_PERGUNTAS ? "Ver meu diagnóstico" : "Continuar"}
                 {!enviando && <ArrowRight className="h-4 w-4" />}
               </button>
             </div>
@@ -229,7 +240,11 @@ function Campo({
 }: {
   pergunta: Pergunta;
   respostas: Respostas;
-  definir: <K extends keyof Respostas>(chave: K, valor: Respostas[K]) => void;
+  definir: <K extends keyof Respostas>(
+    chave: K,
+    valor: Respostas[K],
+    pergunta?: Pergunta,
+  ) => void;
 }) {
   const extra = pergunta.extra?.quando(respostas) ? pergunta.extra : null;
 
@@ -239,7 +254,7 @@ function Campo({
         <EscolhaUnica
           opcoes={pergunta.opcoes ?? []}
           valor={respostas[pergunta.campo] as string | undefined}
-          onChange={(v) => definir(pergunta.campo, v as never)}
+          onChange={(v) => definir(pergunta.campo, v as never, pergunta)}
           colunas={pergunta.colunas}
         />
       )}
@@ -258,7 +273,7 @@ function Campo({
                 ? "nao"
                 : undefined
           }
-          onChange={(v) => definir(pergunta.campo, (v === "sim") as never)}
+          onChange={(v) => definir(pergunta.campo, (v === "sim") as never, pergunta)}
           colunas={pergunta.colunas}
         />
       )}
@@ -267,7 +282,20 @@ function Campo({
         <EscolhaMultipla
           opcoes={pergunta.opcoes ?? []}
           valores={(respostas[pergunta.campo] as string[] | undefined) ?? []}
-          onChange={(v) => definir(pergunta.campo, v as never)}
+          onChange={(v) => {
+            // "Tudo isso junto" é exclusivo: se acabou de entrar, fica só ele;
+            // se outro valor entrou com ele já marcado, remove o "tudo".
+            let proximo = v;
+            if (pergunta.campo === "objetivos") {
+              const anterior = (respostas.objetivos ?? []) as string[];
+              const entrouTudo = v.includes("tudo") && !anterior.includes("tudo");
+              if (entrouTudo) proximo = ["tudo"];
+              else if (v.includes("tudo") && v.length > 1) {
+                proximo = v.filter((x) => x !== "tudo");
+              }
+            }
+            definir(pergunta.campo, proximo as never, pergunta);
+          }}
           max={pergunta.max ?? 1}
           colunas={pergunta.colunas}
         />
@@ -277,7 +305,7 @@ function Campo({
         <EscolhaEstilo
           estilos={ESTILOS}
           valor={respostas.estilo_narrativo}
-          onChange={(v) => definir("estilo_narrativo", v)}
+          onChange={(v) => definir("estilo_narrativo", v, pergunta)}
         />
       )}
 
@@ -285,14 +313,14 @@ function Campo({
         <EscolhaDias
           dias={DIAS_DA_SEMANA}
           valores={respostas.ritmo_dias ?? []}
-          onChange={(v) => definir("ritmo_dias", v)}
+          onChange={(v) => definir("ritmo_dias", v, pergunta)}
         />
       )}
 
       {pergunta.tipo === "texto" && (
         <Input
           value={(respostas[pergunta.campo] as string | undefined) ?? ""}
-          onChange={(e) => definir(pergunta.campo, e.target.value as never)}
+          onChange={(e) => definir(pergunta.campo, e.target.value as never, pergunta)}
           placeholder={pergunta.placeholder}
           aria-label={pergunta.titulo}
           autoComplete="off"
@@ -303,12 +331,57 @@ function Campo({
       {pergunta.tipo === "texto_longo" && (
         <Textarea
           value={(respostas[pergunta.campo] as string | undefined) ?? ""}
-          onChange={(e) => definir(pergunta.campo, e.target.value as never)}
+          onChange={(e) => definir(pergunta.campo, e.target.value as never, pergunta)}
           placeholder={pergunta.placeholder}
           aria-label={pergunta.titulo}
           rows={4}
           className="text-base"
         />
+      )}
+
+      {pergunta.tipo === "contato" && (
+        <div className="space-y-4">
+          <div>
+            <label
+              htmlFor="quiz-email"
+              className="mb-1.5 block text-sm text-muted-foreground"
+            >
+              Seu melhor e-mail
+            </label>
+            <Input
+              id="quiz-email"
+              type="email"
+              value={respostas.email ?? ""}
+              onChange={(e) => definir("email", e.target.value)}
+              placeholder="seu@email.com"
+              autoComplete="email"
+              className="h-12 text-base"
+              required
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="quiz-whatsapp"
+              className="mb-1.5 block text-sm text-muted-foreground"
+            >
+              WhatsApp
+            </label>
+            <Input
+              id="quiz-whatsapp"
+              type="tel"
+              value={respostas.whatsapp ?? ""}
+              onChange={(e) => definir("whatsapp", e.target.value)}
+              placeholder="(11) 99999-9999"
+              autoComplete="tel"
+              className="h-12 text-base"
+              required
+            />
+          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Ao continuar, você concorda em receber o diagnóstico e comunicações
+            relacionadas a ele. Não enviamos spam.
+          </p>
+        </div>
       )}
 
       {extra && (
@@ -348,16 +421,37 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
 
         <div className="space-y-5">
           <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-            Diagnóstico de conteúdo · advocacia
+            Diagnóstico de Conteúdo · Advocacia
           </div>
           <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight sm:text-[2.75rem]">
-            Descubra o DNA Viral do seu conteúdo.
+            Descubra o que está impedindo seu conteúdo de viralizar e atrair mais clientes.
           </h1>
+
+          <img
+            src="/gif.gif"
+            alt="Advogado perdido em frente ao computador — o meme de quem trava na hora de gravar"
+            className="w-full max-w-md rounded-lg border border-border"
+            width={480}
+            height={480}
+          />
+
           <p className="text-lg leading-relaxed text-muted-foreground">
-            Doze perguntas sobre como você trabalha hoje. No fim, um diagnóstico escrito para o seu
-            caso: o que está travando a sua constância, os três pilares que sustentam a sua
-            autoridade e três ganchos prontos para gravar.
+            Em 11 perguntas rápidas, você recebe um diagnóstico personalizado com:
           </p>
+          <ul className="space-y-2.5 text-base leading-relaxed text-muted-foreground">
+            <li className="flex gap-2.5">
+              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              Seu principal gargalo — o que está travando sua produção de conteúdo
+            </li>
+            <li className="flex gap-2.5">
+              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              Seus 3 pilares de autoridade — o que você precisa fortalecer no posicionamento
+            </li>
+            <li className="flex gap-2.5">
+              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              3 roteiros prontos — para você gravar ainda hoje
+            </li>
+          </ul>
         </div>
 
         <div className="space-y-4">
@@ -368,10 +462,10 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
               focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            Começar o diagnóstico <ArrowRight className="h-4 w-4" />
+            Fazer meu diagnóstico gratuito <ArrowRight className="h-4 w-4" />
           </button>
           <p className="num text-sm text-muted-foreground">
-            Leva cerca de 2 minutos · Não pedimos e-mail para ver o resultado
+            Leva menos de 2 minutos · Resultado na hora, sem esperar e-mail
           </p>
         </div>
       </div>

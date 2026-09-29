@@ -25,18 +25,18 @@ export const Route = createFileRoute("/")({
       // Sobrescreve o title/description de produto que o __root define. O que
       // está lá descreve a ferramenta para quem já é cliente; aqui a leitora
       // ainda não sabe o que é isto.
-      { title: "Descubra o DNA Viral do seu conteúdo | prevIA" },
+      { title: "Diagnóstico de Conteúdo · Advocacia | prevIA" },
       {
         name: "description",
         content:
-          "Diagnóstico de conteúdo para advogados: o que trava a sua constância, seus três " +
-          "pilares de autoridade e três ganchos prontos para gravar. Leva 2 minutos.",
+          "Descubra o que está impedindo seu conteúdo de viralizar. Em 11 perguntas rápidas: " +
+          "seu gargalo, 3 pilares de autoridade e 3 roteiros prontos para gravar. Leva 2 minutos.",
       },
-      { property: "og:title", content: "Descubra o DNA Viral do seu conteúdo" },
+      { property: "og:title", content: "Diagnóstico de Conteúdo · Advocacia" },
       {
         property: "og:description",
         content:
-          "Doze perguntas sobre como você trabalha hoje. No fim, um diagnóstico escrito para o seu caso.",
+          "Em 11 perguntas rápidas, um diagnóstico personalizado: gargalo, pilares e roteiros prontos.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
