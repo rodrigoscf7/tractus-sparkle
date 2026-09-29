@@ -206,16 +206,38 @@ Deno.serve(async (req) => {
     });
 
     /*
-     * 4000, e nao um teto apertado.
+     * 8000 + reasoning.effort=low.
      *
-     * A primeira versao pedia 1500 por ser um contrato curto. Na producao isso
-     * devolveu conteudo VAZIO depois de 25 segundos: o orcamento se esgota
-     * antes de sair texto, e o relatorio caia no fallback curado sem ninguem
-     * perceber. Economizar token aqui custa a personalizacao inteira, que e a
-     * unica razao de existir desta funcao.
+     * Historia: com 1500 o modelo esgotava o orcamento e devolvia content
+     * vazio. Subimos pra 4000 e o DNA Viral curto funcionava. Quando o
+     * contrato passou a pedir 3 roteiros de 110-150 palavras, o Sonnet 5
+     * (thinking adaptativo) passou a gastar os 4000 em reasoning e devolver
+     * content "" ou JSON truncado. O app via "fora do contrato" / 500 e
+     * caia no fallback curado. 8000 deixa folga pra thinking baixo + JSON
+     * completo; effort=low evita que o thinking coma o orcamento de novo.
      */
-    const text = await callModelo(system, "Escreva o DNA Viral agora.", 4000);
+    const text = await callModelo(system, "Escreva o DNA Viral agora. Responda só com o JSON.", 8000, {
+      reasoningEffort: "low",
+    });
     const relatorio = extractJson<Record<string, unknown>>(text);
+
+    // Recusar devolver ok:true com JSON "reparado" incompleto. Isso era o
+    // caminho silencioso pro fallback: o app recebia 200, normalizava null
+    // e logava "fora do contrato" sem ninguem ver o motivo real.
+    const roteiros = Array.isArray(relatorio.roteiros) ? relatorio.roteiros : [];
+    const pilares = Array.isArray(relatorio.pilares) ? relatorio.pilares : [];
+    const gargalos = Array.isArray(relatorio.gargalos) ? relatorio.gargalos : [];
+    const roteirosOk = roteiros.filter((r) => {
+      const item = (r ?? {}) as Record<string, unknown>;
+      return Boolean(item.gancho && item.desenvolvimento && item.fecho);
+    }).length >= 3;
+    if (!roteirosOk || pilares.length < 3 || gargalos.length < 3) {
+      throw new Error(
+        `Relatório incompleto após parse: roteiros=${roteiros.length}, ` +
+          `pilares=${pilares.length}, gargalos=${gargalos.length}. ` +
+          `Provável truncamento (finish_reason=length).`,
+      );
+    }
 
     return new Response(JSON.stringify({ ok: true, relatorio }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

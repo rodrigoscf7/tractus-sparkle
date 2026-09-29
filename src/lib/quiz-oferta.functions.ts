@@ -51,7 +51,7 @@ const LIMITE_GERACOES_POR_HORA = 8;
 /** Teto do JSON de respostas. O quiz cheio não passa de alguns KB. */
 const MAX_BYTES_RESPOSTAS = 16 * 1024;
 
-const TIMEOUT_AGENTE_MS = 90_000;
+const TIMEOUT_AGENTE_MS = 120_000;
 
 /** Cliente de service role, já tipado contra o schema real. */
 type Db = SupabaseClient<Database>;
@@ -251,7 +251,14 @@ async function gerarComFallback(
         }
         return { conteudo: comScore(normalizado, respostas), origem: "ia" };
       } else {
-        console.error("dna-viral: agente respondeu fora do contrato");
+        const bruto = resposta.data?.relatorio as Record<string, unknown> | undefined;
+        console.error("dna-viral: agente respondeu fora do contrato", {
+          keys: bruto && typeof bruto === "object" ? Object.keys(bruto) : null,
+          roteiros: Array.isArray(bruto?.roteiros) ? bruto.roteiros.length : null,
+          pilares: Array.isArray(bruto?.pilares) ? bruto.pilares.length : null,
+          gargalos: Array.isArray(bruto?.gargalos) ? bruto.gargalos.length : null,
+          ganchos: Array.isArray(bruto?.ganchos) ? bruto.ganchos.length : null,
+        });
       }
     } else {
       console.error("dna-viral: agente falhou", resposta.status, resposta.erro);
