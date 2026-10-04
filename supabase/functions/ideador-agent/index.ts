@@ -175,7 +175,9 @@ async function gerarPautaFocada(supabase: SupabaseClient, conteudoId: string) {
     agente: "ideador",
     tipo: "pauta",
   });
-  const text = await callModelo(system, "Gere 1 pauta focada na curadoria-alvo agora.", 500);
+  // 500 era o teto exato das saídas vazias: o modelo gasta o orçamento
+  // raciocinando e devolve "" (mesmo caso do SCORE_MAX_TOKENS do curador).
+  const text = await callModelo(system, "Gere 1 pauta focada na curadoria-alvo agora.", 1500);
   const parsed = extractJson<{ pautas: PautaGerada[] }>(text);
   const p = parsed.pautas?.[0];
   if (!p) return 0;

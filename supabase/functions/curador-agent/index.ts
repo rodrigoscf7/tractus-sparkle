@@ -54,15 +54,22 @@ const RUBRICA_POSICIONAMENTO =
 - 0-4: fora do nicho ou sem ângulo de opinião possível
 IGNORE visualizações e engajamento no julgamento: post com pouca tração pode ter score alto.`;
 
-const APIFY_TIMEOUT_MS = 60_000;
+/** 60s abortava a coleta do onboarding (AbortError); o scraper leva ~40s com a fila vazia. */
+const APIFY_TIMEOUT_MS = 100_000;
+/**
+ * A conta do Apify aceita 5 execuções simultâneas. O orquestrador usa 4 e deixa
+ * uma de folga para a coleta disparada pelo onboarding.
+ */
+const APIFY_CONCORRENCIA = 4;
+const APIFY_TENTATIVAS = 4;
 const TRANSCRIPT_TIMEOUT_MS = 120_000;
 const CLAUDE_TIMEOUT_MS = 30_000;
 const APIFY_RESULTS_LIMIT = 12;
 const MAX_NEW_POSTS_TO_SCORE = 5;
 /** Quantos itens gravar por ref/ciclo (sempre o de maior score). */
 const TOP_SAVE_PER_REF = 1;
-/** JSON de score (tema + gancho + motivo); 220 truncava; 500 ainda estourava em alguns posts. */
-const SCORE_MAX_TOKENS = 800;
+/** JSON de score (tema + gancho + motivo); 220 truncava; 500 e 800 ainda estouravam em alguns posts. */
+const SCORE_MAX_TOKENS = 1200;
 const TRANSCRIPT_ACTOR =
   "scraping_solutions~instagram-reels-transcript-scraper-audio-to-text";
 
@@ -253,22 +260,28 @@ async function processRef(refId: string) {
     };
 
     let apifyRes = await runApify();
+    // 5xx/429 e o 402 de limite de execuções simultâneas são transitórios:
+    // espera e tenta de novo antes de desistir. Os demais 4xx (handle inválido,
+    // perfil privado) não melhoram com repetição.
+    for (let tentativa = 1; !apifyRes.ok && tentativa < APIFY_TENTATIVAS; tentativa++) {
+      const limiteSimultaneas = apifyRes.status === 402 &&
+        (await apifyRes.clone().text().catch(() => "")).includes("concurrent-runs-limit");
+      if (!limiteSimultaneas && apifyRes.status < 500 && apifyRes.status !== 429) break;
+      // Jitter evita que os workers barrados voltem todos no mesmo instante.
+      const espera = limiteSimultaneas ? 15_000 + Math.random() * 10_000 : 4_000;
+      await new Promise((r) => setTimeout(r, espera));
+      apifyRes = await runApify();
+    }
     if (!apifyRes.ok) {
-      // 5xx/429 do Apify são transitórios: uma nova tentativa antes de desistir.
-      if (apifyRes.status >= 500 || apifyRes.status === 429) {
-        await new Promise((r) => setTimeout(r, 4000));
-        apifyRes = await runApify();
-        if (!apifyRes.ok) {
-          return { ref: ref.handle, curados: 0, error: await summarizeApifyError(apifyRes) };
-        }
-      } else {
-        return { ref: ref.handle, curados: 0, error: await summarizeApifyError(apifyRes) };
-      }
+      return { ref: ref.handle, curados: 0, error: await summarizeApifyError(apifyRes) };
     }
     posts = await apifyRes.json();
   } catch (e) {
     console.error("Apify error", ref.handle, e);
-    return { ref: ref.handle, curados: 0, error: String(e).slice(0, 200) };
+    const error = e instanceof Error && e.name === "AbortError"
+      ? `timeout apify após ${APIFY_TIMEOUT_MS / 1000}s`
+      : String(e).slice(0, 200);
+    return { ref: ref.handle, curados: 0, error };
   }
 
   // Custo da coleta (Apify) desta referência.
@@ -279,6 +292,18 @@ async function processRef(refId: string) {
     agente: "curador",
     tipo: "curadoria",
   });
+
+  // Perfil inexistente/privado volta 1 linha de erro (`error: "no_items"`) em vez
+  // de posts. Sem este filtro ela virava um "conteúdo" de score 0 na curadoria.
+  const encontrados = posts.length;
+  posts = posts.filter((p) => p && !p.error && !p.errorDescription);
+  if (!posts.length) {
+    return {
+      ref: ref.handle,
+      curados: 0,
+      error: "sem posts: handle inexistente, perfil privado ou sem publicações",
+    };
+  }
 
   let curados = 0;
   let duplicados = 0;
@@ -395,7 +420,7 @@ ${textoRico || "(sem texto de legenda/alt/slides)"}
     curados,
     avaliados,
     duplicados,
-    encontrados: posts.length,
+    encontrados,
     topScore: vencedores[0]?.parsed.score_curadoria ?? null,
   };
 }
@@ -413,6 +438,13 @@ Deno.serve(async (req) => {
   if (refId) {
     try {
       const result = await processRef(refId);
+      // A fila do cron só considera coletada a referência que terminou sem erro.
+      if (!result.error) {
+        await getServiceClient()
+          .from("perfis_referencia")
+          .update({ ultima_coleta_em: new Date().toISOString() })
+          .eq("id", refId);
+      }
       const detalhe = result.error
         ? `falha @${result.ref}: ${result.error}`
         : `worker ok: @${result.ref} (${result.curados} novas, ${result.duplicados ?? 0} dup, ${result.avaliados ?? 0} avaliadas${
@@ -439,20 +471,34 @@ Deno.serve(async (req) => {
 
   // ============ MODO ORQUESTRADOR ============
   try {
-    await setStatus("curador", "working", "orquestrando curadoria diária");
     const supabase = getServiceClient();
 
-    const { data: refs } = await supabase
-      .from("perfis_referencia")
-      .select("id, handle")
-      .eq("ativo", true);
+    // Fila: cada tick do cron reserva só o que cabe nas execuções simultâneas do
+    // Apify. O que não coube (ou falhou) volta no tick seguinte, dentro do dia.
+    const { data: reservadas, error: reservaError } = await supabase.rpc(
+      "reservar_referencias_coleta",
+      { _limite: APIFY_CONCORRENCIA },
+    );
+    if (reservaError) throw new Error(`reservar_referencias_coleta: ${reservaError.message}`);
+
+    const refs = (reservadas ?? []).map((r: { ref_id: string; ref_handle: string }) => ({
+      id: r.ref_id,
+      handle: r.ref_handle,
+    }));
+
+    // Nada pendente: não toca no status do agente (o tick roda de 5 em 5 minutos).
+    if (!refs.length) {
+      return new Response(JSON.stringify({ ok: true, disparados: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const internalSecret = Deno.env.get("AGENT_INTERNAL_SECRET") ?? "";
     const fnUrl = `${supabaseUrl}/functions/v1/curador-agent`;
 
-    const workerPromises = (refs ?? []).map((ref) =>
+    const dispararWorker = (ref: { id: string; handle: string }) =>
       fetch(`${fnUrl}?ref_id=${ref.id}`, {
         method: "POST",
         headers: {
@@ -472,14 +518,20 @@ Deno.serve(async (req) => {
         ok: false,
         status: 0,
         body: String(e),
-      })),
-    );
+      }));
+
+    const totalRefs = refs.length;
+    const resultados: Awaited<ReturnType<typeof dispararWorker>>[] = [];
+    const pool = Promise.all(refs.map(async (ref) => {
+      resultados.push(await dispararWorker(ref));
+    }));
 
     const summarizeWorkers = async () => {
-      const results = await Promise.allSettled(workerPromises);
-      const ok = results.filter((r) => r.status === "fulfilled" && r.value.ok).length;
+      await pool;
+      const results = resultados;
+      const ok = results.filter((r) => r.ok).length;
       const fail = results.length - ok;
-      const firstFail = results.find((r) => r.status === "fulfilled" && !r.value.ok);
+      const firstFail = results.find((r) => !r.ok);
       if (fail) {
         console.error("curador fanout failures", results);
         // Falha parcial (perfil indisponível na fonte) não é erro do agente:
@@ -490,7 +542,7 @@ Deno.serve(async (req) => {
           parcial ? "idle" : "error",
           `${ok}/${results.length} referências verificadas${
             fail
-              ? `; ${fail} indisponível(is) na fonte${firstFail?.status === "fulfilled" ? ` (@${firstFail.value.handle})` : ""} — serão tentadas no próximo ciclo`
+              ? `; ${fail} indisponível(is) na fonte${firstFail ? ` (@${firstFail.handle})` : ""} — serão tentadas no próximo ciclo`
               : ""
           }`,
         );
@@ -503,8 +555,8 @@ Deno.serve(async (req) => {
     if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(summarizeWorkers());
     else await summarizeWorkers();
 
-    await setStatus("curador", "working", `${workerPromises.length} workers disparados`);
-    return new Response(JSON.stringify({ ok: true, disparados: workerPromises.length }), {
+    await setStatus("curador", "working", `${totalRefs} workers disparados`);
+    return new Response(JSON.stringify({ ok: true, disparados: totalRefs }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
