@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
      * perceber. Economizar token aqui custa a personalizacao inteira, que e a
      * unica razao de existir desta funcao.
      */
-    const text = await callModelo(system, "Escreva o DNA Viral agora.", 4000);
+    const text = await callModelo(system, "Escreva o DNA Viral agora.", 8000);
     const relatorio = extractJson<Record<string, unknown>>(text);
 
     return new Response(JSON.stringify({ ok: true, relatorio }), {

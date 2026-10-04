@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       agente: "carrossel",
       tipo: "carrossel",
     });
-    const copyText = await callModelo(systemCopy, "Copy do carrossel agora. JSON apenas.", 1100);
+    const copyText = await callModelo(systemCopy, "Copy do carrossel agora. JSON apenas.", 2000);
     const copyJson = extractJson(copyText) as {
       slides?: Array<{ tipo?: string; texto?: string }>;
       legenda_sugerida?: string;
@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
 
     let visualJson: unknown = null;
     try {
-      const visualText = await callModelo(systemVisual, "Direção dos slides em JSON.", 600);
+      const visualText = await callModelo(systemVisual, "Direção dos slides em JSON.", 1500);
       visualJson = extractJson(visualText);
     } catch (e) {
       // Direção é opcional: sem ela o carrossel renderiza com texto simples.

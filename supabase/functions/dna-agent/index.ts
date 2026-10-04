@@ -102,6 +102,17 @@ Retorne APENAS JSON, sem cercas de código, neste formato exato:
 
 Entregue de 3 a 5 pilares, de 4 a 5 fórmulas de gancho e exatamente 4 semanas.`;
 
+/** Seções do formato pedido no SYSTEM; a falta de qualquer uma indica resposta truncada. */
+const SECOES_OBRIGATORIAS = [
+  "resumo_posicionamento",
+  "como_voce_soa",
+  "publico",
+  "pilares",
+  "formulas_de_gancho",
+  "primeiras_quatro_semanas",
+  "proximo_passo",
+];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -152,8 +163,15 @@ Deno.serve(async (req) => {
       tipo: "manual_marca",
     });
 
-    const text = await callModelo(system, "Escreva o manual de marca agora.", 4000);
+    // 4000 tokens truncavam o manual em todas as gerações; o extractJson
+    // "consertava" o JSON cortado e o salvava com 2 das 9 seções.
+    const text = await callModelo(system, "Escreva o manual de marca agora.", 11000);
     const conteudo = extractJson<Record<string, unknown>>(text);
+
+    const ausentes = SECOES_OBRIGATORIAS.filter((k) => !conteudo[k]);
+    if (ausentes.length) {
+      throw new Error(`manual incompleto, faltam: ${ausentes.join(", ")}`);
+    }
 
     const { data: anterior } = await supabase
       .from("dna_relatorios")

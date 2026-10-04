@@ -300,7 +300,15 @@ export async function callModelo(
     Number(data?.usage?.prompt_tokens ?? 0),
     Number(data?.usage?.completion_tokens ?? 0),
   );
-  return data?.choices?.[0]?.message?.content ?? "";
+  const content = data?.choices?.[0]?.message?.content ?? "";
+  // Resposta vazia quase sempre é max_tokens consumido pelo raciocínio do modelo.
+  // Não lança: o revisor depende do "No JSON found" de extractJson para o fallback.
+  if (!String(content).trim()) {
+    console.warn(
+      `callModelo: resposta vazia (finish_reason=${data?.choices?.[0]?.finish_reason ?? "?"}, max_tokens=${maxTokens})`,
+    );
+  }
+  return content;
 }
 
 

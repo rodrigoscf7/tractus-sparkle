@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
       agente: "copy",
       tipo: "roteiro",
     });
-    const text = await callModelo(system, "Escreva o roteiro falado agora. JSON apenas.", 900);
+    const text = await callModelo(system, "Escreva o roteiro falado agora. JSON apenas.", 1500);
     const parsed = extractJson(text);
 
     await supabase.from("roteiros").insert({

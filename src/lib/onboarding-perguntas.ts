@@ -293,8 +293,8 @@ export function linhasParaLista(texto: string): string[] {
 export function normalizarHandle(bruto: string): string {
   return bruto
     .trim()
-    .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
-    .replace(/\/.*$/, "")
+    .replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i, "")
+    .replace(/[/?#].*$/, "")
     .replace(/^@+/, "")
     .trim()
     .toLowerCase();

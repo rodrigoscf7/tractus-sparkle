@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       agente: "visual",
       tipo: "visual",
     });
-    const text = await callModelo(system, "Direção de gravação em JSON compacto.", 600);
+    const text = await callModelo(system, "Direção de gravação em JSON compacto.", 1500);
     const parsed = extractJson(text);
 
     await supabase.from("artes").insert({
