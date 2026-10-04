@@ -26,6 +26,7 @@ const AGENTES = [
   "dna-agent",
   "dna-viral-agent",
   "push-agent",
+  "planejador-agent",
 ] as const;
 
 export type Agente = (typeof AGENTES)[number];

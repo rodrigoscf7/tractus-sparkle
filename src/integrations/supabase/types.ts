@@ -74,6 +74,24 @@ export type Database = {
           },
         ]
       }
+      admin_alertas_push: {
+        Row: {
+          chave: string
+          dia: string
+          primeiro_em: string
+        }
+        Insert: {
+          chave: string
+          dia: string
+          primeiro_em?: string
+        }
+        Update: {
+          chave?: string
+          dia?: string
+          primeiro_em?: string
+        }
+        Relationships: []
+      }
       agentes_status: {
         Row: {
           agente_nome: string
@@ -92,6 +110,60 @@ export type Database = {
           atualizado_em?: string | null
           estado_atual?: string | null
           ultima_acao?: string | null
+        }
+        Relationships: []
+      }
+      analises_virais: {
+        Row: {
+          analisado_em: string
+          analise: Json
+          comentarios: number | null
+          formato: string
+          handle: string
+          id: string
+          indice: number | null
+          legenda: string | null
+          likes: number | null
+          mediana: number | null
+          metrica: number | null
+          modelo: string
+          postado_em: string | null
+          url: string
+          views: number | null
+        }
+        Insert: {
+          analisado_em?: string
+          analise: Json
+          comentarios?: number | null
+          formato: string
+          handle: string
+          id?: string
+          indice?: number | null
+          legenda?: string | null
+          likes?: number | null
+          mediana?: number | null
+          metrica?: number | null
+          modelo: string
+          postado_em?: string | null
+          url: string
+          views?: number | null
+        }
+        Update: {
+          analisado_em?: string
+          analise?: Json
+          comentarios?: number | null
+          formato?: string
+          handle?: string
+          id?: string
+          indice?: number | null
+          legenda?: string | null
+          likes?: number | null
+          mediana?: number | null
+          metrica?: number | null
+          modelo?: string
+          postado_em?: string | null
+          url?: string
+          views?: number | null
         }
         Relationships: []
       }
@@ -778,39 +850,61 @@ export type Database = {
       }
       pautas_geradas: {
         Row: {
+          analise_viral_id: string | null
           angulo: string | null
           conta_id: string | null
           criado_em: string | null
+          data_prevista: string | null
+          estrutura_modelo: Json | null
           formato_sugerido: string | null
+          gancho_modelo: string | null
           id: string
           origem_curadoria_id: string | null
           perfil_id: string | null
+          plano_semanal_id: string | null
           status: string | null
           tema: string | null
         }
         Insert: {
+          analise_viral_id?: string | null
           angulo?: string | null
           conta_id?: string | null
           criado_em?: string | null
+          data_prevista?: string | null
+          estrutura_modelo?: Json | null
           formato_sugerido?: string | null
+          gancho_modelo?: string | null
           id?: string
           origem_curadoria_id?: string | null
           perfil_id?: string | null
+          plano_semanal_id?: string | null
           status?: string | null
           tema?: string | null
         }
         Update: {
+          analise_viral_id?: string | null
           angulo?: string | null
           conta_id?: string | null
           criado_em?: string | null
+          data_prevista?: string | null
+          estrutura_modelo?: Json | null
           formato_sugerido?: string | null
+          gancho_modelo?: string | null
           id?: string
           origem_curadoria_id?: string | null
           perfil_id?: string | null
+          plano_semanal_id?: string | null
           status?: string | null
           tema?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pautas_geradas_analise_viral_id_fkey"
+            columns: ["analise_viral_id"]
+            isOneToOne: false
+            referencedRelation: "analises_virais"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pautas_geradas_conta_id_fkey"
             columns: ["conta_id"]
@@ -830,6 +924,13 @@ export type Database = {
             columns: ["perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pautas_geradas_plano_semanal_id_fkey"
+            columns: ["plano_semanal_id"]
+            isOneToOne: false
+            referencedRelation: "planos_semanais"
             referencedColumns: ["id"]
           },
         ]
@@ -906,6 +1007,9 @@ export type Database = {
           id: string
           nicho: string | null
           perfil_id_relacionado: string | null
+          tentativas_hoje: number
+          ultima_coleta_em: string | null
+          ultima_tentativa_em: string | null
         }
         Insert: {
           ativo?: boolean | null
@@ -916,6 +1020,9 @@ export type Database = {
           id?: string
           nicho?: string | null
           perfil_id_relacionado?: string | null
+          tentativas_hoje?: number
+          ultima_coleta_em?: string | null
+          ultima_tentativa_em?: string | null
         }
         Update: {
           ativo?: boolean | null
@@ -926,6 +1033,9 @@ export type Database = {
           id?: string
           nicho?: string | null
           perfil_id_relacionado?: string | null
+          tentativas_hoje?: number
+          ultima_coleta_em?: string | null
+          ultima_tentativa_em?: string | null
         }
         Relationships: [
           {
@@ -1018,6 +1128,75 @@ export type Database = {
           trial_dias?: number
         }
         Relationships: []
+      }
+      planos_semanais: {
+        Row: {
+          aprovado_em: string | null
+          atualizado_em: string
+          conta_id: string
+          criado_em: string
+          erro: string | null
+          etapa_dados: Json
+          id: string
+          perfil_id: string | null
+          prioridade: number
+          pronto_em: string | null
+          relatorio: Json | null
+          reservado_em: string | null
+          semana_inicio: string
+          status: string
+          tentativas: number
+        }
+        Insert: {
+          aprovado_em?: string | null
+          atualizado_em?: string
+          conta_id: string
+          criado_em?: string
+          erro?: string | null
+          etapa_dados?: Json
+          id?: string
+          perfil_id?: string | null
+          prioridade?: number
+          pronto_em?: string | null
+          relatorio?: Json | null
+          reservado_em?: string | null
+          semana_inicio: string
+          status?: string
+          tentativas?: number
+        }
+        Update: {
+          aprovado_em?: string | null
+          atualizado_em?: string
+          conta_id?: string
+          criado_em?: string
+          erro?: string | null
+          etapa_dados?: Json
+          id?: string
+          perfil_id?: string | null
+          prioridade?: number
+          pronto_em?: string | null
+          relatorio?: Json | null
+          reservado_em?: string | null
+          semana_inicio?: string
+          status?: string
+          tentativas?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planos_semanais_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planos_semanais_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       publicacoes: {
         Row: {
@@ -1362,6 +1541,7 @@ export type Database = {
       agent_internal_headers: { Args: never; Returns: Json }
       agent_secret: { Args: { nome: string }; Returns: string }
       contas_do_usuario: { Args: { _user_id: string }; Returns: string[] }
+      criar_planos_da_semana: { Args: never; Returns: number }
       despachar_notificacoes_pendentes: {
         Args: { p_forcar?: boolean }
         Returns: undefined
@@ -1394,6 +1574,20 @@ export type Database = {
       registrar_uso: {
         Args: { _conta_id: string; _qtd?: number; _tipo: string }
         Returns: undefined
+      }
+      reservar_planos_semanais: {
+        Args: { _limite: number }
+        Returns: {
+          plano_id: string
+          plano_status: string
+        }[]
+      }
+      reservar_referencias_coleta: {
+        Args: { _limite: number }
+        Returns: {
+          ref_handle: string
+          ref_id: string
+        }[]
       }
       revisar_next_pauta_pronta: { Args: never; Returns: undefined }
     }

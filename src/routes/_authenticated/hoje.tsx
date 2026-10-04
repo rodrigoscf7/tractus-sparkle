@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { EstadoCarregando, EstadoErro } from "@/components/estados";
 import { PautaDaSemana } from "@/components/hoje/PautaDaSemana";
 import { RITMO_PADRAO, pautaDaSemana, semanasSeguidas, type PublicacaoPostada } from "@/lib/ritmo";
-import { Video, CheckCheck, Sparkles, ArrowRight } from "lucide-react";
+import { Video, CheckCheck, Sparkles, ArrowRight, CalendarRange, Loader2 } from "lucide-react";
+import { usePlanoAtual, type PlanoAtual } from "@/hooks/use-plano";
+import { PLANO_EM_ANDAMENTO } from "@/lib/plano";
 
 export const Route = createFileRoute("/_authenticated/hoje")({
   head: () => ({
@@ -41,6 +43,7 @@ type PublicacaoComPauta = {
  * Ela nunca fica vazia: quando não há nada pronto, diz o que está acontecendo.
  */
 function HojePage() {
+  const { data: plano } = usePlanoAtual();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["hoje"],
     queryFn: async () => {
@@ -128,12 +131,14 @@ function HojePage() {
       <AcaoDeHoje
         gravar={gravar}
         aprovar={aprovar}
+        plano={plano ?? null}
         curadoriasPendentes={data.curadoriasPendentes}
       />
 
       <PautaDaSemana dias={dias} ritmoDias={ritmoDias} semanasSeguidas={sequencia} />
 
       <EsperandoVoce
+        planoParaAprovar={plano?.status === "pronto"}
         curadoriasPendentes={data.curadoriasPendentes}
         aprovacoesPendentes={data.aprovacoesPendentes.length}
       />
@@ -143,17 +148,19 @@ function HojePage() {
 
 /**
  * Um cartão, uma ação. A prioridade segue o que está mais perto de virar post:
- * gravar um roteiro pronto vale mais que aprovar, que vale mais que escolher
- * assunto. Sem nada pronto, a tela explica o que a prevIA está fazendo — nunca
- * mostra vazio.
+ * gravar um roteiro pronto vale mais que aprovar, que vale mais que aprovar o
+ * plano da semana, que vale mais que escolher assunto. Sem nada pronto, a tela
+ * explica o que a prevIA está fazendo — nunca mostra vazio.
  */
 function AcaoDeHoje({
   gravar,
   aprovar,
+  plano,
   curadoriasPendentes,
 }: {
   gravar: PublicacaoComPauta | null;
   aprovar: { id: string; tema: string | null; angulo: string | null } | null;
+  plano: PlanoAtual | null;
   curadoriasPendentes: number;
 }) {
   if (gravar?.pautas_geradas) {
@@ -193,6 +200,44 @@ function AcaoDeHoje({
     );
   }
 
+  if (plano?.status === "pronto") {
+    const videos = plano.relatorio?.pautas.filter((p) => !p.removida).length ?? 0;
+    return (
+      <Cartao
+        etiqueta="Seu plano chegou"
+        icone={<CalendarRange className="w-4 h-4" />}
+        titulo={
+          videos === 1
+            ? "1 vídeo pronto para a sua semana"
+            : `${videos} vídeos prontos para a sua semana`
+        }
+        apoio="Com o gancho já escrito e a estrutura de cada fala, modelados no que mais funcionou no seu nicho."
+        destaque
+      >
+        <Button asChild>
+          <Link to="/plano">
+            Ver e aprovar o plano <ArrowRight className="w-4 h-4 ml-1" />
+          </Link>
+        </Button>
+      </Cartao>
+    );
+  }
+
+  if (plano && PLANO_EM_ANDAMENTO.includes(plano.status)) {
+    return (
+      <Cartao
+        etiqueta="Em andamento"
+        icone={<Loader2 className="w-4 h-4 animate-spin motion-reduce:animate-none" />}
+        titulo="A prevIA está montando o seu plano da semana"
+        apoio="Ela está assistindo aos vídeos que mais performaram nos perfis que você acompanha. Você é avisado quando ficar pronto."
+      >
+        <Button variant="outline" asChild>
+          <Link to="/plano">Acompanhar</Link>
+        </Button>
+      </Cartao>
+    );
+  }
+
   if (curadoriasPendentes > 0) {
     return (
       <Cartao
@@ -219,11 +264,11 @@ function AcaoDeHoje({
     <Cartao
       etiqueta="Em andamento"
       icone={<Sparkles className="w-4 h-4" />}
-      titulo="A prevIA está buscando o seu próximo assunto"
-      apoio="Toda manhã ela lê os perfis que você indicou. Você é avisado assim que tiver algo para decidir."
+      titulo="Seu próximo plano chega no domingo"
+      apoio="Todo domingo a prevIA assiste aos posts que mais performaram nos perfis que você acompanha e monta os vídeos da sua semana."
     >
       <Button variant="outline" asChild>
-        <Link to="/perfis">Ajustar minhas referências</Link>
+        <Link to="/plano">Ver o plano da semana</Link>
       </Button>
     </Cartao>
   );
@@ -262,13 +307,15 @@ function Cartao({
  * O que muda é que o usuário não precisa mais caçar o que está esperando por ele.
  */
 function EsperandoVoce({
+  planoParaAprovar,
   curadoriasPendentes,
   aprovacoesPendentes,
 }: {
+  planoParaAprovar: boolean;
   curadoriasPendentes: number;
   aprovacoesPendentes: number;
 }) {
-  if (curadoriasPendentes === 0 && aprovacoesPendentes === 0) return null;
+  if (!planoParaAprovar && curadoriasPendentes === 0 && aprovacoesPendentes === 0) return null;
 
   return (
     <section>
@@ -276,6 +323,14 @@ function EsperandoVoce({
         Esperando você
       </h2>
       <div className="space-y-2">
+        {planoParaAprovar && (
+          <LinhaPendencia
+            para="/plano"
+            contagem={1}
+            singular="plano da semana para aprovar"
+            plural="planos da semana para aprovar"
+          />
+        )}
         {aprovacoesPendentes > 0 && (
           <LinhaPendencia
             para="/pipeline"

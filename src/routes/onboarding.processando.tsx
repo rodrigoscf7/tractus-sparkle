@@ -8,9 +8,9 @@ import { concluirOnboarding, getOnboarding } from "@/lib/onboarding.functions";
 /**
  * Fecha o onboarding enquanto conta o que está acontecendo.
  *
- * Não é uma tela de espera decorativa: os 40 segundos aqui são o tempo em que
- * a primeira coleta de referências roda em segundo plano. Quem termina de ler
- * o manual encontra a curadoria com conteúdo em vez de um app vazio.
+ * Não é uma tela de espera decorativa: enquanto o manual é escrito, o primeiro
+ * plano semanal já está sendo montado em segundo plano. Quem termina de ler o
+ * manual recebe o plano em alguns minutos, em vez de um app vazio.
  */
 const FASES = [
   { ate: 4, texto: "Lendo suas respostas" },
@@ -162,8 +162,8 @@ function Processando() {
       </ul>
 
       <p className="mt-10 border-t border-border pt-6 text-base leading-relaxed text-muted-foreground">
-        Enquanto isso a prevIA já começou a ler os perfis que você indicou. Quando você terminar
-        de ver o manual, a curadoria vai estar esperando na sua tela.
+        Enquanto isso a prevIA já começou a assistir aos posts que mais performaram nos perfis que
+        você indicou. Em alguns minutos o seu plano da semana fica pronto, e você é avisado.
       </p>
     </div>
   );
