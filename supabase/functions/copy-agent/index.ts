@@ -24,12 +24,21 @@ Roteiros rejeitados (não repita o padrão): {{historico_roteiros_rejeitados}}
 REGRAS INEGOCIÁVEIS DESTE PERFIL
 {{restricoes_perfil}}
 
-Estruture o discurso em 3 blocos curtos, prontos pra gravar lendo:
-1. gancho_falado: 1 frase de até 15 palavras, provocativa, dita nos 3 primeiros segundos.
-2. desenvolvimento_falado: 3 a 5 frases curtas, conectadas, defendendo UMA tese de posicionamento. Sem listas, sem "primeiro/segundo/terceiro", sem slides.
-3. cta_falado: 1 frase fechando com convite claro. Se houver CTA padrão do perfil, ela é a base:
+Estruture o discurso em 3 blocos, prontos pra gravar lendo:
+1. gancho_falado: 1 frase de até 20 palavras, provocativa, dita nos 3 primeiros segundos.
+2. desenvolvimento_falado: 5 a 8 frases curtas, conectadas, defendendo UMA tese de posicionamento. Sem listas, sem "primeiro/segundo/terceiro", sem slides.
+3. cta_falado: 1 ou 2 frases fechando com convite claro. Se houver CTA padrão do perfil, ela é a base:
    mantenha a MESMA intenção e o MESMO canal de resposta, podendo ajustar as palavras ao tema.
    Se a CTA padrão for "nenhuma", escolha você a melhor CTA.
+
+TAMANHO E PROFUNDIDADE (o que separa roteiro de esboço):
+- Os três blocos somados têm de 110 a 150 palavras. É o que cabe em 30 a 50 segundos de fala.
+- O desenvolvimento precisa entregar substância: um mecanismo, uma consequência concreta ou um exemplo real. Frase que serviria para qualquer profissão não entra.
+- Leia mentalmente em voz alta antes de devolver. Se travar na leitura, reescreva.
+
+REPETIÇÃO MECÂNICA (erro mais comum, proibido):
+- NÃO fique repetindo o nome do nicho ou da área dentro das frases. Escrever "em mentoria para advogados que muda o resultado" é erro de concordância e denuncia preenchimento automático. A especificidade vem do conteúdo, não de citar o nome do nicho.
+- NÃO use descrição de público escrita em linguagem de briefing como sujeito de frase. Entenda com quem se fala e escreva com palavras suas, faladas.
 
 Retorne APENAS um JSON compacto:
 { "gancho_falado": "string",

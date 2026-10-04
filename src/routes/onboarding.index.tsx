@@ -82,10 +82,11 @@ function OnboardingWizard() {
   /*
    * Quais passos esta pessoa ainda precisa responder.
    *
-   * Quem chegou pelo quiz da oferta já respondeu 1, 2, 3 e 5 — cobrar de novo
-   * é exatamente o castigo por ter comprado que este fluxo existe para acabar.
-   * O roteiro é fixado uma vez, na hidratação: recalcular a cada resposta
-   * faria o passo sumir debaixo da pessoa enquanto ela ainda o preenche.
+   * Quem chegou pelo quiz da oferta já fecha 1, 2 e 3 (a percepção deriva
+   * atributos + estilo). Sobram o 4 (referências) e o 5 (ritmo_dias) — cobrar
+   * de novo o que já foi respondido é o castigo por ter comprado que este
+   * fluxo existe para acabar. O roteiro é fixado uma vez, na hidratação:
+   * recalcular a cada resposta faria o passo sumir debaixo da pessoa.
    */
   const [roteiro, setRoteiro] = useState<number[]>([]);
 

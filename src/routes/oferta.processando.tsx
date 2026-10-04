@@ -19,7 +19,10 @@ import { obterLeadId } from "@/lib/oferta-variante";
 export const Route = createFileRoute("/oferta/processando")({
   ssr: false,
   head: () => ({
-    meta: [{ title: "Montando o seu DNA Viral | prevIA" }, { name: "robots", content: "noindex" }],
+    meta: [
+      { title: "Analisando as suas respostas | prevIA" },
+      { name: "robots", content: "noindex" },
+    ],
   }),
   component: Processando,
 });
@@ -36,13 +39,23 @@ const DURACAO_MINIMA_MS = 2_500;
  * respostas de um quiz completo. Fases que terminassem antes disso deixariam
  * a tela parada na última por meio minuto, que é exatamente a sensação de
  * travado que faz a pessoa fechar a aba.
+ *
+ * Três fases (copy da reunião), redistribuídas sobre a mesma janela.
  */
 const FASES = [
-  { ate: 6, texto: "Lendo suas respostas" },
-  { ate: 16, texto: "Mapeando o seu posicionamento" },
-  { ate: 30, texto: "Identificando o que trava a sua constância" },
-  { ate: Infinity, texto: "Escrevendo os seus ganchos" },
+  { ate: 12, texto: "Analisando as suas respostas..." },
+  { ate: 28, texto: "Mapeando gargalos e soluções para destravar..." },
+  { ate: Infinity, texto: "Escrevendo seus roteiros..." },
 ];
+
+/** Progresso visual: sobe com o tempo até 95%, completa na navegação. */
+function progressoVisual(segundos: number, concluindo: boolean): number {
+  if (concluindo) return 100;
+  // Curva suave em direção a 95% ao longo de ~45s (tempo típico do agente).
+  const alvo = 45;
+  const t = Math.min(segundos / alvo, 1);
+  return Math.min(95, Math.round(t * 95));
+}
 
 function Processando() {
   const navigate = useNavigate();
@@ -50,6 +63,7 @@ function Processando() {
   const [segundos, setSegundos] = useState(0);
   const [erro, setErro] = useState<string | null>(null);
   const [tentativa, setTentativa] = useState(0);
+  const [concluindo, setConcluindo] = useState(false);
   const jaRodou = useRef(false);
 
   useEffect(() => {
@@ -70,6 +84,11 @@ function Processando() {
 
         const restante = DURACAO_MINIMA_MS - (Date.now() - comecou);
         if (restante > 0) await new Promise((r) => setTimeout(r, restante));
+        if (cancelado) return;
+
+        setConcluindo(true);
+        // Um frame na barra em 100% antes de sair.
+        await new Promise((r) => setTimeout(r, 280));
         if (cancelado) return;
 
         navigate({ to: "/dna-viral/$token", params: { token }, replace: true });
@@ -98,6 +117,7 @@ function Processando() {
           onClick={() => {
             setErro(null);
             setSegundos(0);
+            setConcluindo(false);
             jaRodou.current = false;
             setTentativa((t) => t + 1);
           }}
@@ -113,6 +133,7 @@ function Processando() {
   }
 
   const faseAtual = FASES.findIndex((f) => segundos < f.ate);
+  const pct = progressoVisual(segundos, concluindo);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-5 py-16 sm:px-8">
@@ -121,15 +142,29 @@ function Processando() {
 
         <div className="space-y-2">
           <h1 className="font-display text-2xl font-semibold leading-snug tracking-tight sm:text-3xl">
-            Montando o seu DNA Viral
+            Montando o seu diagnóstico
           </h1>
-          <p className="num text-sm text-muted-foreground">Leva menos de um minuto.</p>
+          <p className="num text-sm text-muted-foreground">Carregando...</p>
+        </div>
+
+        <div
+          className="h-2 overflow-hidden rounded-full bg-border"
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Progresso da análise"
+        >
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+            style={{ width: `${pct}%` }}
+          />
         </div>
 
         <ul className="space-y-3" aria-live="polite">
           {FASES.map((fase, i) => {
-            const concluida = i < faseAtual;
-            const ativa = i === faseAtual;
+            const concluida = i < faseAtual || concluindo;
+            const ativa = i === faseAtual && !concluindo;
             return (
               <li
                 key={fase.texto}

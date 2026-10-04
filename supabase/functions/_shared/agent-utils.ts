@@ -255,13 +255,54 @@ export async function registrarCustoScraping(
   }
 }
 
+export type ReasoningEffort =
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
+
+export type CallModeloOpts = {
+  /**
+   * Esforço de thinking do modelo. Default `low`.
+   *
+   * Claude Sonnet 5 (e similares) contam tokens de reasoning dentro de
+   * `max_tokens`. Sem teto, o thinking engole o orçamento inteiro e a
+   * resposta chega com `content` vazio / `finish_reason: length`. Foi isso
+   * que fez o dna-viral cair no fallback curado com leads pagando anúncio.
+   */
+  reasoningEffort?: ReasoningEffort;
+};
+
+/** Extrai texto de `message.content` (string ou array de blocos). */
+function textoDoContent(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object" && "text" in part) {
+          return String((part as { text?: unknown }).text ?? "");
+        }
+        return "";
+      })
+      .join("");
+  }
+  return "";
+}
+
 export async function callModelo(
   systemPrompt: string,
   userPrompt: string,
   maxTokens = 2000,
+  opts: CallModeloOpts = {},
 ): Promise<string> {
   const key = Deno.env.get("OPENROUTER_API_KEY");
   if (!key) throw new Error("OPENROUTER_API_KEY missing");
+
+  const reasoningEffort = opts.reasoningEffort ?? "low";
 
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -273,6 +314,8 @@ export async function callModelo(
     body: JSON.stringify({
       model: MODEL,
       max_tokens: maxTokens,
+      // Sem isso, Sonnet 5 gasta o max_tokens em thinking e devolve content "".
+      reasoning: { effort: reasoningEffort },
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -296,19 +339,30 @@ export async function callModelo(
   if (data?.error) {
     throw new Error(`OpenRouter error: ${data.error.message ?? JSON.stringify(data.error)}`);
   }
+
+  const choice = data?.choices?.[0];
+  const text = textoDoContent(choice?.message?.content).trim();
+  const finish = choice?.finish_reason ?? "unknown";
+  const completion = Number(data?.usage?.completion_tokens ?? 0);
+  const reasoning = Number(
+    data?.usage?.completion_tokens_details?.reasoning_tokens ?? 0,
+  );
+
   await registrarCustoModelo(
     Number(data?.usage?.prompt_tokens ?? 0),
-    Number(data?.usage?.completion_tokens ?? 0),
+    completion,
   );
-  const content = data?.choices?.[0]?.message?.content ?? "";
-  // Resposta vazia quase sempre é max_tokens consumido pelo raciocínio do modelo.
-  // Não lança: o revisor depende do "No JSON found" de extractJson para o fallback.
-  if (!String(content).trim()) {
-    console.warn(
-      `callModelo: resposta vazia (finish_reason=${data?.choices?.[0]?.finish_reason ?? "?"}, max_tokens=${maxTokens})`,
+
+  if (!text) {
+    throw new Error(
+      `Modelo devolveu conteúdo vazio (finish_reason=${finish}, ` +
+        `completion_tokens=${completion}, reasoning_tokens=${reasoning}, ` +
+        `max_tokens=${maxTokens}, effort=${reasoningEffort}). ` +
+        `Provável orçamento consumido por thinking.`,
     );
   }
-  return content;
+
+  return text;
 }
 
 

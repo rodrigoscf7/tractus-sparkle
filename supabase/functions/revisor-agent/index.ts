@@ -112,7 +112,9 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error(e);
-    if (pautaId && String(e).includes("No JSON found")) {
+    // Resposta vazia (callModelo) ou sem JSON (extractJson): a revisão automática
+    // falhou, mas a pauta não pode ficar presa; segue para aprovação humana.
+    if (pautaId && /No JSON found|conteúdo vazio/.test(String(e))) {
       const supabase = getServiceClient();
       await supabase
         .from("pautas_geradas")

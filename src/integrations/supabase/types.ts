@@ -674,6 +674,7 @@ export type Database = {
           respostas: Json
           senha_definida_em: string | null
           token: string
+          whatsapp: string | null
         }
         Insert: {
           atualizado_em?: string
@@ -694,6 +695,7 @@ export type Database = {
           respostas?: Json
           senha_definida_em?: string | null
           token: string
+          whatsapp?: string | null
         }
         Update: {
           atualizado_em?: string
@@ -714,6 +716,7 @@ export type Database = {
           respostas?: Json
           senha_definida_em?: string | null
           token?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
@@ -960,6 +963,7 @@ export type Database = {
           nome: string
           ordem: number
           preco_anual_centavos: number
+          preco_de_centavos: number | null
           preco_mensal_centavos: number
           publico: boolean
           recomendado: boolean
@@ -983,6 +987,7 @@ export type Database = {
           nome: string
           ordem?: number
           preco_anual_centavos?: number
+          preco_de_centavos?: number | null
           preco_mensal_centavos?: number
           publico?: boolean
           recomendado?: boolean
@@ -1006,6 +1011,7 @@ export type Database = {
           nome?: string
           ordem?: number
           preco_anual_centavos?: number
+          preco_de_centavos?: number | null
           preco_mensal_centavos?: number
           publico?: boolean
           recomendado?: boolean

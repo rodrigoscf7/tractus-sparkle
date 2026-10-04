@@ -51,6 +51,10 @@ Se o ângulo já foi coberto por uma pauta recente, gere uma variação com âng
 REGRAS:
 - Formato fixo: "Reel falado" (30-60s, pessoa à câmera).
 - Ângulo = TESE DE POSICIONAMENTO em 1 frase (opinião defensável, não descrição).
+  Teste: se ninguém razoável discordaria da frase, não é tese. Reescreva até doer um pouco.
+  "A importância da comunicação para advogados" é tema, não tese. "Advogado excelente que não comunica perde cliente para advogado mediano que comunica" é tese.
+- Escreva para o público REAL do perfil. Quem faz mentoria para advogados fala com colegas de profissão, não com o cliente final do direito. Errar isso invalida a pauta inteira.
+- Nada de pauta motivacional e nada de superlativo vazio ("revolucionário", "poderoso", "descomplicado").
 - origem_curadoria_id DEVE ser o id da curadoria-alvo.
 
 Retorne APENAS JSON:

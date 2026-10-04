@@ -20,9 +20,24 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
 
-import { dnaViralCurado, normalizarDnaViral, type DnaViral } from "@/lib/dna-viral";
+import {
+  comScore,
+  dnaViralCurado,
+  normalizarDnaViral,
+  roteirosTemProfundidade,
+  temSubsidioArquetipo,
+  type DnaViral,
+} from "@/lib/dna-viral";
+import { calcularScore } from "@/lib/dna-viral-score";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { PERGUNTAS, resumoDoQuiz, validarPergunta, type Respostas } from "@/lib/quiz-oferta";
+import {
+  PERGUNTAS,
+  digitosWhatsapp,
+  emailValido,
+  resumoDoQuiz,
+  validarPergunta,
+  type Respostas,
+} from "@/lib/quiz-oferta";
 
 /**
  * Quantos relatórios uma mesma origem pode gerar por hora.
@@ -36,7 +51,7 @@ const LIMITE_GERACOES_POR_HORA = 8;
 /** Teto do JSON de respostas. O quiz cheio não passa de alguns KB. */
 const MAX_BYTES_RESPOSTAS = 16 * 1024;
 
-const TIMEOUT_AGENTE_MS = 90_000;
+const TIMEOUT_AGENTE_MS = 120_000;
 
 /** Cliente de service role, já tipado contra o schema real. */
 type Db = SupabaseClient<Database>;
@@ -86,6 +101,23 @@ function quizCompleto(respostas: Respostas): boolean {
   return true;
 }
 
+/** Espelha e-mail/WhatsApp do jsonb nas colunas tipadas, quando válidos. */
+function colunasDeContato(respostas: Respostas): {
+  email?: string | null;
+  whatsapp?: string | null;
+  nome?: string | null;
+} {
+  const out: { email?: string | null; whatsapp?: string | null; nome?: string | null } = {};
+  if (respostas.nome?.trim()) out.nome = respostas.nome.trim();
+  if (respostas.email && emailValido(respostas.email)) {
+    out.email = respostas.email.trim().toLowerCase();
+  }
+  if (respostas.whatsapp && digitosWhatsapp(respostas.whatsapp).length >= 10) {
+    out.whatsapp = digitosWhatsapp(respostas.whatsapp);
+  }
+  return out;
+}
+
 /**
  * Grava o progresso do quiz. Chamada a cada resposta.
  *
@@ -103,6 +135,7 @@ export const salvarQuiz = createServerFn({ method: "POST" })
 
     const db = await admin();
     const agora = new Date().toISOString();
+    const contato = colunasDeContato(data.respostas);
 
     const { data: existente } = await db
       .from("oferta_leads")
@@ -113,7 +146,11 @@ export const salvarQuiz = createServerFn({ method: "POST" })
     if (existente) {
       await db
         .from("oferta_leads")
-        .update({ respostas: data.respostas, atualizado_em: agora })
+        .update({
+          respostas: data.respostas,
+          atualizado_em: agora,
+          ...contato,
+        })
         .eq("id", data.leadId);
       return { token: existente.token as string };
     }
@@ -127,6 +164,7 @@ export const salvarQuiz = createServerFn({ method: "POST" })
       ip_hash: hashDaOrigem(),
       criado_em: agora,
       atualizado_em: agora,
+      ...contato,
     });
     if (error) throw new Error("Não foi possível salvar suas respostas.");
 
@@ -162,14 +200,17 @@ export const gerarDnaViral = createServerFn({ method: "POST" })
 
     const relatorio = await gerarComFallback(db, lead.ip_hash as string | null, respostas);
 
+    const contato = colunasDeContato(respostas);
+
     await db
       .from("oferta_leads")
       .update({
         relatorio: relatorio.conteudo,
         relatorio_origem: relatorio.origem,
         relatorio_gerado_em: new Date().toISOString(),
-        nome: respostas.nome ?? null,
         atualizado_em: new Date().toISOString(),
+        ...contato,
+        nome: respostas.nome ?? contato.nome ?? null,
       })
       .eq("id", data.leadId);
 
@@ -181,6 +222,9 @@ async function gerarComFallback(
   ipHash: string | null,
   respostas: Respostas,
 ): Promise<{ conteudo: DnaViral; origem: "ia" | "curado" }> {
+  // Score sempre calculado aqui — nunca confia no modelo para os percentuais.
+  const score = calcularScore(respostas);
+
   if (await origemNoLimite(db, ipHash)) {
     console.warn("dna-viral: origem no limite de geracoes, servindo curado");
     return { conteudo: dnaViralCurado(respostas), origem: "curado" };
@@ -190,14 +234,32 @@ async function gerarComFallback(
     const { invocarAgente } = await import("@/lib/agentes.server");
     const resposta = await invocarAgente<{ relatorio?: unknown }>(
       "dna-viral-agent",
-      { respostas },
+      { respostas, score },
       { timeoutMs: TIMEOUT_AGENTE_MS },
     );
 
     if (resposta.ok) {
       const normalizado = normalizarDnaViral(resposta.data?.relatorio);
-      if (normalizado) return { conteudo: normalizado, origem: "ia" };
-      console.error("dna-viral: agente respondeu fora do contrato");
+      if (normalizado && !roteirosTemProfundidade(normalizado)) {
+        // Passa no contrato de forma mas chega raso na tela. Melhor o curado,
+        // que tem menos nuance mas é texto que a pessoa grava hoje.
+        console.error("dna-viral: roteiros rasos, servindo curado");
+      } else if (normalizado) {
+        // Sem base concreta, arquétipo some — evita rótulo de prateleira.
+        if (!temSubsidioArquetipo(respostas)) {
+          normalizado.arquetipo = null;
+        }
+        return { conteudo: comScore(normalizado, respostas), origem: "ia" };
+      } else {
+        const bruto = resposta.data?.relatorio as Record<string, unknown> | undefined;
+        console.error("dna-viral: agente respondeu fora do contrato", {
+          keys: bruto && typeof bruto === "object" ? Object.keys(bruto) : null,
+          roteiros: Array.isArray(bruto?.roteiros) ? bruto.roteiros.length : null,
+          pilares: Array.isArray(bruto?.pilares) ? bruto.pilares.length : null,
+          gargalos: Array.isArray(bruto?.gargalos) ? bruto.gargalos.length : null,
+          ganchos: Array.isArray(bruto?.ganchos) ? bruto.ganchos.length : null,
+        });
+      }
     } else {
       console.error("dna-viral: agente falhou", resposta.status, resposta.erro);
     }
@@ -243,13 +305,19 @@ export const getDnaViral = createServerFn({ method: "GET" })
 
     if (!lead?.relatorio) return null;
 
+    // Normaliza na leitura: leads antigos têm `diagnostico` em vez de
+    // `gargalos`. Se falhar, devolve o bruto tipado — a página trata campos
+    // ausentes com checagens.
+    const normalizado = normalizarDnaViral(lead.relatorio);
+    const relatorio = (normalizado ?? lead.relatorio) as DnaViral;
+
     const primeiroNome =
       String(lead.nome ?? "")
         .trim()
         .split(/\s+/)[0] ?? "";
 
     return {
-      relatorio: lead.relatorio as DnaViral,
+      relatorio,
       primeiroNome,
       geradoEm: lead.relatorio_gerado_em as string | null,
       temEmail: Boolean(lead.email),
@@ -287,7 +355,7 @@ export const getOfertaPublica = createServerFn({ method: "GET" }).handler(async 
   const db = await admin();
   const { data: plano } = await db
     .from("planos")
-    .select("nome, preco_mensal_centavos, checkout_url, codigo")
+    .select("nome, preco_mensal_centavos, preco_de_centavos, checkout_url, codigo")
     .eq("publico", true)
     .eq("ativo", true)
     .order("ordem")
@@ -300,6 +368,7 @@ export const getOfertaPublica = createServerFn({ method: "GET" }).handler(async 
     nome: plano.nome as string,
     codigo: plano.codigo as string,
     precoCentavos: (plano.preco_mensal_centavos ?? null) as number | null,
+    precoDeCentavos: (plano.preco_de_centavos ?? null) as number | null,
     checkoutUrl: plano.checkout_url as string,
   };
 });
@@ -357,8 +426,12 @@ export const importarQuizParaOnboarding = createServerFn({ method: "POST" })
     const lead = await acharLead(db, data.leadId, context.claims?.email as string | undefined);
     if (!lead) return vazio;
 
-    const respostas = (lead.respostas ?? {}) as Respostas;
-    if (!Object.keys(respostas).length) return vazio;
+    const bruto = (lead.respostas ?? {}) as Respostas;
+    if (!Object.keys(bruto).length) return vazio;
+
+    // Contato fica em oferta_leads (colunas tipadas). Não duplica em
+    // onboarding_respostas — não há motivo para o wizard carregar e-mail/WhatsApp.
+    const { email: _e, whatsapp: _w, ...respostas } = bruto;
 
     const agora = new Date().toISOString();
 
