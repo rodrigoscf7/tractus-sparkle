@@ -212,6 +212,7 @@ export function setCustoContexto(ctx: CustoContexto | null) {
 async function registrarCustoModelo(
   tokensEntrada: number,
   tokensSaida: number,
+  modelo: string = MODEL,
 ) {
   const ctx = custoContexto;
   if (!ctx) return;
@@ -222,7 +223,7 @@ async function registrarCustoModelo(
       perfil_id: ctx.perfilId ?? null,
       agente: ctx.agente,
       tipo: ctx.tipo,
-      modelo: MODEL,
+      modelo,
       tokens_entrada: tokensEntrada,
       tokens_saida: tokensSaida,
       itens: 1,
@@ -274,6 +275,10 @@ export type CallModeloOpts = {
    * que fez o dna-viral cair no fallback curado com leads pagando anúncio.
    */
   reasoningEffort?: ReasoningEffort;
+  /** Modelo do OpenRouter; default `MODEL`. Ex.: visão usa um modelo mais barato. */
+  model?: string;
+  /** Imagens (data URL ou https) enviadas junto do prompt do usuário, em ordem. */
+  imagens?: string[];
 };
 
 /** Extrai texto de `message.content` (string ou array de blocos). */
@@ -303,6 +308,13 @@ export async function callModelo(
   if (!key) throw new Error("OPENROUTER_API_KEY missing");
 
   const reasoningEffort = opts.reasoningEffort ?? "low";
+  const modelo = opts.model ?? MODEL;
+  const conteudoUsuario = opts.imagens?.length
+    ? [
+      { type: "text", text: userPrompt },
+      ...opts.imagens.map((url) => ({ type: "image_url", image_url: { url } })),
+    ]
+    : userPrompt;
 
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -312,13 +324,13 @@ export async function callModelo(
       "X-Title": "Tractus Content Hub",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: modelo,
       max_tokens: maxTokens,
       // Sem isso, Sonnet 5 gasta o max_tokens em thinking e devolve content "".
       reasoning: { effort: reasoningEffort },
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+        { role: "user", content: conteudoUsuario },
       ],
     }),
   });
@@ -351,6 +363,7 @@ export async function callModelo(
   await registrarCustoModelo(
     Number(data?.usage?.prompt_tokens ?? 0),
     completion,
+    modelo,
   );
 
   if (!text) {
