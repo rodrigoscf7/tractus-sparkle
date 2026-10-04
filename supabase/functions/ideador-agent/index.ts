@@ -162,11 +162,14 @@ async function gerarPautaFocada(supabase: SupabaseClient, conteudoId: string) {
       score: curadoria.score_curadoria,
       formato: curadoria.formato,
       metricas: { likes: curadoria.likes, comentarios: curadoria.comentarios, views: curadoria.views },
-      trecho: (
-        (curadoria as { transcricao?: string | null }).transcricao ||
-        curadoria.texto_original ||
-        ""
-      ).slice(0, 800),
+      // Conteúdo todo: legenda, texto escrito nas imagens/slides e fala do vídeo.
+      // Antes a transcrição substituía o resto e o carrossel só trazia a legenda.
+      trecho: [
+        curadoria.texto_original,
+        (curadoria as { transcricao?: string | null }).transcricao
+          ? `Fala (transcrição do áudio):\n${(curadoria as { transcricao?: string | null }).transcricao}`
+          : null,
+      ].filter(Boolean).join("\n\n").slice(0, 3000),
     }));
 
   setCustoContexto({
