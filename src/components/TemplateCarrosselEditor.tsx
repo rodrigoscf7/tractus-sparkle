@@ -5,15 +5,76 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { mensagemErro } from "@/lib/mensagem-erro";
 import { CarrosselSlide } from "@/components/CarrosselSlide";
+import { FONTES_CARROSSEL } from "@/lib/carrossel-fontes";
+import { useFontesCarrossel } from "@/hooks/use-fontes-carrossel";
 import {
   FOTO_BUCKET,
   fotoAsDataUrl,
   parseTemplate,
+  type CarrosselSlideData,
   type TemplateCarrossel,
 } from "@/lib/carrossel-template";
+
+/** Prévia com o que um carrossel de verdade tem: uma capa e um slide de conteúdo. */
+const SLIDES_EXEMPLO: CarrosselSlideData[] = [
+  {
+    tipo: "capa",
+    titulo: "3 erros que fazem o INSS negar o seu benefício",
+    corpo: "O segundo quase ninguém percebe.",
+  },
+  {
+    tipo: "conteudo",
+    titulo: "1. Laudo sem a sua rotina",
+    corpo:
+      "O perito avalia o que está escrito. Se o laudo não mostra o que você deixou de conseguir fazer, a limitação não existe para ele.",
+    destaque: "a limitação não existe",
+  },
+];
+
+function SeletorDeFonte({
+  id,
+  rotulo,
+  valor,
+  onChange,
+}: {
+  id: string;
+  rotulo: string;
+  valor: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <div>
+      <Label
+        htmlFor={id}
+        className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground"
+      >
+        {rotulo}
+      </Label>
+      <Select value={valor} onValueChange={onChange}>
+        <SelectTrigger id={id} className="mt-1">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {FONTES_CARROSSEL.map((f) => (
+            <SelectItem key={f.id} value={f.id}>
+              {f.nome} <span className="text-muted-foreground">· {f.tom}</span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export function TemplateCarrosselEditor({
   perfilId,
@@ -30,6 +91,7 @@ export function TemplateCarrosselEditor({
   const [fotoDataUrl, setFotoDataUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const { pronto: fontesProntas } = useFontesCarrossel(t.fonte_titulo, t.fonte_texto);
 
   useEffect(() => {
     const next = parseTemplate(templateRaw);
@@ -154,20 +216,37 @@ export function TemplateCarrosselEditor({
           <Switch checked={t.verificado} onCheckedChange={(v) => set("verificado", v)} />
           <span className="text-sm">Selo de verificado</span>
         </div>
+        <SeletorDeFonte
+          id="fonte-titulo"
+          rotulo="Fonte dos títulos"
+          valor={t.fonte_titulo}
+          onChange={(v) => set("fonte_titulo", v)}
+        />
+        <SeletorDeFonte
+          id="fonte-texto"
+          rotulo="Fonte do texto"
+          valor={t.fonte_texto}
+          onChange={(v) => set("fonte_texto", v)}
+        />
       </div>
 
       <div className="mt-6">
         <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
-          Prévia
+          Prévia {fontesProntas ? "" : "· carregando fontes…"}
         </div>
-        <CarrosselSlide
-          slide={{ texto: "Exemplo de slide com o texto do carrossel.", destaque: "texto do carrossel" }}
-          template={t}
-          fotoDataUrl={fotoDataUrl}
-          index={0}
-          total={6}
-          scale={0.22}
-        />
+        <div className="flex flex-wrap gap-3">
+          {SLIDES_EXEMPLO.map((slide, i) => (
+            <CarrosselSlide
+              key={i}
+              slide={slide}
+              template={t}
+              fotoDataUrl={fotoDataUrl}
+              index={i}
+              total={8}
+              scale={0.22}
+            />
+          ))}
+        </div>
       </div>
     </Card>
   );
