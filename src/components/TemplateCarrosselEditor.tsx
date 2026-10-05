@@ -19,11 +19,14 @@ import { FONTES_CARROSSEL } from "@/lib/carrossel-fontes";
 import { useFontesCarrossel } from "@/hooks/use-fontes-carrossel";
 import {
   FOTO_BUCKET,
+  MODELOS_CARROSSEL,
   fotoAsDataUrl,
+  modeloDoId,
   parseTemplate,
   type CarrosselSlideData,
   type TemplateCarrossel,
 } from "@/lib/carrossel-template";
+import { cn } from "@/lib/utils";
 
 /** Prévia com o que um carrossel de verdade tem: uma capa e um slide de conteúdo. */
 const SLIDES_EXEMPLO: CarrosselSlideData[] = [
@@ -31,6 +34,7 @@ const SLIDES_EXEMPLO: CarrosselSlideData[] = [
     tipo: "capa",
     titulo: "3 erros que fazem o INSS negar o seu benefício",
     corpo: "O segundo quase ninguém percebe.",
+    destaque: "quase ninguém percebe",
   },
   {
     tipo: "conteudo",
@@ -40,6 +44,80 @@ const SLIDES_EXEMPLO: CarrosselSlideData[] = [
     destaque: "a limitação não existe",
   },
 ];
+
+const ROTULO = "text-[11px] font-mono uppercase tracking-widest text-muted-foreground";
+
+function CampoCor({
+  rotulo,
+  valor,
+  onChange,
+}: {
+  rotulo: string;
+  valor: string;
+  onChange: (cor: string) => void;
+}) {
+  return (
+    <div>
+      <Label className={ROTULO}>{rotulo}</Label>
+      <div className="flex gap-2 mt-1">
+        <input
+          type="color"
+          value={valor}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-9 w-12 rounded border border-border bg-background"
+        />
+        <Input value={valor} onChange={(e) => onChange(e.target.value)} />
+      </div>
+    </div>
+  );
+}
+
+/** Uma miniatura da capa por modelo, já com as cores, fontes e identidade do perfil. */
+function SeletorDeModelo({
+  template,
+  fotoDataUrl,
+  onChange,
+}: {
+  template: TemplateCarrossel;
+  fotoDataUrl: string;
+  onChange: (modelo: TemplateCarrossel["modelo"]) => void;
+}) {
+  return (
+    <div className="mb-5">
+      <div className={cn(ROTULO, "mb-2")}>Modelo</div>
+      <div className="grid grid-cols-3 gap-3">
+        {MODELOS_CARROSSEL.map((m) => {
+          const ativo = m.id === template.modelo;
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onChange(m.id)}
+              aria-pressed={ativo}
+              className={cn(
+                "rounded-lg border p-2 text-left transition-colors",
+                ativo ? "border-primary ring-1 ring-primary" : "border-border hover:border-foreground/40",
+              )}
+            >
+              <div className="flex justify-center pointer-events-none">
+                <CarrosselSlide
+                  slide={SLIDES_EXEMPLO[0]}
+                  template={{ ...template, modelo: m.id }}
+                  fotoDataUrl={fotoDataUrl}
+                  index={0}
+                  total={8}
+                  scale={0.11}
+                />
+              </div>
+              <div className="mt-2 text-sm font-medium">{m.nome}</div>
+              <div className="text-xs text-muted-foreground leading-snug">{m.descricao}</div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function SeletorDeFonte({
   id,
@@ -54,10 +132,7 @@ function SeletorDeFonte({
 }) {
   return (
     <div>
-      <Label
-        htmlFor={id}
-        className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground"
-      >
+      <Label htmlFor={id} className={ROTULO}>
         {rotulo}
       </Label>
       <Select value={valor} onValueChange={onChange}>
@@ -92,6 +167,7 @@ export function TemplateCarrosselEditor({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const { pronto: fontesProntas } = useFontesCarrossel(t.fonte_titulo, t.fonte_texto);
+  const usa = modeloDoId(t.modelo).usa;
 
   useEffect(() => {
     const next = parseTemplate(templateRaw);
@@ -146,22 +222,26 @@ export function TemplateCarrosselEditor({
         </Button>
       </div>
 
+      <SeletorDeModelo
+        template={t}
+        fotoDataUrl={fotoDataUrl}
+        onChange={(modelo) => set("modelo", modelo)}
+      />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {usa.nome && (
+          <div>
+            <Label className={ROTULO}>Nome de exibição</Label>
+            <Input
+              className="mt-1"
+              value={t.nome_exibicao}
+              onChange={(e) => set("nome_exibicao", e.target.value)}
+              placeholder="Márcia Canuto"
+            />
+          </div>
+        )}
         <div>
-          <Label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-            Nome de exibição
-          </Label>
-          <Input
-            className="mt-1"
-            value={t.nome_exibicao}
-            onChange={(e) => set("nome_exibicao", e.target.value)}
-            placeholder="Márcia Canuto"
-          />
-        </div>
-        <div>
-          <Label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-            Arroba
-          </Label>
+          <Label className={ROTULO}>Arroba</Label>
           <Input
             className="mt-1"
             value={t.arroba}
@@ -169,53 +249,36 @@ export function TemplateCarrosselEditor({
             placeholder="marciacanuto.adv"
           />
         </div>
-        <div>
-          <Label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-            Cor de fundo
-          </Label>
-          <div className="flex gap-2 mt-1">
-            <input
-              type="color"
-              value={t.cor_fundo}
-              onChange={(e) => set("cor_fundo", e.target.value)}
-              className="h-9 w-12 rounded border border-border bg-background"
-            />
-            <Input value={t.cor_fundo} onChange={(e) => set("cor_fundo", e.target.value)} />
-          </div>
-        </div>
-        <div>
-          <Label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-            Cor do texto
-          </Label>
-          <div className="flex gap-2 mt-1">
-            <input
-              type="color"
-              value={t.cor_texto}
-              onChange={(e) => set("cor_texto", e.target.value)}
-              className="h-9 w-12 rounded border border-border bg-background"
-            />
-            <Input value={t.cor_texto} onChange={(e) => set("cor_texto", e.target.value)} />
-          </div>
-        </div>
-        <div>
-          <Label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-            Foto de perfil
-          </Label>
-          <Input
-            className="mt-1"
-            type="file"
-            accept="image/*"
-            disabled={uploading}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) uploadFoto(f);
-            }}
+        <CampoCor rotulo="Cor de fundo" valor={t.cor_fundo} onChange={(v) => set("cor_fundo", v)} />
+        <CampoCor rotulo="Cor do texto" valor={t.cor_texto} onChange={(v) => set("cor_texto", v)} />
+        {usa.cor_destaque && (
+          <CampoCor
+            rotulo="Cor de destaque"
+            valor={t.cor_destaque}
+            onChange={(v) => set("cor_destaque", v)}
           />
-        </div>
-        <div className="flex items-center gap-3 pt-6">
-          <Switch checked={t.verificado} onCheckedChange={(v) => set("verificado", v)} />
-          <span className="text-sm">Selo de verificado</span>
-        </div>
+        )}
+        {usa.foto && (
+          <div>
+            <Label className={ROTULO}>Foto de perfil</Label>
+            <Input
+              className="mt-1"
+              type="file"
+              accept="image/*"
+              disabled={uploading}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) uploadFoto(f);
+              }}
+            />
+          </div>
+        )}
+        {usa.verificado && (
+          <div className="flex items-center gap-3 pt-6">
+            <Switch checked={t.verificado} onCheckedChange={(v) => set("verificado", v)} />
+            <span className="text-sm">Selo de verificado</span>
+          </div>
+        )}
         <SeletorDeFonte
           id="fonte-titulo"
           rotulo="Fonte dos títulos"
@@ -231,7 +294,7 @@ export function TemplateCarrosselEditor({
       </div>
 
       <div className="mt-6">
-        <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
+        <div className={cn(ROTULO, "mb-2")}>
           Prévia {fontesProntas ? "" : "· carregando fontes…"}
         </div>
         <div className="flex flex-wrap gap-3">

@@ -127,7 +127,7 @@ export function CarrosselPanel({
 
       {templateIncompleto && (
         <p className="text-xs text-muted-foreground mb-4">
-          Configure arroba, foto, cores e fontes em <strong>Perfis → Template do carrossel</strong>{" "}
+          Configure modelo, arroba, foto, cores e fontes em <strong>Perfis → Template do carrossel</strong>{" "}
           para os slides saírem com a identidade certa.
         </p>
       )}
