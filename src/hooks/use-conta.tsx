@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 export type TipoUso = "curadoria" | "roteiro" | "carrossel";
 
 export const TIPOS_USO: { tipo: TipoUso; label: string; campoLimite: string }[] = [
-  { tipo: "curadoria", label: "Referências curadas", campoLimite: "limite_curadorias_mes" },
   { tipo: "roteiro", label: "Roteiros produzidos", campoLimite: "limite_roteiros_mes" },
   { tipo: "carrossel", label: "Carrosséis gerados", campoLimite: "limite_carrosseis_mes" },
 ];

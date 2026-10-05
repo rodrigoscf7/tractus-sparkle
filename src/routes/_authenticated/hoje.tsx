@@ -47,7 +47,7 @@ function HojePage() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["hoje"],
     queryFn: async () => {
-      const [perfilRes, pubRes, curadoriaRes, aprovacaoRes] = await Promise.all([
+      const [perfilRes, pubRes, aprovacaoRes] = await Promise.all([
         supabase
           .from("perfis")
           .select("id, nome, ritmo_dias")
@@ -60,10 +60,6 @@ function HojePage() {
           .order("criado_em", { ascending: false })
           .limit(200),
         supabase
-          .from("conteudos_curados")
-          .select("id", { count: "exact", head: true })
-          .eq("aprovacao_humana", "pendente"),
-        supabase
           .from("pautas_geradas")
           .select("id, tema, angulo")
           .eq("status", "aguardando_aprovacao")
@@ -73,7 +69,6 @@ function HojePage() {
       if (perfilRes.error) throw perfilRes.error;
       if (pubRes.error) throw pubRes.error;
       if (aprovacaoRes.error) throw aprovacaoRes.error;
-      if (curadoriaRes.error) throw curadoriaRes.error;
 
       const publicacoes = (pubRes.data ?? []) as unknown as PublicacaoComPauta[];
 
@@ -86,7 +81,6 @@ function HojePage() {
             postado_em: p.postado_em as string,
             tema: p.pautas_geradas?.tema ?? null,
           })),
-        curadoriasPendentes: curadoriaRes.count ?? 0,
         aprovacoesPendentes: aprovacaoRes.data ?? [],
       };
     },
@@ -128,18 +122,12 @@ function HojePage() {
         </p>
       </header>
 
-      <AcaoDeHoje
-        gravar={gravar}
-        aprovar={aprovar}
-        plano={plano ?? null}
-        curadoriasPendentes={data.curadoriasPendentes}
-      />
+      <AcaoDeHoje gravar={gravar} aprovar={aprovar} plano={plano ?? null} />
 
       <PautaDaSemana dias={dias} ritmoDias={ritmoDias} semanasSeguidas={sequencia} />
 
       <EsperandoVoce
         planoParaAprovar={plano?.status === "pronto"}
-        curadoriasPendentes={data.curadoriasPendentes}
         aprovacoesPendentes={data.aprovacoesPendentes.length}
       />
     </div>
@@ -149,19 +137,17 @@ function HojePage() {
 /**
  * Um cartão, uma ação. A prioridade segue o que está mais perto de virar post:
  * gravar um roteiro pronto vale mais que aprovar, que vale mais que aprovar o
- * plano da semana, que vale mais que escolher assunto. Sem nada pronto, a tela
- * explica o que a prevIA está fazendo — nunca mostra vazio.
+ * plano da semana. Sem nada pronto, a tela explica o que a prevIA está fazendo,
+ * nunca mostra vazio.
  */
 function AcaoDeHoje({
   gravar,
   aprovar,
   plano,
-  curadoriasPendentes,
 }: {
   gravar: PublicacaoComPauta | null;
   aprovar: { id: string; tema: string | null; angulo: string | null } | null;
   plano: PlanoAtual | null;
-  curadoriasPendentes: number;
 }) {
   if (gravar?.pautas_geradas) {
     const pauta = gravar.pautas_geradas;
@@ -238,28 +224,6 @@ function AcaoDeHoje({
     );
   }
 
-  if (curadoriasPendentes > 0) {
-    return (
-      <Cartao
-        etiqueta="Esperando você"
-        icone={<CheckCheck className="w-4 h-4" />}
-        titulo={
-          curadoriasPendentes === 1
-            ? "1 assunto para você escolher"
-            : `${curadoriasPendentes} assuntos para você escolher`
-        }
-        apoio="Os que você aprovar viram roteiro seu automaticamente."
-        destaque
-      >
-        <Button asChild>
-          <Link to="/curadoria">
-            Escolher assuntos <ArrowRight className="w-4 h-4 ml-1" />
-          </Link>
-        </Button>
-      </Cartao>
-    );
-  }
-
   return (
     <Cartao
       etiqueta="Em andamento"
@@ -308,14 +272,12 @@ function Cartao({
  */
 function EsperandoVoce({
   planoParaAprovar,
-  curadoriasPendentes,
   aprovacoesPendentes,
 }: {
   planoParaAprovar: boolean;
-  curadoriasPendentes: number;
   aprovacoesPendentes: number;
 }) {
-  if (!planoParaAprovar && curadoriasPendentes === 0 && aprovacoesPendentes === 0) return null;
+  if (!planoParaAprovar && aprovacoesPendentes === 0) return null;
 
   return (
     <section>
@@ -337,14 +299,6 @@ function EsperandoVoce({
             contagem={aprovacoesPendentes}
             singular="roteiro para aprovar"
             plural="roteiros para aprovar"
-          />
-        )}
-        {curadoriasPendentes > 0 && (
-          <LinhaPendencia
-            para="/curadoria"
-            contagem={curadoriasPendentes}
-            singular="assunto para escolher"
-            plural="assuntos para escolher"
           />
         )}
       </div>

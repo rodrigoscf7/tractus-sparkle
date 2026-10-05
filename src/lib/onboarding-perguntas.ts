@@ -148,8 +148,11 @@ export const ESTILOS: Estilo[] = [
   },
 ];
 
-/** Q10 — perfis de referência. Pelo menos um: sem referência a esteira não roda. */
-export const MIN_REFERENCIAS = 1;
+/**
+ * Q10 — perfis de referência. Pelo menos dois: sem referência o plano semanal não
+ * roda, e com uma só todos os virais analisados saem do mesmo perfil.
+ */
+export const MIN_REFERENCIAS = 2;
 export const MAX_REFERENCIAS = 5;
 
 /** Q11 — onde publica hoje. */
@@ -397,7 +400,9 @@ export function validarPasso(passo: number, r: Respostas): string[] {
   if (passo === 4) {
     const refs = r.referencias ?? [];
     if (refs.length < MIN_REFERENCIAS)
-      erros.push("Adicione ao menos um perfil de referência — é o que a prevIA usa para buscar repertório.");
+      erros.push(
+        `Adicione ao menos ${MIN_REFERENCIAS} perfis de referência. É deles que a prevIA tira os virais do seu plano.`,
+      );
     if (refs.length > MAX_REFERENCIAS)
       erros.push(`Adicione no máximo ${MAX_REFERENCIAS} perfis.`);
     if (!(r.canais ?? []).length) erros.push("Diga onde você publica hoje.");
