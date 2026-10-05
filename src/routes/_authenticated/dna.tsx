@@ -120,21 +120,19 @@ function DnaPage() {
             <span className="text-sm text-muted-foreground">Seu manual está pronto</span>
           </div>
           <p className="mt-3 text-base leading-relaxed">
-            Baixe e guarde este documento. Enquanto você lê, a prevIA está lendo os perfis que
-            você indicou — os primeiros assuntos aparecem em alguns minutos.
+            Baixe e guarde este documento. Enquanto você lê, a prevIA está assistindo aos posts que
+            mais performaram nos perfis que você indicou. Seu plano da semana fica pronto em alguns
+            minutos.
           </p>
-          {/*
-           * Leva para `Hoje`, não para a curadoria: logo após o onboarding a
-           * curadoria costuma estar vazia, e `Hoje` sempre diz em que pé está.
-           */}
+          {/* A tela do plano mostra em que passo ele está enquanto é montado. */}
           <Link
-            to="/hoje"
+            to="/plano"
             className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-base
               font-medium text-primary-foreground transition hover:bg-primary/90
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
               focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            Ver o meu dia <ArrowRight className="h-4 w-4" />
+            Acompanhar meu plano <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       )}
@@ -326,12 +324,12 @@ function DnaPage() {
           </p>
           <Link
             data-print-hide
-            to="/curadoria"
+            to="/plano"
             className="mt-6 inline-flex items-center gap-2 text-base transition hover:text-muted-foreground
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
               focus-visible:ring-offset-background rounded"
           >
-            Ir para a curadoria <ArrowRight className="h-4 w-4" />
+            Ver meu plano da semana <ArrowRight className="h-4 w-4" />
           </Link>
         </footer>
       )}

@@ -13,6 +13,7 @@ import {
   CreditCard,
   Shield,
   BookOpen,
+  CalendarRange,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/hooks/use-theme";
@@ -105,6 +106,9 @@ function AuthenticatedLayout() {
       <nav className="flex-1 px-3 py-4 space-y-1">
         <NavLink to="/hoje" icon={<CalendarDays className="w-4 h-4" />}>
           Hoje
+        </NavLink>
+        <NavLink to="/plano" icon={<CalendarRange className="w-4 h-4" />}>
+          Plano da semana
         </NavLink>
         <NavLink to="/curadoria" icon={<CheckCheck className="w-4 h-4" />}>
           Curadoria

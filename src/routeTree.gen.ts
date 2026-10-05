@@ -23,6 +23,7 @@ import { Route as AuthenticatedDnaRouteImport } from './routes/_authenticated/dn
 import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
 import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
+import { Route as AuthenticatedPlanoRouteImport } from './routes/_authenticated/plano'
 import { Route as DnaViralTokenRouteImport } from './routes/dna-viral.$token'
 import { Route as OfertaProcessandoRouteImport } from './routes/oferta.processando'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
@@ -101,6 +102,11 @@ const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
   path: '/pipeline',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPlanoRoute = AuthenticatedPlanoRouteImport.update({
+  id: '/plano',
+  path: '/plano',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const DnaViralTokenRoute = DnaViralTokenRouteImport.update({
   id: '/dna-viral/$token',
   path: '/dna-viral/$token',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/hoje': typeof AuthenticatedHojeRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
+  '/plano': typeof AuthenticatedPlanoRoute
   '/dna-viral/$token': typeof DnaViralTokenRoute
   '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/hoje': typeof AuthenticatedHojeRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
+  '/plano': typeof AuthenticatedPlanoRoute
   '/dna-viral/$token': typeof DnaViralTokenRoute
   '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/_authenticated/hoje': typeof AuthenticatedHojeRoute
   '/_authenticated/perfis': typeof AuthenticatedPerfisRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
+  '/_authenticated/plano': typeof AuthenticatedPlanoRoute
   '/dna-viral/$token': typeof DnaViralTokenRoute
   '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/hoje'
     | '/perfis'
     | '/pipeline'
+    | '/plano'
     | '/dna-viral/$token'
     | '/oferta/processando'
     | '/onboarding/processando'
@@ -251,6 +261,7 @@ export interface FileRouteTypes {
     | '/hoje'
     | '/perfis'
     | '/pipeline'
+    | '/plano'
     | '/dna-viral/$token'
     | '/oferta/processando'
     | '/onboarding/processando'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/_authenticated/hoje'
     | '/_authenticated/perfis'
     | '/_authenticated/pipeline'
+    | '/_authenticated/plano'
     | '/dna-viral/$token'
     | '/oferta/processando'
     | '/onboarding/processando'
@@ -397,6 +409,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPipelineRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/plano': {
+      id: '/_authenticated/plano'
+      path: '/plano'
+      fullPath: '/plano'
+      preLoaderRoute: typeof AuthenticatedPlanoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/dna-viral/$token': {
       id: '/dna-viral/$token'
       path: '/dna-viral/$token'
@@ -478,6 +497,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHojeRoute: typeof AuthenticatedHojeRoute
   AuthenticatedPerfisRoute: typeof AuthenticatedPerfisRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
+  AuthenticatedPlanoRoute: typeof AuthenticatedPlanoRoute
   AuthenticatedAprovacaoPautaIdRoute: typeof AuthenticatedAprovacaoPautaIdRoute
 }
 
@@ -490,6 +510,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHojeRoute: AuthenticatedHojeRoute,
   AuthenticatedPerfisRoute: AuthenticatedPerfisRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
+  AuthenticatedPlanoRoute: AuthenticatedPlanoRoute,
   AuthenticatedAprovacaoPautaIdRoute: AuthenticatedAprovacaoPautaIdRoute,
 }
 

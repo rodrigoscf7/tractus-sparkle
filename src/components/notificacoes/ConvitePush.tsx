@@ -88,8 +88,8 @@ export function ConvitePush() {
       {estado === "pedir_permissao" && (
         <>
           <p className="mt-3 text-base leading-relaxed">
-            Avisamos quando a curadoria e as pautas estiverem prontas pra você aprovar — sem precisar
-            ficar checando o app.
+            Avisamos quando o plano da semana e os roteiros estiverem prontos pra você aprovar, sem
+            precisar ficar checando o app.
           </p>
           <button
             type="button"

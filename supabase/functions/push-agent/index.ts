@@ -10,6 +10,12 @@ import {
 } from "../_shared/agent-utils.ts";
 
 function montarMensagem(tipo: string, nome: string, contagem: number) {
+  if (tipo === "plano_pronto") {
+    return {
+      titulo: "prevIA",
+      corpo: `${nome}, seu plano da semana chegou: os vídeos de cada dia, com o gancho já escrito.`,
+    };
+  }
   if (tipo === "curadoria_pronta") {
     return {
       titulo: "prevIA",
@@ -37,6 +43,7 @@ function montarMensagem(tipo: string, nome: string, contagem: number) {
 }
 
 function destino(tipo: string): string {
+  if (tipo === "plano_pronto") return "/plano";
   if (tipo === "curadoria_pronta") return "/curadoria";
   // A cobrança leva para a tela que diz o que fazer agora, não para o quadro.
   if (tipo === "ritmo_hoje") return "/hoje";

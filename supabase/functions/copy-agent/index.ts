@@ -19,6 +19,7 @@ Tom: direto, assertivo, primeira pessoa, português do Brasil. Sem emoji, sem tr
 Diretrizes do perfil: {{perfil_diretrizes}}
 CTA padrão do perfil (âncora obrigatória): {{cta_padrao}}
 Pauta: tema={{pauta_tema}} | ângulo={{pauta_angulo}}
+{{modelo_viral}}
 Roteiros rejeitados (não repita o padrão): {{historico_roteiros_rejeitados}}
 
 REGRAS INEGOCIÁVEIS DESTE PERFIL
@@ -46,6 +47,20 @@ Retorne APENAS um JSON compacto:
   "cta_falado": "string",
   "legenda_sugerida": "string curta de até 280 caracteres, sem emoji" }`;
 
+/**
+ * Pauta nascida do plano semanal: traz o gancho e a estrutura modelados no
+ * padrão de um viral analisado. O roteiro parte deles em vez de partir do zero.
+ */
+function modeloViral(pauta: { gancho_modelo?: string | null; estrutura_modelo?: unknown }): string {
+  const estrutura = Array.isArray(pauta.estrutura_modelo) ? pauta.estrutura_modelo.map(String) : [];
+  if (!pauta.gancho_modelo && !estrutura.length) return "";
+  return `
+MODELO DESTA PAUTA (tirado de um post que performou muito acima do normal no nicho):
+- Gancho sugerido: ${pauta.gancho_modelo ?? "(livre)"}
+- Estrutura que funcionou: ${estrutura.join(" → ") || "(livre)"}
+Siga o mecanismo e a ordem dos blocos. Pode ajustar as palavras do gancho para soar como ele, sem perder a força.`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -60,7 +75,7 @@ Deno.serve(async (req) => {
     const { data: pauta } = await supabase
       .from("pautas_geradas")
       .select(
-        "id, perfil_id, tema, angulo, formato_sugerido, conta_id, perfis:perfis(nome,diretrizes,cta_padrao,conta_id)",
+        "id, perfil_id, tema, angulo, formato_sugerido, conta_id, gancho_modelo, estrutura_modelo, perfis:perfis(nome,diretrizes,cta_padrao,conta_id)",
       )
       .eq("id", pauta_id)
       .single();
@@ -89,6 +104,8 @@ Deno.serve(async (req) => {
       .replace("{{cta_padrao}}", String(perfil.cta_padrao ?? "").trim() || "nenhuma")
       .replace("{{pauta_tema}}", pauta!.tema ?? "")
       .replace("{{pauta_angulo}}", pauta!.angulo ?? "")
+      // Função como substituto: o gancho pode ter "R$", e "$" é especial em replace.
+      .replace("{{modelo_viral}}", () => modeloViral(pauta as any))
       .replace("{{historico_roteiros_rejeitados}}", formatHistorico(historico))
       .replace("{{restricoes_perfil}}", formatRestricoes(perfil.diretrizes));
 

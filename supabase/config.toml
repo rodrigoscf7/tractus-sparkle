@@ -32,3 +32,6 @@ verify_jwt = false
 # invocarAgente que os outros agentes usam.
 [functions.dna-viral-agent]
 verify_jwt = false
+
+[functions.planejador-agent]
+verify_jwt = false

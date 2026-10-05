@@ -11,15 +11,6 @@ import {
   type Respostas,
 } from "@/lib/onboarding-perguntas";
 
-/**
- * Quantas referências entram na primeira coleta imediata.
- *
- * Cada worker do curador consome uma execução do Apify. Três já garantem
- * conteúdo na tela quando o usuário termina de ler o manual; o resto entra no
- * cron diário sem custo extra agora.
- */
-const REFERENCIAS_PRIMEIRA_COLETA = 3;
-
 async function contaDoUsuario(
   supabase: { from: (t: string) => any },
   userId: string,
@@ -114,10 +105,10 @@ export const salvarPasso = createServerFn({ method: "POST" })
 
 /**
  * Fecha o onboarding: grava o perfil, cria as referências, marca como
- * concluído, gera o manual de marca e dispara a primeira coleta.
+ * concluído, pede o primeiro plano semanal e gera o manual de marca.
  *
- * O manual é aguardado (a tela de processamento depende dele). A coleta não é:
- * roda em segundo plano enquanto o usuário lê o relatório.
+ * O manual é aguardado (a tela de processamento depende dele). O plano não é:
+ * entra na fila do planejador e fica pronto alguns minutos depois, com aviso.
  */
 export const concluirOnboarding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -132,7 +123,7 @@ export const concluirOnboarding = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { invocarAgente, dispararCuradoria } = await import("@/lib/agentes.server");
+    const { invocarAgente } = await import("@/lib/agentes.server");
     const admin = supabaseAdmin as any;
 
     const { data: registro } = await admin
@@ -222,29 +213,16 @@ export const concluirOnboarding = createServerFn({ method: "POST" })
       .filter((h) => !existentes.has(h))
       .slice(0, Math.max(0, limiteRefs - existentes.size));
 
-    let idsParaColeta: string[] = [];
     if (aInserir.length) {
-      const { data: inseridas, error } = await admin
-        .from("perfis_referencia")
-        .insert(
-          aInserir.map((handle) => ({
-            handle,
-            perfil_id_relacionado: perfilId,
-            conta_id: contaId,
-            ativo: true,
-          })),
-        )
-        .select("id, handle");
-      if (error) throw new Error(error.message);
-
-      // Prioriza os perfis que o próprio usuário indicou na primeira coleta.
-      const ordenadas = (inseridas ?? []).sort(
-        (a: { handle: string }, b: { handle: string }) =>
-          informados.indexOf(a.handle) - informados.indexOf(b.handle),
+      const { error } = await admin.from("perfis_referencia").insert(
+        aInserir.map((handle) => ({
+          handle,
+          perfil_id_relacionado: perfilId,
+          conta_id: contaId,
+          ativo: true,
+        })),
       );
-      idsParaColeta = ordenadas
-        .slice(0, REFERENCIAS_PRIMEIRA_COLETA)
-        .map((r: { id: string }) => r.id);
+      if (error) throw new Error(error.message);
     }
 
     // ---- Fecha o wizard antes de gerar o manual ----
@@ -262,10 +240,16 @@ export const concluirOnboarding = createServerFn({ method: "POST" })
       await admin.from("onboarding_respostas").insert({ conta_id: contaId, ...marcar });
     }
 
-    // ---- Primeira coleta, em segundo plano ----
-    // Sai antes do manual para as duas coisas correrem em paralelo: quando o
-    // usuário terminar de ler o relatório, a curadoria já tem conteúdo.
-    if (idsParaColeta.length) dispararCuradoria(idsParaColeta);
+    // ---- Primeiro plano semanal ----
+    // Entra na fila antes do manual para as duas coisas correrem em paralelo. O
+    // planejador espera o manual ficar pronto antes de escrever as pautas. Uma
+    // falha aqui não pode travar o onboarding: o assinante pede o plano pela tela.
+    try {
+      const { criarPlanoDaConta } = await import("@/lib/plano.server");
+      await criarPlanoDaConta(contaId);
+    } catch (e) {
+      console.error("onboarding: não consegui pedir o primeiro plano", e);
+    }
 
     // ---- Manual de marca ----
     const resposta = await invocarAgente<{ relatorio_id?: string }>(

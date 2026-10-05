@@ -238,13 +238,14 @@ export async function registrarCustoScraping(
   contaId: string | null | undefined,
   perfilId: string | null | undefined,
   itens = 1,
+  agente = "curador",
 ) {
   try {
     const supabase = getServiceClient();
     await supabase.from("custo_eventos").insert({
       conta_id: contaId ?? null,
       perfil_id: perfilId ?? null,
-      agente: "curador",
+      agente,
       tipo: "scraping",
       modelo: "apify",
       tokens_entrada: 0,
@@ -279,6 +280,8 @@ export type CallModeloOpts = {
   model?: string;
   /** Imagens (data URL ou https) enviadas junto do prompt do usuário, em ordem. */
   imagens?: string[];
+  /** Vídeos (data URL). Só modelos com entrada de vídeo, como os Gemini. */
+  videos?: string[];
 };
 
 /** Extrai texto de `message.content` (string ou array de blocos). */
@@ -309,10 +312,12 @@ export async function callModelo(
 
   const reasoningEffort = opts.reasoningEffort ?? "low";
   const modelo = opts.model ?? MODEL;
-  const conteudoUsuario = opts.imagens?.length
+  const temMidia = Boolean(opts.imagens?.length || opts.videos?.length);
+  const conteudoUsuario = temMidia
     ? [
       { type: "text", text: userPrompt },
-      ...opts.imagens.map((url) => ({ type: "image_url", image_url: { url } })),
+      ...(opts.imagens ?? []).map((url) => ({ type: "image_url", image_url: { url } })),
+      ...(opts.videos ?? []).map((url) => ({ type: "video_url", video_url: { url } })),
     ]
     : userPrompt;
 
