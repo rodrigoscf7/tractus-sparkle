@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { familiaCss } from "@/lib/carrossel-fontes";
 import type { CarrosselSlideData, TemplateCarrossel } from "@/lib/carrossel-template";
 
 const WIDTH = 1080;
@@ -36,13 +37,37 @@ type Props = {
   scale?: number;
 };
 
-/** Slide 1080×1350 (4:5) no estilo "post de rede social": fundo sólido, avatar, arroba, selo e texto. */
+/**
+ * Tamanhos em px no slide de 1080 de largura. O título cresce quando está
+ * sozinho (capa ou slide de respiro) e encolhe quando divide espaço com o corpo.
+ */
+function tamanhos(slide: CarrosselSlideData, capa: boolean) {
+  const t = slide.titulo?.length ?? 0;
+  const c = slide.corpo?.length ?? 0;
+  if (!slide.corpo) {
+    const titulo = capa
+      ? t < 45 ? 104 : t < 80 ? 88 : 74
+      : t < 50 ? 92 : t < 90 ? 76 : 64;
+    return { titulo, corpo: 0 };
+  }
+  if (!slide.titulo) {
+    return { titulo: 0, corpo: c < 70 ? 80 : c < 130 ? 64 : c < 190 ? 54 : 46 };
+  }
+  return {
+    titulo: capa ? (t < 45 ? 96 : t < 80 ? 80 : 68) : t < 40 ? 68 : t < 70 ? 60 : 52,
+    corpo: capa ? 42 : c < 120 ? 46 : c < 200 ? 40 : 36,
+  };
+}
+
+/** Slide 1080×1350 (4:5) no estilo "post de rede social": fundo sólido, avatar, arroba, selo, título e corpo. */
 export const CarrosselSlide = forwardRef<HTMLDivElement, Props>(function CarrosselSlide(
   { slide, template, fotoDataUrl, index, total, scale = 1 },
   ref,
 ) {
-  const len = slide.texto.length;
-  const fontSize = len < 70 ? 92 : len < 130 ? 74 : len < 190 ? 60 : 52;
+  const capa = index === 0 || slide.tipo === "capa" || slide.tipo === "hook";
+  const tam = tamanhos(slide, capa);
+  const fonteTitulo = familiaCss(template.fonte_titulo);
+  const fonteTexto = familiaCss(template.fonte_texto);
   const paddingX = 88;
   const paddingY = 96;
 
@@ -69,8 +94,7 @@ export const CarrosselSlide = forwardRef<HTMLDivElement, Props>(function Carross
           flexDirection: "column",
           justifyContent: "space-between",
           padding: `${paddingY}px ${paddingX}px`,
-          fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
+          fontFamily: fonteTexto,
           boxSizing: "border-box",
         }}
       >
@@ -108,19 +132,44 @@ export const CarrosselSlide = forwardRef<HTMLDivElement, Props>(function Carross
 
         <div
           style={{
-            fontSize,
-            lineHeight: 1.28,
-            letterSpacing: "-0.02em",
-            fontWeight: 400,
             flex: 1,
             display: "flex",
-            alignItems: "center",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 36,
             paddingTop: 72,
             paddingBottom: 72,
-            whiteSpace: "pre-wrap",
           }}
         >
-          <span>{renderTexto(slide.texto, slide.destaque)}</span>
+          {slide.titulo && (
+            <div
+              style={{
+                fontFamily: fonteTitulo,
+                fontSize: tam.titulo,
+                fontWeight: 700,
+                lineHeight: 1.12,
+                letterSpacing: "-0.025em",
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {slide.titulo}
+            </div>
+          )}
+          {slide.corpo && (
+            <div
+              style={{
+                fontFamily: fonteTexto,
+                fontSize: tam.corpo,
+                fontWeight: 400,
+                lineHeight: 1.34,
+                letterSpacing: "-0.01em",
+                opacity: slide.titulo ? 0.9 : 1,
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {renderTexto(slide.corpo, slide.destaque)}
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 30, opacity: 0.45 }}>

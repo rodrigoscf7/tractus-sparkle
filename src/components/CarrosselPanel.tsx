@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Download, Images, Loader2, RefreshCw } from "lucide-react";
 import { toPng } from "html-to-image";
 import { CarrosselSlide } from "@/components/CarrosselSlide";
+import { useFontesCarrossel } from "@/hooks/use-fontes-carrossel";
 import {
   fotoAsDataUrl,
   mergeSlides,
@@ -32,6 +33,8 @@ export function CarrosselPanel({
 
   const template = parseTemplate(perfilTemplateRaw);
   const slides = mergeSlides(carrossel);
+  // A exportação só sai na fonte certa com o CSS embutido (ver carrossel-fontes).
+  const fontes = useFontesCarrossel(template.fonte_titulo, template.fonte_texto);
 
   async function load() {
     const { data } = await supabase
@@ -72,6 +75,7 @@ export function CarrosselPanel({
         height: 1350,
         pixelRatio: 1,
         style: { transform: "none" },
+        fontEmbedCSS: fontes.css,
       });
       const a = document.createElement("a");
       a.href = dataUrl;
@@ -99,7 +103,7 @@ export function CarrosselPanel({
         </h2>
         <div className="flex flex-wrap gap-2">
           {slides.length > 0 && (
-            <Button variant="outline" size="sm" onClick={baixarTodos}>
+            <Button variant="outline" size="sm" onClick={baixarTodos} disabled={!fontes.pronto}>
               <Download className="w-4 h-4 mr-2" /> Baixar todos
             </Button>
           )}
@@ -123,8 +127,8 @@ export function CarrosselPanel({
 
       {templateIncompleto && (
         <p className="text-xs text-muted-foreground mb-4">
-          Configure arroba, foto e cores em <strong>Perfis → Template do carrossel</strong> para os
-          slides saírem com a identidade certa.
+          Configure arroba, foto, cores e fontes em <strong>Perfis → Template do carrossel</strong>{" "}
+          para os slides saírem com a identidade certa.
         </p>
       )}
 
@@ -136,15 +140,22 @@ export function CarrosselPanel({
         <p className="text-sm text-muted-foreground italic">Carregando...</p>
       ) : slides.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">
-          Nenhum carrossel gerado. A copy adapta o roteiro aprovado em slides e o visual define a
-          ênfase de cada um.
+          Nenhum carrossel gerado. A prevIA parte da tese do roteiro e escreve um carrossel próprio
+          para leitura: capa que prende, uma ideia por slide e um fechamento que vale salvar.
         </p>
       ) : (
         <>
-          {carrossel?.visual?.observacao_geral && (
+          {carrossel?.copy?.formato ? (
             <p className="text-sm text-muted-foreground mb-4">
-              {carrossel.visual.observacao_geral}
+              <span className="font-medium text-foreground">{carrossel.copy.formato}.</span>{" "}
+              {carrossel.copy.estrategia}
             </p>
+          ) : (
+            carrossel?.visual?.observacao_geral && (
+              <p className="text-sm text-muted-foreground mb-4">
+                {carrossel.visual.observacao_geral}
+              </p>
+            )
           )}
           <div className="flex gap-4 overflow-x-auto pb-3">
             {slides.map((s, i) => (
@@ -155,7 +166,8 @@ export function CarrosselPanel({
                   </Badge>
                   <button
                     onClick={() => baixar(i)}
-                    className="text-xs text-muted-foreground hover:text-foreground"
+                    disabled={!fontes.pronto}
+                    className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
                   >
                     baixar
                   </button>

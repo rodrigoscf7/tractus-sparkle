@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { FONTE_PADRAO, fonteDoId } from "@/lib/carrossel-fontes";
 
 export const FOTO_BUCKET = "perfil-fotos";
 
@@ -9,6 +10,10 @@ export type TemplateCarrossel = {
   verificado: boolean;
   cor_fundo: string;
   cor_texto: string;
+  /** Id de FONTES_CARROSSEL usado nos títulos. */
+  fonte_titulo: string;
+  /** Id de FONTES_CARROSSEL usado no corpo dos slides. */
+  fonte_texto: string;
 };
 
 export const TEMPLATE_DEFAULT: TemplateCarrossel = {
@@ -18,6 +23,8 @@ export const TEMPLATE_DEFAULT: TemplateCarrossel = {
   verificado: true,
   cor_fundo: "#0F172A",
   cor_texto: "#FFFFFF",
+  fonte_titulo: FONTE_PADRAO,
+  fonte_texto: FONTE_PADRAO,
 };
 
 export function parseTemplate(raw: unknown): TemplateCarrossel {
@@ -29,6 +36,9 @@ export function parseTemplate(raw: unknown): TemplateCarrossel {
     verificado: t.verificado ?? true,
     cor_fundo: t.cor_fundo || TEMPLATE_DEFAULT.cor_fundo,
     cor_texto: t.cor_texto || TEMPLATE_DEFAULT.cor_texto,
+    // Id desconhecido (fonte removida da lista) cai na padrão.
+    fonte_titulo: fonteDoId(t.fonte_titulo).id,
+    fonte_texto: fonteDoId(t.fonte_texto).id,
   };
 }
 
@@ -47,28 +57,52 @@ export async function fotoAsDataUrl(path: string): Promise<string> {
 
 export type CarrosselSlideData = {
   tipo?: string;
-  texto: string;
+  titulo?: string;
+  corpo?: string;
   destaque?: string;
-  ritmo?: string;
+};
+
+type SlideCopy = {
+  tipo?: string;
+  titulo?: string;
+  corpo?: string;
+  destaque?: string;
+  /** Formato antigo: um texto só por slide. */
+  texto?: string;
 };
 
 export type CarrosselRow = {
   id: string;
   status: string;
   erro: string | null;
-  copy: { slides?: Array<{ tipo?: string; texto?: string }>; legenda_sugerida?: string } | null;
-  visual: { slides?: Array<{ destaque?: string; ritmo?: string }>; observacao_geral?: string } | null;
+  copy: {
+    formato?: string;
+    estrategia?: string;
+    slides?: SlideCopy[];
+    legenda_sugerida?: string;
+  } | null;
+  visual: {
+    slides?: Array<{ destaque?: string; ritmo?: string }>;
+    observacao_geral?: string;
+  } | null;
 };
+
+/** Capa e hook são títulos; no formato antigo, o resto era corpo. */
+const TIPOS_TITULO = new Set(["capa", "hook"]);
 
 export function mergeSlides(carrossel: CarrosselRow | null | undefined): CarrosselSlideData[] {
   const copySlides = carrossel?.copy?.slides ?? [];
   const visualSlides = carrossel?.visual?.slides ?? [];
   return copySlides
-    .filter((s) => s?.texto)
-    .map((s, i) => ({
-      tipo: s.tipo,
-      texto: String(s.texto),
-      destaque: visualSlides[i]?.destaque ?? "",
-      ritmo: visualSlides[i]?.ritmo ?? "",
-    }));
+    .map((s, i): CarrosselSlideData => {
+      const antigo = !s.titulo && !s.corpo && s.texto;
+      return {
+        tipo: s.tipo,
+        titulo: antigo ? (TIPOS_TITULO.has(s.tipo ?? "") ? s.texto : undefined) : s.titulo,
+        corpo: antigo ? (TIPOS_TITULO.has(s.tipo ?? "") ? undefined : s.texto) : s.corpo,
+        // Carrosséis novos trazem o destaque na copy; os antigos, no passo visual.
+        destaque: s.destaque ?? visualSlides[i]?.destaque ?? "",
+      };
+    })
+    .filter((s) => s.titulo || s.corpo);
 }
