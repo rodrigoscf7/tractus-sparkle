@@ -7,7 +7,6 @@ import {
   Users,
   LogOut,
   Menu,
-  CheckCheck,
   Moon,
   Sun,
   CreditCard,
@@ -109,9 +108,6 @@ function AuthenticatedLayout() {
         </NavLink>
         <NavLink to="/plano" icon={<CalendarRange className="w-4 h-4" />}>
           Plano da semana
-        </NavLink>
-        <NavLink to="/curadoria" icon={<CheckCheck className="w-4 h-4" />}>
-          Curadoria
         </NavLink>
         <NavLink to="/pipeline" icon={<LayoutGrid className="w-4 h-4" />}>
           Acompanhar

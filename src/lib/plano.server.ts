@@ -40,6 +40,16 @@ export async function criarPlanoDaConta(contaId: string): Promise<string> {
     .maybeSingle();
   if (recente?.id) return recente.id;
 
+  // Trial expirado volta para 'free': sem assinatura, sem plano (e sem custo).
+  const { data: conta } = await db
+    .from("contas")
+    .select("status, plano_codigo")
+    .eq("id", contaId)
+    .maybeSingle();
+  if (!conta || conta.status !== "ativa" || conta.plano_codigo === "free") {
+    throw new Error("Sua assinatura não está ativa. Assine para receber o plano da semana.");
+  }
+
   const { data: onboarding } = await db
     .from("onboarding_respostas")
     .select("perfil_id, concluido_em")

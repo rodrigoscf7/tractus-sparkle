@@ -104,7 +104,7 @@ export function SininhoNotificacoes() {
           ) : (
             <>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Avisamos quando a curadoria e as pautas estiverem prontas pra você aprovar.
+                Avisamos quando o plano da semana e os roteiros estiverem prontos pra você aprovar.
               </p>
               <button
                 type="button"

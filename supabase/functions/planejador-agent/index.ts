@@ -145,12 +145,19 @@ async function respostasDoOnboarding(db: Db, contaId: string) {
 // ---------------------------------------------------------------------------
 
 async function handlesDaConta(db: Db, contaId: string): Promise<string[]> {
-  const { data: refs } = await db
-    .from("perfis_referencia")
-    .select("handle")
-    .eq("conta_id", contaId)
-    .eq("ativo", true);
-  const proprias = (refs ?? []).map((r) => String(r.handle)).filter(Boolean);
+  const [{ data: refs }, { data: conta }] = await Promise.all([
+    db.from("perfis_referencia")
+      .select("handle")
+      .eq("conta_id", contaId)
+      .eq("ativo", true)
+      .order("criado_em"),
+    db.from("contas").select("planos:planos(limite_referencias)").eq("id", contaId).maybeSingle(),
+  ]);
+  // O limite do plano vale também aqui: a coleta é o custo que cresce por referência.
+  const limite = Number(
+    (conta as { planos?: { limite_referencias?: number } | null } | null)?.planos?.limite_referencias ?? 5,
+  );
+  const proprias = (refs ?? []).map((r) => String(r.handle)).filter(Boolean).slice(0, limite);
   if (proprias.length) return proprias;
 
   // Sem referências próprias: usa o catálogo da área de atuação.
