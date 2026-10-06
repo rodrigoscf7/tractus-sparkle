@@ -20,6 +20,7 @@ import { useIsPlatformAdmin } from "@/hooks/use-platform-admin";
 import { ICONE_MARCA, LOGO_FUNDO_CLARO, LOGO_FUNDO_ESCURO, MARCA_ALT } from "@/lib/marca";
 import { SininhoNotificacoes } from "@/components/notificacoes/SininhoNotificacoes";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { AssistenteSuporte } from "@/components/suporte/AssistenteSuporte";
 
 /**
  * Onboarding concluído nunca volta a ficar pendente, então basta confirmar uma
@@ -190,6 +191,8 @@ function AuthenticatedLayout() {
           <Outlet />
         </main>
       </div>
+
+      <AssistenteSuporte />
     </div>
   );
 }

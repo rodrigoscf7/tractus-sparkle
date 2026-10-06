@@ -1403,6 +1403,124 @@ export type Database = {
           },
         ]
       }
+      suporte_chamados: {
+        Row: {
+          conta_id: string
+          conversa_id: string | null
+          criado_em: string
+          id: string
+          resolvido_em: string | null
+          resumo: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          conta_id: string
+          conversa_id?: string | null
+          criado_em?: string
+          id?: string
+          resolvido_em?: string | null
+          resumo: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          conta_id?: string
+          conversa_id?: string | null
+          criado_em?: string
+          id?: string
+          resolvido_em?: string | null
+          resumo?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suporte_chamados_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suporte_chamados_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "suporte_conversas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suporte_conversas: {
+        Row: {
+          atualizado_em: string
+          conta_id: string
+          criado_em: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          conta_id: string
+          criado_em?: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          conta_id?: string
+          criado_em?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suporte_conversas_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suporte_mensagens: {
+        Row: {
+          acao: Json | null
+          conteudo: string
+          conversa_id: string
+          criado_em: string
+          id: string
+          papel: string
+        }
+        Insert: {
+          acao?: Json | null
+          conteudo?: string
+          conversa_id: string
+          criado_em?: string
+          id?: string
+          papel: string
+        }
+        Update: {
+          acao?: Json | null
+          conteudo?: string
+          conversa_id?: string
+          criado_em?: string
+          id?: string
+          papel?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suporte_mensagens_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "suporte_conversas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           criado_em: string

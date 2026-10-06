@@ -97,10 +97,15 @@ function diaSaoPaulo(): string {
  * Push imediato aos admins da plataforma (com inscrição PWA), no máximo 1×
  * por chave/dia. Falha de envio não propaga — só log.
  */
-export async function alertarAdminFalha(agente: string, mensagem: string) {
+/**
+ * `chaveUnica` troca o agrupamento por categoria (um push por tipo de falha por
+ * dia) por um push por evento: o chamado de suporte não pode ser engolido pelo
+ * chamado anterior do mesmo dia.
+ */
+export async function alertarAdminFalha(agente: string, mensagem: string, chaveUnica?: string) {
   try {
     const supabase = getServiceClient();
-    const chave = chaveAlertaAdmin(agente, mensagem);
+    const chave = chaveUnica ?? chaveAlertaAdmin(agente, mensagem);
     const dia = diaSaoPaulo();
 
     const { error: dedupeError } = await supabase
@@ -383,6 +388,109 @@ export async function callModelo(
   return text;
 }
 
+
+export type FerramentaModelo = {
+  nome: string;
+  descricao: string;
+  /** JSON Schema dos argumentos. */
+  parametros: Record<string, unknown>;
+};
+
+export type MensagemConversa = { papel: "usuario" | "assistente"; texto: string };
+
+export type RespostaComFerramentas = {
+  texto: string;
+  /** No máximo uma chamada é usada: a ação proposta da vez. */
+  chamada: { nome: string; args: Record<string, unknown> } | null;
+};
+
+/**
+ * Conversa com ferramentas (tool calling do OpenRouter, formato OpenAI).
+ *
+ * O system vai em bloco com `cache_control`: o manual do app é longo e igual em
+ * toda mensagem, e o cache do provedor cobra uma fração na leitura repetida.
+ * `contexto` entra fora do cache, porque muda a cada mensagem.
+ */
+export async function chamarModeloComFerramentas(input: {
+  system: string;
+  contexto: string;
+  mensagens: MensagemConversa[];
+  ferramentas: FerramentaModelo[];
+  model: string;
+  maxTokens?: number;
+}): Promise<RespostaComFerramentas> {
+  const key = Deno.env.get("OPENROUTER_API_KEY");
+  if (!key) throw new Error("OPENROUTER_API_KEY missing");
+
+  const res = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "content-type": "application/json",
+      "X-Title": "Tractus Content Hub",
+    },
+    body: JSON.stringify({
+      model: input.model,
+      max_tokens: input.maxTokens ?? 1200,
+      reasoning: { effort: "low" },
+      messages: [
+        {
+          role: "system",
+          content: [
+            { type: "text", text: input.system, cache_control: { type: "ephemeral" } },
+            { type: "text", text: input.contexto },
+          ],
+        },
+        ...input.mensagens.map((m) => ({
+          role: m.papel === "usuario" ? "user" : "assistant",
+          content: m.texto,
+        })),
+      ],
+      tools: input.ferramentas.map((f) => ({
+        type: "function",
+        function: { name: f.nome, description: f.descricao, parameters: f.parametros },
+      })),
+      tool_choice: "auto",
+    }),
+  });
+
+  if (!res.ok) {
+    const t = await res.text();
+    let message = t;
+    try {
+      message = JSON.parse(t)?.error?.message ?? t;
+    } catch {
+      // mantém o texto cru
+    }
+    throw new Error(`OpenRouter error ${res.status}: ${message}`);
+  }
+  const data = await res.json();
+  if (data?.error) {
+    throw new Error(`OpenRouter error: ${data.error.message ?? JSON.stringify(data.error)}`);
+  }
+
+  await registrarCustoModelo(
+    Number(data?.usage?.prompt_tokens ?? 0),
+    Number(data?.usage?.completion_tokens ?? 0),
+    input.model,
+  );
+
+  const mensagem = data?.choices?.[0]?.message ?? {};
+  const texto = textoDoContent(mensagem.content).trim();
+  const bruta = Array.isArray(mensagem.tool_calls) ? mensagem.tool_calls[0] : null;
+  let chamada: RespostaComFerramentas["chamada"] = null;
+  if (bruta?.function?.name) {
+    let args: Record<string, unknown> = {};
+    try {
+      args = JSON.parse(bruta.function.arguments || "{}");
+    } catch {
+      args = {};
+    }
+    chamada = { nome: String(bruta.function.name), args };
+  }
+  if (!texto && !chamada) throw new Error("Modelo devolveu resposta vazia");
+  return { texto, chamada };
+}
 
 export function formatAgentError(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error);

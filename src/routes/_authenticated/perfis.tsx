@@ -295,8 +295,8 @@ function PerfisPage() {
           <Card className="p-6 bg-surface border-border">
             <h2 className="font-display font-semibold text-lg mb-1">Onde buscar repertório</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Perfis do Instagram que a prevIA lê toda manhã atrás de assunto. Ela nunca copia —
-              usa como matéria-prima para escrever com a sua voz.
+              Perfis do Instagram que a prevIA analisa toda semana para montar o seu plano. Ela
+              nunca copia: transporta o que funcionou para o seu nicho e a sua voz.
             </p>
             <div className="flex gap-2 mb-4">
               <Input

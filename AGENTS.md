@@ -21,8 +21,15 @@ A URL do projeto, a apikey e o segredo interno dos agentes vêm do Vault do Supa
 (`agent_base_url`, `agent_apikey`, `agent_internal_secret`), lidos por
 `public.agent_secret()`. Não escreva esses valores em SQL versionado.
 
+## Assistente de suporte
+
+O assistente dentro do app só sabe o que está em
+`supabase/functions/_shared/ajuda.ts`. Ao mudar uma tela, um fluxo, um limite ou um
+rótulo de botão, atualize esse manual no mesmo PR. As ações que ele pode propor
+ficam em `suporte-agent` (validação) e `src/lib/suporte.server.ts` (execução).
+
 ## Edge Functions
 
-As seis funções em `supabase/functions/` rodam com `verify_jwt = false` porque fazem
+As funções em `supabase/functions/` rodam com `verify_jwt = false` porque fazem
 a própria autenticação em `_shared/agent-utils.ts`: aceitam o header `x-agent-secret`
 (usado pelos cron jobs e triggers via pg_net) ou um JWT de usuário com role admin.

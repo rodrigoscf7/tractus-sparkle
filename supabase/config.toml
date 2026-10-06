@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.planejador-agent]
 verify_jwt = false
+
+[functions.suporte-agent]
+verify_jwt = false
