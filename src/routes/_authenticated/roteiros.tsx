@@ -15,6 +15,7 @@ import {
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "@/components/estados";
 import { BotaoCarrossel } from "@/components/roteiro/BotaoCarrossel";
 import { BotaoPostado } from "@/components/roteiro/BotaoPostado";
+import { BotaoGravar } from "@/components/roteiro/ModoGravacao";
 import { useConta } from "@/hooks/use-conta";
 import { copiarTexto } from "@/lib/copiar";
 import { dataCurta, dataLocalCurta, diaDaSemana } from "@/lib/datas";
@@ -380,7 +381,16 @@ function CartaoRoteiro({
       ) : (
         <>
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Button size="sm" variant={etapa === "para-ler" ? "default" : "outline"} asChild>
+            {etapa === "para-gravar" && (
+              <BotaoGravar texto={texto} titulo={pauta.tema ?? "Roteiro"} />
+            )}
+            <Button
+              size="sm"
+              variant={
+                etapa === "para-ler" ? "default" : etapa === "para-gravar" ? "ghost" : "outline"
+              }
+              asChild
+            >
               <Link to="/aprovacao/$pautaId" params={{ pautaId: pauta.id }}>
                 {etapa === "para-ler" ? "Ler e aprovar" : "Abrir roteiro"}
               </Link>

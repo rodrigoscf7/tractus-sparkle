@@ -15,6 +15,7 @@ import { EstadoCarregando, EstadoErro } from "@/components/estados";
 import { mensagemErro } from "@/lib/mensagem-erro";
 import { nomeStatusPauta } from "@/lib/vocabulario";
 import { copiarTexto } from "@/lib/copiar";
+import { BotaoGravar } from "@/components/roteiro/ModoGravacao";
 import { temRoteiroEscrito, textoDoRoteiro } from "@/lib/roteiro";
 
 function RawFallback({ data }: { data: unknown }) {
@@ -30,7 +31,7 @@ function RawFallback({ data }: { data: unknown }) {
   );
 }
 
-function RoteiroView({ conteudo }: { conteudo: any }) {
+function RoteiroView({ conteudo, titulo }: { conteudo: any; titulo: string }) {
   if (!conteudo || typeof conteudo !== "object") return <RawFallback data={conteudo} />;
 
   const t = textoDoRoteiro(conteudo);
@@ -53,14 +54,17 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
             <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
               Roteiro para gravar
             </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs"
-              onClick={() => copiarTexto(falaContinua, "Roteiro copiado")}
-            >
-              <Copy className="w-3 h-3 mr-1" /> Copiar fala
-            </Button>
+            <div className="flex items-center gap-1">
+              <BotaoGravar texto={t} titulo={titulo} variant="ghost" className="h-7 px-2 text-xs" />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs"
+                onClick={() => copiarTexto(falaContinua, "Roteiro copiado")}
+              >
+                <Copy className="w-3 h-3 mr-1" /> Copiar fala
+              </Button>
+            </div>
           </div>
 
           {gancho_falado && (
@@ -504,7 +508,7 @@ function AprovacaoPage() {
             Roteiro
           </h2>
           {roteiro?.conteudo ? (
-            <RoteiroView conteudo={roteiro.conteudo} />
+            <RoteiroView conteudo={roteiro.conteudo} titulo={pauta.tema ?? "Roteiro"} />
           ) : (
             <p className="text-sm text-muted-foreground italic">Aguardando produção.</p>
           )}

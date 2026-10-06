@@ -15,6 +15,7 @@ import {
   Loader2,
   Copy,
 } from "lucide-react";
+import { BotaoGravar } from "@/components/roteiro/ModoGravacao";
 import { BotaoPostado } from "@/components/roteiro/BotaoPostado";
 import { copiarTexto } from "@/lib/copiar";
 import { textoDoRoteiro } from "@/lib/roteiro";
@@ -182,13 +183,20 @@ function AcaoDeHoje({
         destaque
       >
         <div className="flex flex-wrap gap-2">
-          <Button asChild>
+          <BotaoGravar
+            texto={texto}
+            titulo={pauta.tema ?? "Roteiro"}
+            rotulo="Gravar agora"
+            variant="default"
+            size="default"
+          />
+          <Button variant={texto?.fala ? "outline" : "default"} asChild>
             <Link to="/aprovacao/$pautaId" params={{ pautaId: pauta.id }}>
               Ver o roteiro <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
           </Button>
           {texto?.fala && (
-            <Button variant="outline" onClick={() => copiarTexto(texto.fala, "Fala copiada")}>
+            <Button variant="ghost" onClick={() => copiarTexto(texto.fala, "Fala copiada")}>
               <Copy className="w-4 h-4 mr-1.5" /> Copiar a fala
             </Button>
           )}

@@ -32,7 +32,7 @@ O número ao lado de Roteiros é quantos roteiros estão esperando leitura. A bo
 
 ## Hoje (/hoje)
 Mostra uma ação por vez, na ordem do que está mais perto de virar post:
-1. "Grave hoje": roteiro aprovado esperando gravação. O cartão tem "Ver o roteiro", "Copiar a fala" e "Marcar como postado".
+1. "Grave hoje": roteiro aprovado esperando gravação. O cartão tem "Gravar agora" (abre o modo gravação), "Ver o roteiro", "Copiar a fala" e "Marcar como postado".
 2. "Esperando você": roteiro pronto para ler e aprovar.
 3. "Seu plano chegou": plano da semana pronto para aprovar.
 4. "Montando seu plano": o plano está sendo preparado.
@@ -69,6 +69,15 @@ Cada cartão tem o dia previsto do vídeo e atalhos: "Ler e aprovar" ou "Abrir r
 - Recusar: exige um motivo (tom, tema, formato, gancho ou outro) e um comentário opcional. A prevIA usa os motivos para acertar nos próximos roteiros.
 - Depois de postar no Instagram, usar "Marcar como postado": isso conta para a semana do ritmo e a sequência na tela Hoje.
 - O botão "Roteiros" no topo volta para a lista de roteiros.
+
+## Modo gravação (teleprompter)
+- Mostra só a fala do roteiro (gancho, desenvolvimento e fechamento) em letra grande, em tela escura, rolando sozinha, para gravar lendo no celular.
+- Onde abrir: "Gravar agora" no cartão "Grave hoje" da tela Hoje; "Gravar" nos cartões de Roteiros que estão em Para gravar; e "Gravar" ao lado de "Copiar fala" na tela do roteiro.
+- "Começar" faz uma contagem de 3 segundos e começa a rolar. Tocar no texto ou em "Pausar" para; "Continuar" retoma. No fim aparece "Do começo".
+- Velocidade e tamanho da letra têm botões − e + no rodapé; as escolhas ficam lembradas no aparelho. No computador: barra de espaço pausa e continua, setas para cima e para baixo mudam a velocidade, Esc fecha.
+- A linha amarela à esquerda marca onde ler, no alto da tela, perto da câmera frontal. Com o texto parado dá para rolar com o dedo.
+- A tela fica acesa enquanto o modo gravação está aberto (nos navegadores que permitem).
+- O modo gravação não grava o vídeo: a pessoa grava com a câmera do celular ou outro app, lendo a tela.
 
 ## Carrossel
 - Pode ser gerado assim que o roteiro estiver escrito, sem precisar aprovar o roteiro antes: na tela do roteiro (seção Carrossel, logo abaixo do roteiro), botão "Gerar carrossel", direto no cartão em Roteiros ou no Plano da semana, ou na tela Carrosséis. "Regerar" escreve de novo. Enquanto o roteiro ainda está sendo escrito, não dá para gerar. Leva até 2 minutos.
