@@ -27,6 +27,7 @@ import {
   criarContaConvidado,
 } from "@/lib/billing.functions";
 import { enviarNotificacaoTeste } from "@/lib/notificacoes.functions";
+import { ChamadosSuporte } from "@/components/suporte/ChamadosSuporte";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -132,6 +133,7 @@ function AdminPage() {
           <TabsTrigger value="custos">Custos</TabsTrigger>
           <TabsTrigger value="kiwify">Cobrança</TabsTrigger>
           <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
+          <TabsTrigger value="suporte">Suporte</TabsTrigger>
         </TabsList>
 
         {/* ---------------- FINANCEIRO ---------------- */}
@@ -721,6 +723,11 @@ function AdminPage() {
               )}
             </div>
           </Card>
+        </TabsContent>
+
+        {/* ---------------- SUPORTE ---------------- */}
+        <TabsContent value="suporte" className="mt-5">
+          <ChamadosSuporte />
         </TabsContent>
       </Tabs>
     </div>

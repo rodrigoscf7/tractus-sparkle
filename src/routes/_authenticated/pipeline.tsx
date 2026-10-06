@@ -137,10 +137,10 @@ function PipelinePage() {
       {!isLoading && !isError && filtradas.length === 0 && (
         <EstadoVazio
           titulo="Nenhuma pauta por aqui ainda"
-          descricao="As pautas aparecem assim que você escolher, na curadoria, quais assuntos valem virar post seu."
+          descricao="Os vídeos aparecem aqui quando você aprova o plano da semana: cada um vira um roteiro e você acompanha as etapas."
           acao={
             <Button asChild>
-              <Link to="/curadoria">Escolher assuntos</Link>
+              <Link to="/plano">Ver o plano da semana</Link>
             </Button>
           }
         />
