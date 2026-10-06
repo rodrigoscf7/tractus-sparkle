@@ -31,7 +31,7 @@ O número ao lado de Roteiros é quantos roteiros estão esperando leitura. A bo
 
 ## Hoje (/hoje)
 Mostra uma ação por vez, na ordem do que está mais perto de virar post:
-1. "Grave hoje": roteiro aprovado esperando gravação.
+1. "Grave hoje": roteiro aprovado esperando gravação. O cartão tem "Ver o roteiro", "Copiar a fala" e "Marcar como postado".
 2. "Esperando você": roteiro pronto para ler e aprovar.
 3. "Seu plano chegou": plano da semana pronto para aprovar.
 4. "Montando seu plano": o plano está sendo preparado.
@@ -50,15 +50,23 @@ Abaixo, a semana do ritmo (dias de postar) e a sequência de semanas cumpridas.
 - Plano com erro: geralmente as referências não puderam ser lidas (perfil privado, nome digitado errado ou instabilidade do Instagram). Conferir as referências em Configurações e usar "Tentar de novo".
 - No fim da tela: os padrões encontrados nos virais e a lista dos posts analisados, com link para o post original e quantas vezes ele foi acima do normal.
 
-## Roteiros e aprovação (/aprovacao/<id>)
+## Roteiros (/roteiros)
+Todos os roteiros da pessoa, em três etapas (no computador, lado a lado; no celular, em abas):
+- Para ler: roteiros escritos esperando a leitura e a aprovação. Os que a prevIA ainda está escrevendo aparecem no fim dessa etapa, com "A prevIA está escrevendo este roteiro…".
+- Para gravar: roteiros aprovados que ainda não foram postados.
+- Postados: os que já foram marcados como postados, com a data.
+Os recusados ficam fora das etapas, no botão "Ver recusados" no topo.
+Cada cartão tem o dia previsto do vídeo e atalhos: "Ler e aprovar" ou "Abrir roteiro", "Copiar" (o roteiro inteiro com a legenda), "Marcar como postado" (em Para gravar; o aviso tem "Desfazer") e o carrossel ("Gerar carrossel", "Gerando carrossel…", "Ver carrossel" ou "Tentar o carrossel de novo").
+
+## Tela do roteiro (/aprovacao/<id>)
 - Cada roteiro tem: gancho falado, desenvolvimento, CTA falado, legenda sugerida e direção de gravação (expressão, enquadramento, apoios no meio do vídeo). Há botões para copiar cada parte ou tudo.
 - Aprovar: libera para gravar ("Aprovado, já pode gravar").
 - Recusar: exige um motivo (tom, tema, formato, gancho ou outro) e um comentário opcional. A prevIA usa os motivos para acertar nos próximos roteiros.
 - Depois de postar no Instagram, usar "Marcar como postado": isso conta para a semana do ritmo e a sequência na tela Hoje.
-- A lista de todos os roteiros e em que etapa estão fica em Roteiros (/roteiros).
+- O botão "Roteiros" no topo volta para a lista de roteiros.
 
 ## Carrossel
-- É gerado na tela do roteiro, depois que o roteiro é aprovado: botão "Gerar carrossel". "Regerar" escreve de novo.
+- Pode ser gerado assim que o roteiro estiver escrito, sem precisar aprovar o roteiro antes: na tela do roteiro (seção Carrossel, logo abaixo do roteiro), botão "Gerar carrossel", ou direto no cartão em Roteiros. "Regerar" escreve de novo. Enquanto o roteiro ainda está sendo escrito, não dá para gerar.
 - O carrossel não é o roteiro fatiado: a prevIA escreve um formato próprio para leitura (capa que prende, uma ideia por slide, resumo que vale salvar e CTA). Cada slide tem título e corpo.
 - Baixar: cada slide sai como imagem PNG 1080×1350 (formato 4:5 do Instagram); há "Baixar todos".
 - Aparência (template), em Configurações (/configuracoes) → "Template do carrossel". É preciso clicar em "Salvar" depois de mudar:

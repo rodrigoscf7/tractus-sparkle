@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { temRoteiroEscrito } from "@/lib/roteiro";
 
 /**
  * Disparos de agente feitos pelo cliente.
@@ -10,7 +11,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * não é dele) e só então invoca o agente com o segredo do servidor.
  */
 
-/** Gera ou regera o carrossel de uma pauta aprovada da conta do usuário. */
+/** Gera ou regera o carrossel de uma pauta da conta do usuário, assim que o roteiro estiver escrito. */
 export const gerarCarrossel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { pautaId: string }) => data)
@@ -22,8 +23,8 @@ export const gerarCarrossel = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (!pauta) throw new Error("Pauta não encontrada nesta conta.");
-    if (pauta.status !== "aprovada") {
-      throw new Error("O carrossel só é gerado depois que a pauta é aprovada.");
+    if (!temRoteiroEscrito(pauta.status)) {
+      throw new Error("O carrossel sai assim que o roteiro estiver escrito. Ele ainda está sendo escrito.");
     }
 
     const { invocarAgente } = await import("@/lib/agentes.server");

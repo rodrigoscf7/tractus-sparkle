@@ -14,13 +14,8 @@ import { ArrowLeft, Check, X, Send, Copy } from "lucide-react";
 import { EstadoCarregando, EstadoErro } from "@/components/estados";
 import { mensagemErro } from "@/lib/mensagem-erro";
 import { nomeStatusPauta } from "@/lib/vocabulario";
-
-function copyToClipboard(text: string, label = "Copiado") {
-  navigator.clipboard.writeText(text).then(
-    () => toast.success(label),
-    () => toast.error("O navegador bloqueou a cópia. Selecione o texto e copie à mão."),
-  );
-}
+import { copiarTexto } from "@/lib/copiar";
+import { temRoteiroEscrito, textoDoRoteiro } from "@/lib/roteiro";
 
 function RawFallback({ data }: { data: unknown }) {
   return (
@@ -38,34 +33,17 @@ function RawFallback({ data }: { data: unknown }) {
 function RoteiroView({ conteudo }: { conteudo: any }) {
   if (!conteudo || typeof conteudo !== "object") return <RawFallback data={conteudo} />;
 
-  // Novo formato: reel falado
-  const gancho_falado = conteudo.gancho_falado ?? conteudo.gancho;
-  const desenvolvimento_falado =
-    conteudo.desenvolvimento_falado ??
-    (typeof conteudo.corpo === "string" ? conteudo.corpo : null);
-  const cta_falado = conteudo.cta_falado ?? conteudo.cta;
-  const legenda = conteudo.legenda_sugerida;
-
-  // Fallback p/ conteúdo antigo em slides
-  const corpoSlides = Array.isArray(conteudo.corpo) ? conteudo.corpo : null;
-
-  const hasShape = gancho_falado || desenvolvimento_falado || cta_falado || legenda || corpoSlides;
-  if (!hasShape) return <RawFallback data={conteudo} />;
-
-  const falaContinua = [gancho_falado, desenvolvimento_falado, cta_falado]
-    .filter(Boolean)
-    .join("\n\n");
-
-  const textoPlano = [
-    falaContinua && `ROTEIRO PARA GRAVAR:\n\n${falaContinua}`,
-    corpoSlides &&
-      corpoSlides
-        .map((s: any, i: number) => `Slide ${i + 1}: ${typeof s === "string" ? s : JSON.stringify(s)}`)
-        .join("\n\n"),
-    legenda && `\nLegenda:\n${legenda}`,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  const t = textoDoRoteiro(conteudo);
+  if (!t) return <RawFallback data={conteudo} />;
+  const {
+    gancho: gancho_falado,
+    desenvolvimento: desenvolvimento_falado,
+    cta: cta_falado,
+    legenda,
+    slides: corpoSlides,
+    fala: falaContinua,
+    completo: textoPlano,
+  } = t;
 
   return (
     <div className="space-y-5">
@@ -79,7 +57,7 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
               size="sm"
               variant="ghost"
               className="h-7 px-2 text-xs"
-              onClick={() => copyToClipboard(falaContinua, "Roteiro copiado")}
+              onClick={() => copiarTexto(falaContinua, "Roteiro copiado")}
             >
               <Copy className="w-3 h-3 mr-1" /> Copiar fala
             </Button>
@@ -120,14 +98,12 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
             Corpo em slides
           </div>
           <ol className="space-y-2">
-            {corpoSlides.map((slide: any, i: number) => (
+            {corpoSlides.map((slide, i) => (
               <li key={i} className="p-3 bg-background/40 rounded border border-border/60">
                 <div className="text-[11px] font-mono uppercase tracking-wider text-foreground mb-1">
                   Slide {i + 1}
                 </div>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {typeof slide === "string" ? slide : JSON.stringify(slide, null, 2)}
-                </div>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap">{slide}</div>
               </li>
             ))}
           </ol>
@@ -144,7 +120,7 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
               size="sm"
               variant="ghost"
               className="h-7 px-2 text-xs"
-              onClick={() => copyToClipboard(legenda, "Legenda copiada")}
+              onClick={() => copiarTexto(legenda, "Legenda copiada")}
             >
               <Copy className="w-3 h-3 mr-1" /> Copiar
             </Button>
@@ -160,7 +136,7 @@ function RoteiroView({ conteudo }: { conteudo: any }) {
           size="sm"
           variant="outline"
           className="text-xs"
-          onClick={() => copyToClipboard(textoPlano, "Conteúdo copiado")}
+          onClick={() => copiarTexto(textoPlano, "Conteúdo copiado")}
         >
           <Copy className="w-3 h-3 mr-1.5" /> Copiar tudo
         </Button>
@@ -338,7 +314,7 @@ function BriefingView({ briefing }: { briefing: any }) {
           size="sm"
           variant="outline"
           className="text-xs"
-          onClick={() => copyToClipboard(textoPlano, "Direção copiada")}
+          onClick={() => copiarTexto(textoPlano, "Direção copiada")}
         >
           <Copy className="w-3 h-3 mr-1.5" /> Copiar direção
         </Button>
@@ -350,12 +326,12 @@ function BriefingView({ briefing }: { briefing: any }) {
 export const Route = createFileRoute("/_authenticated/aprovacao/$pautaId")({
   head: () => ({
     meta: [
-      { title: "Aprovação de conteúdo | prevIA - CONTENT" },
+      { title: "Roteiro | prevIA - CONTENT" },
       {
         name: "description",
         content: "Revise roteiro, direção visual e carrossel antes de liberar a publicação.",
       },
-      { property: "og:title", content: "Aprovação de conteúdo | prevIA - CONTENT" },
+      { property: "og:title", content: "Roteiro | prevIA - CONTENT" },
       { property: "og:description", content: "Última etapa humana antes da publicação." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -486,7 +462,7 @@ function AprovacaoPage() {
           descricao="Ele pode ter sido removido, ou a conexão falhou no caminho."
           onTentarDeNovo={() => refetch()}
         />
-        <Button variant="outline" className="mt-4" onClick={() => navigate({ to: "/hoje" })}>
+        <Button variant="outline" className="mt-4" onClick={() => navigate({ to: "/roteiros" })}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
         </Button>
       </div>
@@ -500,10 +476,10 @@ function AprovacaoPage() {
   return (
     <div className="p-4 sm:p-8 max-w-[1400px]">
       <button
-        onClick={() => navigate({ to: "/hoje" })}
+        onClick={() => navigate({ to: "/roteiros" })}
         className="flex items-center gap-2 min-h-11 -ml-2 px-2 rounded-md text-sm text-muted-foreground hover:text-foreground mb-4 sm:mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <ArrowLeft className="w-4 h-4" /> Voltar
+        <ArrowLeft className="w-4 h-4" /> Roteiros
       </button>
 
       <header className="mb-6 sm:mb-8">
@@ -545,6 +521,16 @@ function AprovacaoPage() {
           )}
         </Card>
       </div>
+
+      {/* O carrossel sai do roteiro escrito: não precisa esperar a aprovação. */}
+      {temRoteiroEscrito(pauta.status) && roteiro?.conteudo && (
+        <div id="carrossel" className="scroll-mt-20 mb-8 [&>*]:mt-0">
+          <CarrosselPanel
+            pautaId={pauta.id}
+            perfilTemplateRaw={(pauta as any).perfis?.template_carrossel}
+          />
+        </div>
+      )}
 
       {isAguardando && (
         <Card className="p-6 bg-surface border-border">
@@ -635,12 +621,6 @@ function AprovacaoPage() {
         </Card>
       )}
 
-      {isAprovada && (
-        <CarrosselPanel
-          pautaId={pauta.id}
-          perfilTemplateRaw={(pauta as any).perfis?.template_carrossel}
-        />
-      )}
 
     </div>
   );

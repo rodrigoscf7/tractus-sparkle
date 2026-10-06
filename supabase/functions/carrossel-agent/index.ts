@@ -135,8 +135,9 @@ Deno.serve(async (req) => {
       .eq("id", pauta_id)
       .single();
     if (pautaErr || !pauta) throw new Error("Pauta não encontrada");
-    if (pauta.status !== "aprovada") {
-      throw new Error("O carrossel só pode ser gerado depois da aprovação final da pauta");
+    // Sai assim que o roteiro está escrito: a pessoa não precisa aprovar antes.
+    if (pauta.status !== "aguardando_aprovacao" && pauta.status !== "aprovada") {
+      throw new Error("O roteiro desta pauta ainda está sendo escrito");
     }
 
     const perfil = (pauta as unknown as { perfis: Record<string, unknown> | null }).perfis ?? {};
@@ -173,7 +174,7 @@ Deno.serve(async (req) => {
           .maybeSingle()
         : Promise.resolve({ data: null }),
     ]);
-    if (!roteiro?.conteudo) throw new Error("Roteiro aprovado não encontrado para esta pauta");
+    if (!roteiro?.conteudo) throw new Error("Roteiro não encontrado para esta pauta");
 
     const c = roteiro.conteudo as Record<string, unknown>;
     const roteiroTexto = [

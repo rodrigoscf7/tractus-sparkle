@@ -6,7 +6,18 @@ import { Button } from "@/components/ui/button";
 import { EstadoCarregando, EstadoErro } from "@/components/estados";
 import { PautaDaSemana } from "@/components/hoje/PautaDaSemana";
 import { RITMO_PADRAO, pautaDaSemana, semanasSeguidas, type PublicacaoPostada } from "@/lib/ritmo";
-import { Video, CheckCheck, Sparkles, ArrowRight, CalendarRange, Loader2 } from "lucide-react";
+import {
+  Video,
+  CheckCheck,
+  Sparkles,
+  ArrowRight,
+  CalendarRange,
+  Loader2,
+  Copy,
+} from "lucide-react";
+import { BotaoPostado } from "@/components/roteiro/BotaoPostado";
+import { copiarTexto } from "@/lib/copiar";
+import { textoDoRoteiro } from "@/lib/roteiro";
 import { usePlanoAtual, type PlanoAtual } from "@/hooks/use-plano";
 import { PLANO_EM_ANDAMENTO } from "@/lib/plano";
 
@@ -32,7 +43,12 @@ type PublicacaoComPauta = {
   status: string | null;
   postado_em: string | null;
   pauta_id: string | null;
-  pautas_geradas: { id: string; tema: string | null; angulo: string | null } | null;
+  pautas_geradas: {
+    id: string;
+    tema: string | null;
+    angulo: string | null;
+    roteiros: { conteudo: unknown; criado_em: string | null }[];
+  } | null;
 };
 
 /**
@@ -56,7 +72,9 @@ function HojePage() {
           .maybeSingle(),
         supabase
           .from("publicacoes")
-          .select("id, status, postado_em, pauta_id, pautas_geradas:pautas_geradas(id,tema,angulo)")
+          .select(
+            "id, status, postado_em, pauta_id, pautas_geradas:pautas_geradas(id,tema,angulo,roteiros(conteudo,criado_em))",
+          )
           .order("criado_em", { ascending: false })
           .limit(200),
         supabase
@@ -151,6 +169,10 @@ function AcaoDeHoje({
 }) {
   if (gravar?.pautas_geradas) {
     const pauta = gravar.pautas_geradas;
+    const roteiro = [...pauta.roteiros].sort((a, b) =>
+      (b.criado_em ?? "").localeCompare(a.criado_em ?? ""),
+    )[0];
+    const texto = textoDoRoteiro(roteiro?.conteudo);
     return (
       <Cartao
         etiqueta="Grave hoje"
@@ -159,11 +181,19 @@ function AcaoDeHoje({
         apoio={pauta.angulo}
         destaque
       >
-        <Button asChild>
-          <Link to="/aprovacao/$pautaId" params={{ pautaId: pauta.id }}>
-            Ver o roteiro <ArrowRight className="w-4 h-4 ml-1" />
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild>
+            <Link to="/aprovacao/$pautaId" params={{ pautaId: pauta.id }}>
+              Ver o roteiro <ArrowRight className="w-4 h-4 ml-1" />
+            </Link>
+          </Button>
+          {texto?.fala && (
+            <Button variant="outline" onClick={() => copiarTexto(texto.fala, "Fala copiada")}>
+              <Copy className="w-4 h-4 mr-1.5" /> Copiar a fala
+            </Button>
+          )}
+          <BotaoPostado pautaId={pauta.id} variant="ghost" />
+        </div>
       </Cartao>
     );
   }
@@ -296,6 +326,7 @@ function EsperandoVoce({
         {aprovacoesPendentes > 0 && (
           <LinhaPendencia
             para="/roteiros"
+            busca={{ aba: "para-ler" }}
             contagem={aprovacoesPendentes}
             singular="roteiro para aprovar"
             plural="roteiros para aprovar"
@@ -308,11 +339,13 @@ function EsperandoVoce({
 
 function LinhaPendencia({
   para,
+  busca,
   contagem,
   singular,
   plural,
 }: {
   para: string;
+  busca?: Record<string, string>;
   contagem: number;
   singular: string;
   plural: string;
@@ -320,6 +353,7 @@ function LinhaPendencia({
   return (
     <Link
       to={para}
+      search={busca as never}
       className="flex items-center justify-between gap-3 min-h-14 px-4 rounded-lg border border-border bg-surface hover:border-primary/40 transition motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       <span className="text-sm">

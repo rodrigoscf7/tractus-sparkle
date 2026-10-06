@@ -10,6 +10,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 import type { AcaoSuporte } from "@/lib/suporte";
+import { temRoteiroEscrito } from "@/lib/roteiro";
 
 type Ctx = {
   supabase: SupabaseClient<Database>;
@@ -160,8 +161,8 @@ export async function executarAcao(ctx: Ctx, acao: AcaoSuporte): Promise<string>
         .eq("id", pautaId)
         .maybeSingle();
       if (!pauta) throw new Error("Roteiro não encontrado na sua conta.");
-      if (pauta.status !== "aprovada")
-        throw new Error("O carrossel só sai de um roteiro aprovado.");
+      if (!temRoteiroEscrito(pauta.status))
+        throw new Error("O carrossel sai assim que o roteiro estiver escrito. Ele ainda está sendo escrito.");
       const { invocarAgente } = await import("@/lib/agentes.server");
       const r = await invocarAgente(
         "carrossel-agent",

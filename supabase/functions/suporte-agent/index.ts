@@ -118,7 +118,7 @@ async function montarRetrato(db: Db, contaId: string, userId: string, rota: stri
     db.from("perfis_referencia").select("id, handle, ativo").eq("conta_id", contaId).order("criado_em"),
     db.from("planos_semanais").select("id, status, erro, semana_inicio, criado_em, relatorio").eq("conta_id", contaId).order("criado_em", { ascending: false }).limit(1).maybeSingle(),
     db.from("pautas_geradas").select("id, tema").eq("conta_id", contaId).eq("status", "aguardando_aprovacao").order("criado_em", { ascending: false }).limit(5),
-    db.from("pautas_geradas").select("id, tema, carrosseis:carrosseis(id)").eq("conta_id", contaId).eq("status", "aprovada").order("criado_em", { ascending: false }).limit(5),
+    db.from("pautas_geradas").select("id, tema, carrosseis:carrosseis(id)").eq("conta_id", contaId).in("status", ["aguardando_aprovacao", "aprovada"]).order("criado_em", { ascending: false }).limit(5),
     db.from("push_subscriptions").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
 
@@ -171,7 +171,7 @@ async function montarRetrato(db: Db, contaId: string, userId: string, rota: stri
   }
   linhas.push(
     `- Roteiros esperando aprovação: ${(pautasEspera ?? []).length ? (pautasEspera ?? []).map((p) => `${p.tema} (/aprovacao/${p.id})`).join("; ") : "nenhum"}`,
-    `- Roteiros aprovados recentes: ${aprovadas.length ? aprovadas.map((p) => `[ref ${p.id}] ${p.tema}, carrossel: ${p.temCarrossel ? "já gerado" : "não gerado"}`).join("; ") : "nenhum"}`,
+    `- Roteiros já escritos recentes (para ler ou aprovados): ${aprovadas.length ? aprovadas.map((p) => `[ref ${p.id}] ${p.tema}, carrossel: ${p.temCarrossel ? "já gerado" : "não gerado"}`).join("; ") : "nenhum"}`,
     `- Notificações: ${aparelhos ? `ativas em ${aparelhos} aparelho(s)` : "não ativadas neste usuário"}`,
   );
 
@@ -218,7 +218,7 @@ const FERRAMENTAS: FerramentaModelo[] = [
       },
     },
   },
-  { nome: "gerar_carrossel", descricao: "Gera (ou regera) o carrossel de um roteiro aprovado.", parametros: { type: "object", properties: { pauta_ref: { type: "string", description: "A ref do roteiro aprovado, do contexto." } }, required: ["pauta_ref"] } },
+  { nome: "gerar_carrossel", descricao: "Gera (ou regera) o carrossel de um roteiro já escrito, aprovado ou não.", parametros: { type: "object", properties: { pauta_ref: { type: "string", description: "A ref do roteiro, do contexto." } }, required: ["pauta_ref"] } },
   { nome: "regerar_manual_de_marca", descricao: "Escreve de novo o DNA viral (o documento de posicionamento, voz e ganchos) a partir das respostas do onboarding.", parametros: { type: "object", properties: {} } },
   { nome: "falar_com_pessoa", descricao: "Encaminha a conversa para a equipe de suporte.", parametros: { type: "object", properties: { resumo: { type: "string", description: "O problema em 1 a 3 frases, para a equipe." } }, required: ["resumo"] } },
 ];
@@ -335,7 +335,7 @@ function validarAcao(
     }
     case "gerar_carrossel": {
       const pauta = r.aprovadas.find((p) => p.id === String(a.pauta_ref ?? ""));
-      if (!pauta) return { erro: "esse roteiro não está entre os aprovados" };
+      if (!pauta) return { erro: "esse roteiro não está entre os já escritos" };
       return ok("gerar_carrossel", { pauta_id: pauta.id }, `Gerar o carrossel do roteiro "${pauta.tema}"`);
     }
     case "regerar_manual_de_marca":
