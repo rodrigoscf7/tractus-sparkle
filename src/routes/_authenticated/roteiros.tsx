@@ -1,9 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Check, Copy, Images, Loader2, PenLine, RotateCcw } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Check, Copy, PenLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,13 +13,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "@/components/estados";
+import { BotaoCarrossel } from "@/components/roteiro/BotaoCarrossel";
 import { BotaoPostado } from "@/components/roteiro/BotaoPostado";
 import { useConta } from "@/hooks/use-conta";
-import { gerarCarrossel } from "@/lib/agentes.functions";
 import { copiarTexto } from "@/lib/copiar";
 import { dataCurta, dataLocalCurta, diaDaSemana } from "@/lib/datas";
-import { mensagemErro } from "@/lib/mensagem-erro";
-import { textoDoRoteiro } from "@/lib/roteiro";
+import { etapaDoRoteiro, roteiroMaisRecente, textoDoRoteiro, type Etapa } from "@/lib/roteiro";
 import { cn } from "@/lib/utils";
 
 const ABAS = ["para-ler", "para-gravar", "postados", "recusados"] as const;
@@ -60,23 +57,6 @@ type Pauta = {
   carrosseis: { id: string; status: string | null }[];
   roteiros: { conteudo: unknown; criado_em: string | null }[];
 };
-
-type Etapa = "escrevendo" | "para-ler" | "para-gravar" | "postados" | "recusados";
-
-function etapaDe(p: Pauta): Etapa | null {
-  if (p.status === "gerada" || p.status === "em_producao") return "escrevendo";
-  if (p.status === "aguardando_aprovacao") return "para-ler";
-  if (p.status === "rejeitada") return "recusados";
-  if (p.status === "aprovada") {
-    return p.publicacoes.some((pub) => pub.status === "postado") ? "postados" : "para-gravar";
-  }
-  return null;
-}
-
-/** O mais recente: um roteiro regerado não apaga o anterior. */
-function roteiroMaisRecente(p: Pauta) {
-  return [...p.roteiros].sort((a, b) => (b.criado_em ?? "").localeCompare(a.criado_em ?? ""))[0];
-}
 
 const porData = (a: Pauta, b: Pauta) =>
   (a.data_prevista ?? a.criado_em ?? "").localeCompare(b.data_prevista ?? b.criado_em ?? "");
@@ -157,7 +137,7 @@ function RoteirosPage() {
     recusados: [],
   };
   for (const p of filtradas) {
-    const etapa = etapaDe(p);
+    const etapa = etapaDoRoteiro(p.status, p.publicacoes);
     if (etapa) grupos[etapa].push(p);
   }
   grupos.escrevendo.sort(porData);
@@ -363,7 +343,7 @@ function CartaoRoteiro({
   etapa: Etapa;
   multiplosPerfis: boolean;
 }) {
-  const roteiro = roteiroMaisRecente(pauta);
+  const roteiro = roteiroMaisRecente(pauta.roteiros);
   const texto = textoDoRoteiro(roteiro?.conteudo);
   const postadoEm = pauta.publicacoes.find((p) => p.status === "postado")?.postado_em;
 
@@ -418,77 +398,12 @@ function CartaoRoteiro({
           {/* O que sai do roteiro: o carrossel e, depois de gravar, o post. */}
           {etapa !== "recusados" && (
             <div className="mt-3 pt-2 border-t border-divider flex flex-wrap items-center justify-between gap-x-2 -mx-2">
-              <BotaoCarrossel pauta={pauta} />
+              <BotaoCarrossel pautaId={pauta.id} status={pauta.carrosseis[0]?.status ?? null} />
               {etapa === "para-gravar" && <BotaoPostado pautaId={pauta.id} />}
             </div>
           )}
         </>
       )}
     </Card>
-  );
-}
-
-function BotaoCarrossel({ pauta }: { pauta: Pauta }) {
-  const solicitar = useServerFn(gerarCarrossel);
-  const navigate = useNavigate();
-  const [gerando, setGerando] = useState(false);
-  const status = pauta.carrosseis[0]?.status ?? null;
-
-  async function gerar() {
-    setGerando(true);
-    try {
-      await solicitar({ data: { pautaId: pauta.id } });
-      toast.success("Carrossel pronto.", {
-        action: {
-          label: "Ver",
-          onClick: () =>
-            navigate({
-              to: "/aprovacao/$pautaId",
-              params: { pautaId: pauta.id },
-              hash: "carrossel",
-            }),
-        },
-      });
-    } catch (e) {
-      toast.error(mensagemErro(e, "Não consegui gerar o carrossel."));
-    } finally {
-      setGerando(false);
-    }
-  }
-
-  let conteudo: ReactNode;
-  if (gerando || status === "gerando") {
-    return (
-      <Button size="sm" variant="ghost" disabled>
-        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Gerando carrossel…
-      </Button>
-    );
-  }
-  if (status === "pronto") {
-    return (
-      <Button size="sm" variant="ghost" asChild>
-        <Link to="/aprovacao/$pautaId" params={{ pautaId: pauta.id }} hash="carrossel">
-          <Images className="w-4 h-4 mr-1.5" /> Ver carrossel
-        </Link>
-      </Button>
-    );
-  }
-  if (status === "erro") {
-    conteudo = (
-      <>
-        <RotateCcw className="w-4 h-4 mr-1.5" /> Tentar o carrossel de novo
-      </>
-    );
-  } else {
-    conteudo = (
-      <>
-        <Images className="w-4 h-4 mr-1.5" /> Gerar carrossel
-      </>
-    );
-  }
-  return (
-    <Button size="sm" variant="ghost" onClick={gerar}>
-      {conteudo}
-    </Button>
   );
 }

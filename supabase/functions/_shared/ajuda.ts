@@ -41,14 +41,18 @@ Abaixo, a semana do ritmo (dias de postar) e a sequência de semanas cumpridas.
 - Chega todo domingo: a prevIA começa às 12h (Brasília) e o plano fica pronto à tarde. A pessoa recebe uma notificação "seu plano da semana chegou" se as notificações estiverem ativas.
 - Como é feito: a prevIA lê os últimos 15 posts de cada perfil de referência, escolhe os 5 que foram mais acima do normal do próprio perfil (não os de mais views absolutas), assiste aos vídeos inteiros e lê os carrosséis slide a slide, entende por que funcionaram e cria um vídeo para cada dia do ritmo, no nicho e na voz da pessoa.
 - Enquanto monta, a tela mostra 3 passos: lendo os posts, assistindo aos vídeos, transformando em vídeos da semana. Leva uns 5 minutos.
-- Cada vídeo do plano tem: tema, ângulo (a tese), o gancho dos primeiros 3 segundos já escrito, a estrutura da fala e de qual post viral ele foi modelado.
+- No topo: a semana (datas) e um resumo de três linhas, com "Ler o resumo inteiro". Logo abaixo, uma faixa com um cartão por dia do ritmo mostrando o estado do vídeo daquele dia; tocar no dia leva ao vídeo. Antes de aprovar, os dias aparecem como "No plano" (ou "Fora", se o vídeo foi tirado da semana).
+- Cada vídeo do plano mostra: tema, ângulo (a tese) e o gancho dos primeiros 3 segundos já escrito. A estrutura da fala e de qual post viral ele foi modelado ficam em "Ver a estrutura e de onde veio".
 - Ações em cada vídeo, antes de aprovar:
   - Trocar: gera outra opção para o mesmo dia; dá para escrever um pedido (ex.: "algo mais leve").
+  - Copiar gancho: copia a frase dos primeiros 3 segundos.
   - Tirar da semana: o vídeo não vira roteiro. Dá para voltar com "Manter na semana".
-- Aprovar N vídeos: cada vídeo mantido vira um roteiro completo, escrito um de cada vez. A pessoa é avisada quando cada roteiro fica pronto para ler. Depois de aprovado, o plano não muda mais.
+- Aprovar N vídeos (barra fixa no fim da tela): cada vídeo mantido vira um roteiro completo, escrito um de cada vez. A pessoa é avisada quando cada roteiro fica pronto para ler. Depois de aprovado, o plano não muda mais.
+- Depois de aprovado, cada dia da faixa e cada vídeo mostram o estado do roteiro: Escrevendo, Para ler, Gravar (pronto para gravar), Postado ou Recusado. Cada vídeo ganha os atalhos "Ler e aprovar" ou "Abrir roteiro", "Copiar roteiro", o carrossel e, quando está pronto para gravar, "Marcar como postado".
+- "Copiar a semana" (depois de aprovado, acima da lista): copia num texto só todos os roteiros já escritos, dia a dia, com a legenda. Os que ainda estão sendo escritos entram como "(ainda sendo escrito)".
 - Sem plano ainda: o botão "Montar meu plano agora" pede um plano na hora. Só é possível um plano novo a cada 6 dias.
 - Plano com erro: geralmente as referências não puderam ser lidas (perfil privado, nome digitado errado ou instabilidade do Instagram). Conferir as referências em Configurações e usar "Tentar de novo".
-- No fim da tela: os padrões encontrados nos virais e a lista dos posts analisados, com link para o post original e quantas vezes ele foi acima do normal.
+- No fim da tela, recolhido em "Por que esses vídeos" (toque para abrir): os padrões encontrados nos virais e a lista dos posts analisados, com link para o post original e quantas vezes ele foi acima do normal.
 
 ## Roteiros (/roteiros)
 Todos os roteiros da pessoa, em três etapas (no computador, lado a lado; no celular, em abas):

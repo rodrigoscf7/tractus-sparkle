@@ -53,3 +53,24 @@ export function textoDoRoteiro(conteudo: unknown): TextoDoRoteiro | null {
 
   return { gancho, desenvolvimento, cta, fala, legenda, slides, completo };
 }
+
+/** Onde um roteiro está, do ponto de vista de quem grava. */
+export type Etapa = "escrevendo" | "para-ler" | "para-gravar" | "postados" | "recusados";
+
+export function etapaDoRoteiro(
+  status: string | null | undefined,
+  publicacoes: { status: string | null }[] = [],
+): Etapa | null {
+  if (status === "gerada" || status === "em_producao") return "escrevendo";
+  if (status === "aguardando_aprovacao") return "para-ler";
+  if (status === "rejeitada") return "recusados";
+  if (status === "aprovada") {
+    return publicacoes.some((pub) => pub.status === "postado") ? "postados" : "para-gravar";
+  }
+  return null;
+}
+
+/** O mais recente: um roteiro regerado não apaga o anterior. */
+export function roteiroMaisRecente<T extends { criado_em: string | null }>(roteiros: T[]) {
+  return [...roteiros].sort((a, b) => (b.criado_em ?? "").localeCompare(a.criado_em ?? ""))[0];
+}

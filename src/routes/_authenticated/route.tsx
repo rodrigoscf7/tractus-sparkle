@@ -202,8 +202,10 @@ function AuthenticatedLayout() {
           </div>
         </header>
 
-        {/* No celular, o fim do conteúdo não pode ficar atrás da barra inferior. */}
-        <main className="flex-1 min-w-0 overflow-auto pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+        {/* No celular, o fim do conteúdo não pode ficar atrás da barra inferior.
+            overflow-x-clip, e não overflow-auto: assim o main não vira contêiner de
+            rolagem e as barras "sticky" das telas grudam na janela. */}
+        <main className="flex-1 min-w-0 overflow-x-clip pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
           <Outlet />
         </main>
       </div>
