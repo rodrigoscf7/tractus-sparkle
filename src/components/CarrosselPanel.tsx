@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { gerarCarrossel } from "@/lib/agentes.functions";
@@ -127,7 +128,14 @@ export function CarrosselPanel({
 
       {templateIncompleto && (
         <p className="text-xs text-muted-foreground mb-4">
-          Configure modelo, arroba, foto, cores e fontes em <strong>Configurações → Template do carrossel</strong>{" "}
+          Configure modelo, arroba, foto, cores e fontes em{" "}
+          <Link
+            to="/configuracoes"
+            search={{ aba: "carrossel" }}
+            className="font-semibold underline underline-offset-2"
+          >
+            Configurações → Carrossel
+          </Link>{" "}
           para os slides saírem com a identidade certa.
         </p>
       )}

@@ -4,9 +4,9 @@ import {
   Activity,
   CalendarDays,
   CalendarRange,
-  CreditCard,
   Dna,
   FileText,
+  Images,
   LogOut,
   Menu,
   Moon,
@@ -131,6 +131,9 @@ function AuthenticatedLayout() {
         <NavLink to="/roteiros" icon={<FileText className="w-4 h-4" />} aviso={avisoRoteiros}>
           Roteiros
         </NavLink>
+        <NavLink to="/carrosseis" icon={<Images className="w-4 h-4" />}>
+          Carrosséis
+        </NavLink>
 
         <div className={ROTULO_GRUPO}>Marca</div>
         <NavLink to="/dna" icon={<Dna className="w-4 h-4" />}>
@@ -156,9 +159,6 @@ function AuthenticatedLayout() {
         <SininhoNotificacoes />
         <NavLink to="/configuracoes" icon={<Settings className="w-4 h-4" />}>
           Configurações
-        </NavLink>
-        <NavLink to="/assinatura" icon={<CreditCard className="w-4 h-4" />}>
-          Assinatura
         </NavLink>
         <button onClick={toggle} className={BOTAO_RODAPE}>
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -323,6 +323,12 @@ function BarraInferior({
       rotulo: "Roteiros",
       icone: <FileText className="w-5 h-5" />,
       aviso: avisoRoteiros,
+    },
+    {
+      to: "/carrosseis",
+      rotulo: "Carrosséis",
+      icone: <Images className="w-5 h-5" />,
+      aviso: null,
     },
   ];
 

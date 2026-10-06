@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,13 +17,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TemplateCarrosselEditor } from "@/components/TemplateCarrosselEditor";
+import { DiasDePostar } from "@/components/configuracoes/DiasDePostar";
+import { PainelAssinatura } from "@/components/configuracoes/PainelAssinatura";
+import { PainelNotificacoes } from "@/components/configuracoes/PainelNotificacoes";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useConta } from "@/hooks/use-conta";
 import { useIsPlatformAdmin } from "@/hooks/use-platform-admin";
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "@/components/estados";
 import { mensagemErro } from "@/lib/mensagem-erro";
 import { nomeStatusPauta } from "@/lib/vocabulario";
 import { linhasParaLista } from "@/lib/onboarding-perguntas";
-
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -32,13 +35,16 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({
       {
         name: "description",
         content:
-          "Configure tom de voz, CTA padrão, foco de curadoria e identidade visual de cada perfil.",
+          "Voz, referências, aparência do carrossel, dias de postar, notificações e assinatura.",
       },
       { property: "og:title", content: "Configurações | prevIA - CONTENT" },
       { property: "og:description", content: "Parâmetros que orientam os agentes de conteúdo." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+  }),
+  validateSearch: (search: Record<string, unknown>): { aba?: Aba } => ({
+    aba: ABAS.some((a) => a.id === search.aba) ? (search.aba as Aba) : undefined,
   }),
   component: ConfiguracoesPage,
 });
@@ -48,14 +54,41 @@ const STATUS_ORDER = ["gerada", "em_producao", "aguardando_aprovacao", "aprovada
 const ROTULO_CAMPO =
   "block text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5";
 
+const ABAS = [
+  { id: "perfil", rotulo: "Perfil e voz" },
+  { id: "referencias", rotulo: "Referências" },
+  { id: "carrossel", rotulo: "Carrossel" },
+  { id: "dias", rotulo: "Dias de postar" },
+  { id: "notificacoes", rotulo: "Notificações" },
+  { id: "assinatura", rotulo: "Assinatura" },
+] as const;
+type Aba = (typeof ABAS)[number]["id"];
+
+/** Abas que dependem de um perfil escolhido; as outras valem para a conta toda. */
+const ABAS_DO_PERFIL: Aba[] = ["perfil", "referencias", "carrossel", "dias"];
+
 function ConfiguracoesPage() {
+  const { aba = "perfil" } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [novoHandle, setNovoHandle] = useState("");
   const [novoNome, setNovoNome] = useState("");
   const [novoTipo, setNovoTipo] = useState("cliente");
   const [criando, setCriando] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
+  const fileiraAbas = useRef<HTMLDivElement>(null);
   const { data: conta } = useConta();
   const { data: isAdmin } = useIsPlatformAdmin();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+  }, []);
+
+  // No celular a fileira de abas rola de lado: a aba aberta precisa ficar à vista.
+  useEffect(() => {
+    fileiraAbas.current
+      ?.querySelector<HTMLElement>('[data-state="active"]')
+      ?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [aba]);
 
   const {
     data: perfis,
@@ -73,6 +106,7 @@ function ConfiguracoesPage() {
 
   const { data: pautas } = useQuery({
     queryKey: ["perfis-pautas"],
+    enabled: (perfis?.length ?? 0) > 1,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pautas_geradas")
@@ -82,48 +116,12 @@ function ConfiguracoesPage() {
     },
   });
 
-  const { data: refs, refetch: refetchRefs } = useQuery({
-    queryKey: ["perfis-refs", activeId],
-    queryFn: async () => {
-      if (!activeId) return [];
-      const { data, error } = await supabase
-        .from("perfis_referencia")
-        .select("*")
-        .eq("perfil_id_relacionado", activeId);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!activeId,
-  });
-
   const active = perfis?.find((p) => p.id === activeId);
 
   // Assinante solo tem um perfil só: abrir o editor não deveria custar um clique.
   useEffect(() => {
     if (!activeId && perfis?.length === 1) setActiveId(perfis[0].id);
   }, [perfis, activeId]);
-
-  async function addReferencia() {
-    if (!activeId || !novoHandle.trim()) return;
-    const handle = novoHandle.replace(/^@/, "").trim();
-    const { error } = await supabase.from("perfis_referencia").insert({
-      handle,
-      perfil_id_relacionado: activeId,
-      conta_id: perfis?.find((p) => p.id === activeId)?.conta_id ?? null,
-    });
-    if (error) {
-      toast.error(mensagemErro(error, "Não consegui adicionar essa referência."));
-      return;
-    }
-    setNovoHandle("");
-    refetchRefs();
-    toast.success(`@${handle} adicionado.`);
-  }
-
-  async function removeRef(id: string) {
-    await supabase.from("perfis_referencia").delete().eq("id", id);
-    refetchRefs();
-  }
 
   async function criarPerfil() {
     const nome = novoNome.trim();
@@ -153,211 +151,299 @@ function ConfiguracoesPage() {
     toast.success(`Perfil "${nome}" criado.`);
   }
 
+  const abaDoPerfil = ABAS_DO_PERFIL.includes(aba);
+  const multiplosPerfis = (perfis?.length ?? 0) > 1;
+
   return (
-    <div className="p-4 sm:p-8 max-w-[1400px]">
-      <header className="mb-6 sm:mb-8">
+    <div className="p-4 sm:p-8 max-w-[1100px]">
+      <header className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-display font-bold">Configurações</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          O que a prevIA usa para escrever no seu lugar: sua voz, seus limites e os perfis que ela
-          acompanha em busca de assunto.
+          Como a prevIA trabalha para você: sua voz, onde ela busca assunto, a aparência dos
+          carrosséis, seus dias de postar e sua assinatura.
         </p>
+        {email && <p className="text-xs text-muted-foreground mt-2">Conectado como {email}</p>}
       </header>
 
-      {/*
-       * Criar perfil é operação de quem atende vários advogados. O assinante solo
-       * recebe o perfil pronto do onboarding e nunca precisa de um segundo.
-       */}
-      {isAdmin && (
-        <Card className="p-5 bg-surface border-border mb-8">
-          <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
-            Criar novo perfil
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              value={novoNome}
-              onChange={(e) => setNovoNome(e.target.value)}
-              aria-label="Nome do novo perfil"
-              placeholder="Nome do perfil (ex: Márcia Canuto)"
-              onKeyDown={(e) => e.key === "Enter" && criarPerfil()}
-            />
-            <Select value={novoTipo} onValueChange={setNovoTipo}>
-              <SelectTrigger className="sm:w-[200px]" aria-label="Tipo do perfil">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cliente">Cliente</SelectItem>
-                <SelectItem value="socio">Sócio</SelectItem>
-                <SelectItem value="institucional">Institucional</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={criarPerfil} disabled={criando}>
-              {criando ? "Criando…" : "Criar perfil"}
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {carregandoPerfis && <EstadoCarregando linhas={2} rotulo="Carregando os perfis" />}
-
-      {erroPerfis && (
-        <EstadoErro
-          titulo="Não consegui carregar os perfis"
-          descricao="A conexão falhou no meio do caminho. Nada foi perdido."
-          onTentarDeNovo={() => refetchPerfis()}
-        />
-      )}
-
-      {!carregandoPerfis && !erroPerfis && perfis?.length === 0 && (
-        <EstadoVazio
-          className="mb-8"
-          titulo="Nenhum perfil por aqui"
-          descricao={
-            isAdmin
-              ? "Crie o primeiro acima para configurar voz, fechamento e as referências que a prevIA acompanha."
-              : "Seu perfil nasce no onboarding. Se ele não aparecer aqui, fale com o suporte."
-          }
-        />
-      )}
-
-      {/* Com um perfil só não há o que escolher: o editor abre direto abaixo. */}
-      <div
-        className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8 ${
-          (perfis?.length ?? 0) <= 1 ? "hidden" : ""
-        }`}
+      <Tabs
+        value={aba}
+        onValueChange={(v) => navigate({ search: { aba: v as Aba }, replace: true })}
       >
-        {perfis?.map((perfil) => {
-          const ps = (pautas ?? []).filter((x) => x.perfil_id === perfil.id);
-          const isActive = perfil.id === activeId;
-          return (
-            <Card
-              key={perfil.id}
-              role="button"
-              tabIndex={0}
-              aria-pressed={isActive}
-              onClick={() => setActiveId(isActive ? null : perfil.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setActiveId(isActive ? null : perfil.id);
-                }
-              }}
-              className={`p-5 bg-surface border-border cursor-pointer transition motion-reduce:transition-none hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                isActive ? "border-primary" : ""
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="min-w-0">
-                  <h3 className="font-display font-semibold truncate">{perfil.nome}</h3>
-                  <Badge variant="outline" className="mt-1 text-[11px] uppercase font-mono">
-                    {perfil.tipo}
-                  </Badge>
-                </div>
-                <div className="text-2xl font-display font-semibold num shrink-0">
-                  {ps.length}
-                </div>
-              </div>
-              <div className="space-y-1.5 mt-4">
-                {STATUS_ORDER.map((s) => {
-                  const n = ps.filter((p) => p.status === s).length;
-                  if (n === 0) return null;
-                  return (
-                    <div key={s} className="flex justify-between gap-3 text-xs">
-                      <span className="text-muted-foreground">{nomeStatusPauta(s)}</span>
-                      <span className="font-mono num">{n}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+        {/* No celular as seis abas não cabem: a fileira rola de lado. */}
+        <div ref={fileiraAbas} className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto mb-6">
+          <TabsList className="h-auto w-max justify-start">
+            {ABAS.map((a) => (
+              <TabsTrigger key={a.id} value={a.id} className="min-h-10 sm:min-h-8 px-3.5">
+                {a.rotulo}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
-      {active && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <IdentityEditor
-            key={active.id}
-            perfil={active}
-            onSaved={() => refetchPerfis()}
-          />
-
-          <TemplateCarrosselEditor
-            key={`tpl-${active.id}`}
-            perfilId={active.id}
-            perfilNome={active.nome}
-            templateRaw={(active as { template_carrossel?: unknown }).template_carrossel}
-            onSaved={() => refetchPerfis()}
-          />
-
-
-
-
-          <Card className="p-6 bg-surface border-border">
-            <h2 className="font-display font-semibold text-lg mb-1">Onde buscar repertório</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Perfis do Instagram que a prevIA analisa toda semana para montar o seu plano. Ela
-              nunca copia: transporta o que funcionou para o seu nicho e a sua voz.
-            </p>
-            <div className="flex gap-2 mb-4">
+        {/*
+         * Criar perfil é operação de quem atende vários advogados. O assinante solo
+         * recebe o perfil pronto do onboarding e nunca precisa de um segundo.
+         */}
+        {isAdmin && abaDoPerfil && (
+          <Card className="p-5 bg-surface border-border mb-6">
+            <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
+              Criar novo perfil
+            </h2>
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
-                value={novoHandle}
-                onChange={(e) => setNovoHandle(e.target.value)}
-                aria-label="Perfil do Instagram para acompanhar"
-                placeholder="@handle.instagram"
-                onKeyDown={(e) => e.key === "Enter" && addReferencia()}
+                value={novoNome}
+                onChange={(e) => setNovoNome(e.target.value)}
+                aria-label="Nome do novo perfil"
+                placeholder="Nome do perfil (ex: Márcia Canuto)"
+                onKeyDown={(e) => e.key === "Enter" && criarPerfil()}
               />
-              <Button onClick={addReferencia}>Adicionar</Button>
-            </div>
-            <div className="space-y-2">
-              {refs?.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Nenhum perfil ainda. Sem pelo menos um, a prevIA não tem onde buscar assunto.
-                </p>
-              )}
-              {refs?.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex flex-wrap items-center justify-between gap-2 p-3 rounded border border-border bg-background"
-                >
-                  <span className="font-mono text-sm">@{r.handle}</span>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={
-                        (r as { foco_curadoria?: string | null }).foco_curadoria ?? "herdar"
-                      }
-                      onValueChange={async (v) => {
-                        const { error } = await supabase
-                          .from("perfis_referencia")
-                          .update({ foco_curadoria: v === "herdar" ? null : v })
-                          .eq("id", r.id);
-                        if (error) toast.error(mensagemErro(error, "Não consegui salvar o foco."));
-                        else refetchRefs();
-                      }}
-                    >
-                      <SelectTrigger className="h-8 w-[190px] text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="herdar">Herdar do perfil</SelectItem>
-                        <SelectItem value="viral">Foco viral</SelectItem>
-                        <SelectItem value="posicionamento">Foco posicionamento</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <button
-                      onClick={() => removeRef(r.id)}
-                      aria-label={`Remover @${r.handle}`}
-                      className="min-h-11 sm:min-h-9 px-3 rounded-md text-xs text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    >
-                      Remover
-                    </button>
-                  </div>
-                </div>
-              ))}
+              <Select value={novoTipo} onValueChange={setNovoTipo}>
+                <SelectTrigger className="sm:w-[200px]" aria-label="Tipo do perfil">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cliente">Cliente</SelectItem>
+                  <SelectItem value="socio">Sócio</SelectItem>
+                  <SelectItem value="institucional">Institucional</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={criarPerfil} disabled={criando}>
+                {criando ? "Criando…" : "Criar perfil"}
+              </Button>
             </div>
           </Card>
-        </div>
-      )}
+        )}
+
+        {abaDoPerfil && carregandoPerfis && (
+          <EstadoCarregando linhas={2} rotulo="Carregando os perfis" />
+        )}
+
+        {abaDoPerfil && erroPerfis && (
+          <EstadoErro
+            titulo="Não consegui carregar os perfis"
+            descricao="A conexão falhou no meio do caminho. Nada foi perdido."
+            onTentarDeNovo={() => refetchPerfis()}
+          />
+        )}
+
+        {abaDoPerfil && !carregandoPerfis && !erroPerfis && perfis?.length === 0 && (
+          <EstadoVazio
+            className="mb-8"
+            titulo="Nenhum perfil por aqui"
+            descricao={
+              isAdmin
+                ? "Crie o primeiro acima para configurar voz, fechamento e as referências que a prevIA acompanha."
+                : "Seu perfil nasce no onboarding. Se ele não aparecer aqui, fale com o suporte."
+            }
+          />
+        )}
+
+        {/* Com um perfil só não há o que escolher: o editor abre direto. */}
+        {abaDoPerfil && multiplosPerfis && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            {perfis?.map((perfil) => {
+              const ps = (pautas ?? []).filter((x) => x.perfil_id === perfil.id);
+              const isActive = perfil.id === activeId;
+              return (
+                <Card
+                  key={perfil.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isActive}
+                  onClick={() => setActiveId(isActive ? null : perfil.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setActiveId(isActive ? null : perfil.id);
+                    }
+                  }}
+                  className={`p-5 bg-surface border-border cursor-pointer transition motion-reduce:transition-none hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                    isActive ? "border-primary" : ""
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0">
+                      <h3 className="font-display font-semibold truncate">{perfil.nome}</h3>
+                      <Badge variant="outline" className="mt-1 text-[11px] uppercase font-mono">
+                        {perfil.tipo}
+                      </Badge>
+                    </div>
+                    <div className="text-2xl font-display font-semibold num shrink-0">
+                      {ps.length}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 mt-4">
+                    {STATUS_ORDER.map((s) => {
+                      const n = ps.filter((p) => p.status === s).length;
+                      if (n === 0) return null;
+                      return (
+                        <div key={s} className="flex justify-between gap-3 text-xs">
+                          <span className="text-muted-foreground">{nomeStatusPauta(s)}</span>
+                          <span className="font-mono num">{n}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {abaDoPerfil && multiplosPerfis && !active && (
+          <p className="text-sm text-muted-foreground">Escolha um perfil acima para editar.</p>
+        )}
+
+        {/* Editores ficam montados ao trocar de aba: o que não foi salvo não se perde. */}
+        {active && (
+          <>
+            <TabsContent
+              value="perfil"
+              forceMount
+              className="mt-0 max-w-3xl data-[state=inactive]:hidden"
+            >
+              <IdentityEditor key={active.id} perfil={active} onSaved={() => refetchPerfis()} />
+            </TabsContent>
+            <TabsContent
+              value="referencias"
+              forceMount
+              className="mt-0 max-w-3xl data-[state=inactive]:hidden"
+            >
+              <ReferenciasEditor key={active.id} perfilId={active.id} contaId={active.conta_id} />
+            </TabsContent>
+            <TabsContent value="carrossel" forceMount className="mt-0 data-[state=inactive]:hidden">
+              <TemplateCarrosselEditor
+                key={`tpl-${active.id}`}
+                perfilId={active.id}
+                perfilNome={active.nome}
+                templateRaw={(active as { template_carrossel?: unknown }).template_carrossel}
+                onSaved={() => refetchPerfis()}
+              />
+            </TabsContent>
+            <TabsContent value="dias" forceMount className="mt-0 data-[state=inactive]:hidden">
+              <DiasDePostar
+                key={`dias-${active.id}`}
+                perfilId={active.id}
+                ritmoDias={(active as { ritmo_dias?: number[] | null }).ritmo_dias}
+                onSaved={() => refetchPerfis()}
+              />
+            </TabsContent>
+          </>
+        )}
+
+        <TabsContent value="notificacoes" className="mt-0">
+          <PainelNotificacoes />
+        </TabsContent>
+        <TabsContent value="assinatura" className="mt-0">
+          <PainelAssinatura />
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+function ReferenciasEditor({ perfilId, contaId }: { perfilId: string; contaId: string | null }) {
+  const [novoHandle, setNovoHandle] = useState("");
+
+  const { data: refs, refetch: refetchRefs } = useQuery({
+    queryKey: ["perfis-refs", perfilId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("perfis_referencia")
+        .select("*")
+        .eq("perfil_id_relacionado", perfilId);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  async function addReferencia() {
+    if (!novoHandle.trim()) return;
+    const handle = novoHandle.replace(/^@/, "").trim();
+    const { error } = await supabase.from("perfis_referencia").insert({
+      handle,
+      perfil_id_relacionado: perfilId,
+      conta_id: contaId,
+    });
+    if (error) {
+      toast.error(mensagemErro(error, "Não consegui adicionar essa referência."));
+      return;
+    }
+    setNovoHandle("");
+    refetchRefs();
+    toast.success(`@${handle} adicionado.`);
+  }
+
+  async function removeRef(id: string) {
+    await supabase.from("perfis_referencia").delete().eq("id", id);
+    refetchRefs();
+  }
+
+  return (
+    <Card className="p-6 bg-surface border-border">
+      <h2 className="font-display font-semibold text-lg mb-1">Onde buscar repertório</h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        Perfis do Instagram que a prevIA analisa toda semana para montar o seu plano. Ela nunca
+        copia: transporta o que funcionou para o seu nicho e a sua voz.
+      </p>
+      <div className="flex gap-2 mb-4">
+        <Input
+          value={novoHandle}
+          onChange={(e) => setNovoHandle(e.target.value)}
+          aria-label="Perfil do Instagram para acompanhar"
+          placeholder="@handle.instagram"
+          onKeyDown={(e) => e.key === "Enter" && addReferencia()}
+        />
+        <Button onClick={addReferencia}>Adicionar</Button>
+      </div>
+      <div className="space-y-2">
+        {refs?.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Nenhum perfil ainda. Sem pelo menos um, a prevIA não tem onde buscar assunto.
+          </p>
+        )}
+        {refs?.map((r) => (
+          <div
+            key={r.id}
+            className="flex flex-wrap items-center justify-between gap-2 p-3 rounded border border-border bg-background"
+          >
+            <span className="font-mono text-sm">@{r.handle}</span>
+            <div className="flex items-center gap-2">
+              <Select
+                value={(r as { foco_curadoria?: string | null }).foco_curadoria ?? "herdar"}
+                onValueChange={async (v) => {
+                  const { error } = await supabase
+                    .from("perfis_referencia")
+                    .update({ foco_curadoria: v === "herdar" ? null : v })
+                    .eq("id", r.id);
+                  if (error) toast.error(mensagemErro(error, "Não consegui salvar o foco."));
+                  else refetchRefs();
+                }}
+              >
+                <SelectTrigger
+                  className="h-8 w-[190px] text-xs"
+                  aria-label={`Foco de @${r.handle}`}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="herdar">Herdar do perfil</SelectItem>
+                  <SelectItem value="viral">Foco viral</SelectItem>
+                  <SelectItem value="posicionamento">Foco posicionamento</SelectItem>
+                </SelectContent>
+              </Select>
+              <button
+                onClick={() => removeRef(r.id)}
+                aria-label={`Remover @${r.handle}`}
+                className="min-h-11 sm:min-h-9 px-3 rounded-md text-xs text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                Remover
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
@@ -572,4 +658,3 @@ function IdentityEditor({ perfil, onSaved }: { perfil: Perfil; onSaved: () => vo
     </Card>
   );
 }
-

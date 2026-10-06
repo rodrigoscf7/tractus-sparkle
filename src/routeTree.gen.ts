@@ -18,6 +18,7 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
+import { Route as AuthenticatedCarrosseisRouteImport } from './routes/_authenticated/carrosseis'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
 import { Route as AuthenticatedDnaRouteImport } from './routes/_authenticated/dna'
@@ -77,6 +78,11 @@ const AuthenticatedAgentesRoute = AuthenticatedAgentesRouteImport.update({
 const AuthenticatedAssinaturaRoute = AuthenticatedAssinaturaRouteImport.update({
   id: '/assinatura',
   path: '/assinatura',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCarrosseisRoute = AuthenticatedCarrosseisRouteImport.update({
+  id: '/carrosseis',
+  path: '/carrosseis',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedConfiguracoesRoute =
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/assinatura': typeof AuthenticatedAssinaturaRoute
+  '/carrosseis': typeof AuthenticatedCarrosseisRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/dna': typeof AuthenticatedDnaRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assinatura': typeof AuthenticatedAssinaturaRoute
+  '/carrosseis': typeof AuthenticatedCarrosseisRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/dna': typeof AuthenticatedDnaRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
+  '/_authenticated/carrosseis': typeof AuthenticatedCarrosseisRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/curadoria': typeof AuthenticatedCuradoriaRoute
   '/_authenticated/dna': typeof AuthenticatedDnaRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agentes'
     | '/assinatura'
+    | '/carrosseis'
     | '/configuracoes'
     | '/curadoria'
     | '/dna'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/admin'
     | '/assinatura'
+    | '/carrosseis'
     | '/configuracoes'
     | '/curadoria'
     | '/dna'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
     | '/_authenticated/assinatura'
+    | '/_authenticated/carrosseis'
     | '/_authenticated/configuracoes'
     | '/_authenticated/curadoria'
     | '/_authenticated/dna'
@@ -397,6 +409,13 @@ declare module '@tanstack/react-router' {
       path: '/assinatura'
       fullPath: '/assinatura'
       preLoaderRoute: typeof AuthenticatedAssinaturaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/carrosseis': {
+      id: '/_authenticated/carrosseis'
+      path: '/carrosseis'
+      fullPath: '/carrosseis'
+      preLoaderRoute: typeof AuthenticatedCarrosseisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/configuracoes': {
@@ -531,6 +550,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRouteWithChildren
   AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
+  AuthenticatedCarrosseisRoute: typeof AuthenticatedCarrosseisRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCuradoriaRoute: typeof AuthenticatedCuradoriaRoute
   AuthenticatedDnaRoute: typeof AuthenticatedDnaRoute
@@ -546,6 +566,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAgentesRoute: AuthenticatedAgentesRouteWithChildren,
   AuthenticatedAssinaturaRoute: AuthenticatedAssinaturaRoute,
+  AuthenticatedCarrosseisRoute: AuthenticatedCarrosseisRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCuradoriaRoute: AuthenticatedCuradoriaRoute,
   AuthenticatedDnaRoute: AuthenticatedDnaRoute,

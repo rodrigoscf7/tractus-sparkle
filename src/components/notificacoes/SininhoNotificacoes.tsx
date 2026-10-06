@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bell, Check, Share } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ativarNotificacoes,
   ehIOS,
@@ -15,8 +11,17 @@ import {
   temInscricaoAtiva,
 } from "@/lib/push-client";
 
-/** Ponto de entrada permanente para quem não ativou notificações no onboarding. */
-export function SininhoNotificacoes() {
+/**
+ * Ponto de entrada permanente para quem não ativou notificações no onboarding.
+ * `menu` é a linha do rodapé do menu; `botao`, o botão da aba Notificações.
+ */
+export function SininhoNotificacoes({
+  variante = "menu",
+  onAtivou,
+}: {
+  variante?: "menu" | "botao";
+  onAtivou?: () => void;
+} = {}) {
   const [aberto, setAberto] = useState(false);
   const [ativo, setAtivo] = useState<boolean | null>(null);
   const [carregando, setCarregando] = useState(false);
@@ -41,6 +46,7 @@ export function SininhoNotificacoes() {
       }
       setAtivo(true);
       setAberto(false);
+      onAtivou?.();
     } finally {
       setCarregando(false);
     }
@@ -55,16 +61,23 @@ export function SininhoNotificacoes() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setAberto(true)}
-        className="w-full flex items-center gap-3 min-h-11 md:min-h-9 px-3 py-2 rounded-md text-sm text-muted-foreground
+      {variante === "botao" ? (
+        <Button onClick={() => setAberto(true)}>
+          <Bell className="w-4 h-4 mr-2" />
+          Ativar neste aparelho
+        </Button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAberto(true)}
+          className="w-full flex items-center gap-3 min-h-11 md:min-h-9 px-3 py-2 rounded-md text-sm text-muted-foreground
           hover:text-foreground hover:bg-surface-elevated transition focus-visible:outline-none
           focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        <Bell className="w-4 h-4" />
-        Ativar notificações
-      </button>
+        >
+          <Bell className="w-4 h-4" />
+          Ativar notificações
+        </button>
+      )}
 
       <Dialog open={aberto} onOpenChange={setAberto}>
         <DialogContent>
@@ -75,7 +88,8 @@ export function SininhoNotificacoes() {
           {precisaInstalarNoIOS ? (
             confirmadoIOS ? (
               <p className="text-sm text-muted-foreground">
-                Perfeito — na próxima vez que abrir o app pela tela de início, vamos pedir a permissão.
+                Perfeito — na próxima vez que abrir o app pela tela de início, vamos pedir a
+                permissão.
               </p>
             ) : (
               <>
@@ -88,7 +102,10 @@ export function SininhoNotificacoes() {
                     Compartilhar, na barra do Safari
                   </li>
                   <li className="flex gap-2.5">
-                    <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    <span
+                      aria-hidden
+                      className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                    />
                     Depois, toque em "Adicionar à Tela de Início"
                   </li>
                 </ol>

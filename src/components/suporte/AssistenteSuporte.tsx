@@ -18,11 +18,15 @@ import { linkWhatsappSuporte, type AcaoSuporte, type MensagemSuporte } from "@/l
 /** Perguntas de partida, pela tela em que a pessoa está. */
 const SUGESTOES: Record<string, string[]> = {
   "/plano": ["Por que meu plano ainda não chegou?", "Como troco um vídeo do plano?"],
-  "/configuracoes": ["Como mudo a fonte do carrossel?", "Quantas referências posso ter?"],
+  "/configuracoes": [
+    "Como mudo a fonte do carrossel?",
+    "Quantas referências posso ter?",
+    "Quando meu limite renova?",
+  ],
+  "/carrosseis": ["Como mudo a aparência do carrossel?", "Quantos carrosséis posso gerar?"],
   "/roteiros": ["Como marco um vídeo como postado?", "Posso gerar o carrossel antes de aprovar?"],
   "/hoje": ["O que eu faço primeiro?", "Como mudo meus dias de postar?"],
   "/dna": ["Para que serve o DNA viral?", "Posso gerar o DNA viral de novo?"],
-  "/assinatura": ["O que meu plano inclui?", "Quando meu limite renova?"],
 };
 const SUGESTOES_PADRAO = ["Como funciona o plano da semana?", "Como ativo as notificações?"];
 

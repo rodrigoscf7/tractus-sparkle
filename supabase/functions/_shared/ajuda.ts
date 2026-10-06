@@ -8,6 +8,7 @@ export const ROTAS_ATALHO: Record<string, string> = {
   "/hoje": "Hoje",
   "/plano": "Plano da semana",
   "/roteiros": "Roteiros",
+  "/carrosseis": "Carrosséis",
   "/dna": "DNA viral",
   "/configuracoes": "Configurações",
   "/assinatura": "Assinatura",
@@ -18,16 +19,16 @@ export const MANUAL_DO_APP = `# prevIA: manual de uso
 A prevIA produz conteúdo para advogados: toda semana ela analisa os posts que mais performaram nos perfis de referência da pessoa e entrega um plano de vídeos (Reels falados) para os dias em que ela se comprometeu a postar, com roteiro pronto e, se quiser, carrossel.
 
 ## Menu
-No computador, o menu fica na lateral, em dois grupos. Produção: Hoje, Plano da semana e Roteiros. Marca: DNA viral. No rodapé do menu: o sininho de notificações, Configurações, Assinatura, tema claro/escuro e Sair.
-No celular, a barra embaixo tem Hoje, Plano, Roteiros e Mais. "Mais" abre o menu completo (DNA viral, Configurações, Assinatura, notificações, tema e Sair).
+No computador, o menu fica na lateral, em dois grupos. Produção: Hoje, Plano da semana, Roteiros e Carrosséis. Marca: DNA viral. No rodapé do menu: o sininho de notificações (só aparece se ainda não estiverem ativas), Configurações, tema claro/escuro e Sair.
+No celular, a barra embaixo tem Hoje, Plano, Roteiros, Carrosséis e Mais. "Mais" abre o menu completo (DNA viral, Configurações, notificações, tema e Sair).
 O número ao lado de Roteiros é quantos roteiros estão esperando leitura. A bolinha em Plano aparece quando o plano da semana chegou e espera aprovação.
 - Hoje (/hoje): a próxima ação do dia e a semana do ritmo.
 - Plano da semana (/plano): os vídeos da semana para aprovar.
 - Roteiros (/roteiros): todos os roteiros e em que etapa está cada um.
+- Carrosséis (/carrosseis): os carrosséis prontos e os roteiros que ainda podem virar carrossel.
 - DNA viral (/dna): posicionamento, voz, público, pilares e fórmulas de gancho.
-- Configurações (/configuracoes): voz, fechamento padrão, referências e template do carrossel.
-- Assinatura (/assinatura): plano, consumo do mês e situação da assinatura.
-"Acompanhar" agora se chama Roteiros, "Minha marca" agora se chama Configurações e "Manual de marca" agora se chama DNA viral. A tela "Bastidores" não existe mais para clientes.
+- Configurações (/configuracoes), em abas: Perfil e voz, Referências, Carrossel, Dias de postar, Notificações e Assinatura.
+"Acompanhar" agora se chama Roteiros, "Minha marca" agora se chama Configurações e "Manual de marca" agora se chama DNA viral. A Assinatura agora é uma aba de Configurações (o endereço /assinatura leva para ela). A tela "Bastidores" não existe mais para clientes.
 
 ## Hoje (/hoje)
 Mostra uma ação por vez, na ordem do que está mais perto de virar post:
@@ -70,17 +71,18 @@ Cada cartão tem o dia previsto do vídeo e atalhos: "Ler e aprovar" ou "Abrir r
 - O botão "Roteiros" no topo volta para a lista de roteiros.
 
 ## Carrossel
-- Pode ser gerado assim que o roteiro estiver escrito, sem precisar aprovar o roteiro antes: na tela do roteiro (seção Carrossel, logo abaixo do roteiro), botão "Gerar carrossel", ou direto no cartão em Roteiros. "Regerar" escreve de novo. Enquanto o roteiro ainda está sendo escrito, não dá para gerar.
+- Pode ser gerado assim que o roteiro estiver escrito, sem precisar aprovar o roteiro antes: na tela do roteiro (seção Carrossel, logo abaixo do roteiro), botão "Gerar carrossel", direto no cartão em Roteiros ou no Plano da semana, ou na tela Carrosséis. "Regerar" escreve de novo. Enquanto o roteiro ainda está sendo escrito, não dá para gerar. Leva até 2 minutos.
+- Tela Carrosséis (/carrosseis): em "Seus carrosséis", a capa de cada carrossel já no template do perfil, com o dia, o número de slides e "Ver e baixar" (abre a tela do roteiro na seção do carrossel). Os que deram erro mostram "Tentar o carrossel de novo". Embaixo, "Roteiros que ainda podem virar carrossel", cada um com "Gerar carrossel". O link "Mudar a aparência" leva a Configurações → Carrossel.
 - O carrossel não é o roteiro fatiado: a prevIA escreve um formato próprio para leitura (capa que prende, uma ideia por slide, resumo que vale salvar e CTA). Cada slide tem título e corpo.
 - Baixar: cada slide sai como imagem PNG 1080×1350 (formato 4:5 do Instagram); há "Baixar todos".
-- Aparência (template), em Configurações (/configuracoes) → "Template do carrossel". É preciso clicar em "Salvar" depois de mudar:
+- Aparência (template), em Configurações (/configuracoes) → aba Carrossel. É preciso clicar em "Salvar" depois de mudar:
   - Modelo: Tweet (post de rede social, com foto e selo), Editorial (página de revista, título grande e fios) ou Marca-texto (o trecho-chave grifado com cor).
   - Nome de exibição, arroba, foto de perfil e selo de verificado (o que aparece depende do modelo).
   - Cores: fundo, texto e destaque (destaque nos modelos Editorial e Marca-texto).
   - Fonte dos títulos e fonte do texto: Inter, Montserrat, Poppins, DM Sans, Archivo, Playfair Display, DM Serif Display, Lora, Merriweather, Libre Baskerville.
   - A prévia mostra uma capa e um slide de conteúdo com as escolhas.
 
-## Referências (Configurações → "Onde buscar repertório")
+## Referências (Configurações → aba Referências)
 - São os perfis do Instagram de onde a prevIA tira os virais do plano. Ela nunca copia o conteúdo: transporta o mecanismo para o nicho da pessoa.
 - No onboarding são obrigatórias pelo menos 2. O plano permite até 5 ativas.
 - Adicionar: digitar o @ (ou colar o link do perfil) e clicar em "Adicionar".
@@ -88,7 +90,7 @@ Cada cartão tem o dia previsto do vídeo e atalhos: "Ler e aprovar" ou "Abrir r
 - Perfil privado ou inexistente não pode ser lido e faz o plano falhar se for o único.
 - Dica: perfis que falam com o mesmo público que a pessoa dão planos melhores do que perfis grandes de outro assunto.
 
-## Como a prevIA escreve como você (Configurações)
+## Como a prevIA escreve como você (Configurações → aba Perfil e voz)
 Campos: tom de voz, como você fecha seus posts (CTA padrão), o que buscar nas referências (posicionamento ou viral), área de atuação, nicho, cliente ideal, lista proibida (o que nunca escrever) e bordões. Tudo vale para os próximos planos, roteiros e carrosséis. É preciso salvar depois de mudar.
 
 ## DNA viral (/dna)
@@ -96,16 +98,17 @@ Documento com posicionamento, como você soa, público (dores e objeções), pil
 
 ## Ritmo (dias de postar)
 - Definido no onboarding (padrão: segunda, quarta e sexta). O plano da semana tem um vídeo para cada dia do ritmo.
-- Não existe tela para mudar o ritmo depois do onboarding: quem quiser mudar pede ao assistente, que faz a alteração com confirmação.
+- Para mudar: Configurações → aba Dias de postar. Os sete dias aparecem como botões (de segunda a domingo); marcar ou desmarcar e clicar em "Salvar dias". É preciso ao menos um dia. Vale a partir do próximo plano. O assistente também pode mudar, com confirmação.
 - No dia de postar, se já houver conteúdo pronto, a pessoa recebe o lembrete "hoje é dia de postar".
 
 ## Notificações
 - Avisam quando o plano chega, quando um roteiro fica pronto e no dia de postar.
-- Ativar: no sininho, que fica no rodapé do menu lateral (no celular, toque em "Mais" na barra de baixo), em "Ativar notificações"; ou no convite que aparece na tela do DNA viral. O navegador pede permissão. O sininho não fica dentro de Configurações.
+- Ativar: em Configurações → aba Notificações, botão "Ativar neste aparelho"; ou no sininho, no rodapé do menu lateral (no celular, toque em "Mais" na barra de baixo), em "Ativar notificações"; ou no convite que aparece na tela do DNA viral. O navegador pede permissão.
+- As notificações são por aparelho: celular e computador precisam ser ativados cada um uma vez. A aba Notificações mostra se este aparelho já está ativo.
 - iPhone: primeiro instalar o app. No Safari, tocar em Compartilhar → "Adicionar à Tela de Início", abrir a prevIA pelo ícone e então ativar as notificações.
 - Se a permissão foi negada sem querer, é preciso liberar nas configurações do navegador para o site da prevIA.
 
-## Assinatura (/assinatura)
+## Assinatura (Configurações → aba Assinatura)
 - Plano Starter: R$ 47,90 por mês, com até 5 referências, 30 roteiros e 30 carrosséis por mês. O consumo zera no dia 1 de cada mês.
 - A cobrança é feita pela Kiwify. Cancelamento, troca de cartão, nota fiscal e reembolso são tratados pelo suporte humano.
 - "Em teste" mostra quantos dias de teste restam. Quando o teste acaba sem assinatura, os planos semanais param.

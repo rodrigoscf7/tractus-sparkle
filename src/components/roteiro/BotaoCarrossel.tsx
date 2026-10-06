@@ -22,9 +22,11 @@ export function BotaoCarrossel({ pautaId, status }: { pautaId: string; status: s
     setGerando(true);
     try {
       await solicitar({ data: { pautaId } });
-      // Roteiros e Plano mostram o estado do carrossel: as duas recarregam.
+      // Roteiros, Plano e Carrosséis mostram o estado do carrossel: todas recarregam.
       queryClient.invalidateQueries({ queryKey: ["roteiros"] });
       queryClient.invalidateQueries({ queryKey: ["plano-pautas"] });
+      queryClient.invalidateQueries({ queryKey: ["carrosseis"] });
+      queryClient.invalidateQueries({ queryKey: ["roteiros-sem-carrossel"] });
       toast.success("Carrossel pronto.", {
         action: {
           label: "Ver",
