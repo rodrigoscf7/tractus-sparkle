@@ -47,7 +47,7 @@ function destino(tipo: string): string {
   if (tipo === "curadoria_pronta") return "/curadoria";
   // A cobrança leva para a tela que diz o que fazer agora, não para o quadro.
   if (tipo === "ritmo_hoje") return "/hoje";
-  return "/pipeline";
+  return "/roteiros";
 }
 
 Deno.serve(async (req) => {

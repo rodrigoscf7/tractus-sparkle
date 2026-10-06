@@ -11,7 +11,7 @@ import { mensagemErro } from "@/lib/mensagem-erro";
 export const Route = createFileRoute("/_authenticated/dna")({
   head: () => ({
     meta: [
-      { title: "Manual de marca | prevIA" },
+      { title: "DNA viral | prevIA" },
       {
         name: "description",
         content: "Posicionamento, voz, pilares e fórmulas de gancho do seu perfil.",
@@ -51,9 +51,9 @@ function DnaPage() {
     try {
       await regerar();
       await queryClient.invalidateQueries({ queryKey: ["dna"] });
-      toast.success("Manual atualizado.");
+      toast.success("DNA viral atualizado.");
     } catch (e) {
-      toast.error(mensagemErro(e, "Não consegui gerar o manual. Tente de novo em instantes."));
+      toast.error(mensagemErro(e, "Não consegui gerar o seu DNA viral. Tente de novo em instantes."));
     } finally {
       setRegerando(false);
     }
@@ -70,9 +70,9 @@ function DnaPage() {
   if (!data?.relatorio) {
     return (
       <div className="mx-auto max-w-lg p-6 sm:p-10">
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Manual de marca</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">DNA viral</h1>
         <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-          Seu manual ainda não foi gerado. Ele é escrito a partir das respostas do seu onboarding
+          Seu DNA viral ainda não foi gerado. Ele é escrito a partir das respostas do seu onboarding
           e reúne posicionamento, voz, pilares e fórmulas de gancho.
         </p>
         <button
@@ -85,7 +85,7 @@ function DnaPage() {
             focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {regerando ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />}
-          Gerar meu manual
+          Gerar meu DNA viral
         </button>
       </div>
     );
@@ -117,7 +117,7 @@ function DnaPage() {
         >
           <div className="flex items-center gap-3">
             <span aria-hidden className="h-2.5 w-2.5 rounded-[2px] bg-primary" />
-            <span className="text-sm text-muted-foreground">Seu manual está pronto</span>
+            <span className="text-sm text-muted-foreground">Seu DNA viral está pronto</span>
           </div>
           <p className="mt-3 text-base leading-relaxed">
             Baixe e guarde este documento. Enquanto você lê, a prevIA está assistindo aos posts que
@@ -142,7 +142,7 @@ function DnaPage() {
       <header className="border-b border-border pb-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Manual de marca</p>
+            <p className="text-sm text-muted-foreground">DNA viral</p>
             <h1 className="mt-1 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
               {nome}
             </h1>

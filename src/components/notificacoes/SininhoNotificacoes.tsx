@@ -58,8 +58,9 @@ export function SininhoNotificacoes() {
       <button
         type="button"
         onClick={() => setAberto(true)}
-        className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground
-          hover:text-foreground hover:bg-surface-elevated transition"
+        className="w-full flex items-center gap-3 min-h-11 md:min-h-9 px-3 py-2 rounded-md text-sm text-muted-foreground
+          hover:text-foreground hover:bg-surface-elevated transition focus-visible:outline-none
+          focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <Bell className="w-4 h-4" />
         Ativar notificações

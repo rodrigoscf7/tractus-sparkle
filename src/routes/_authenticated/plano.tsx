@@ -226,8 +226,9 @@ function PlanoPronto({ plano, relatorio }: { plano: PlanoAtual; relatorio: Relat
         ))}
       </section>
 
+      {/* No celular, fica logo acima da barra de navegação (56px + borda + área segura). */}
       {editavel && (
-        <div className="sticky bottom-0 -mx-4 sm:mx-0 px-4 sm:px-0 py-3 bg-background/95 backdrop-blur border-t border-border sm:border-0 sm:bg-transparent">
+        <div className="sticky bottom-[calc(57px+env(safe-area-inset-bottom,0px))] md:bottom-0 -mx-4 sm:mx-0 px-4 sm:px-0 py-3 bg-background/95 backdrop-blur border-t border-border sm:border-0 sm:bg-transparent">
           <Button
             size="lg"
             className="w-full sm:w-auto"

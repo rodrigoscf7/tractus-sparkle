@@ -181,8 +181,8 @@ export async function executarAcao(ctx: Ctx, acao: AcaoSuporte): Promise<string>
         { timeoutMs: 150_000 },
       );
       if (!r.ok)
-        throw new Error("Não consegui escrever o manual agora. Tente de novo em instantes.");
-      return "Pronto, seu manual de marca foi escrito de novo. [Ver o manual](/dna)";
+        throw new Error("Não consegui escrever o seu DNA viral agora. Tente de novo em instantes.");
+      return "Pronto, seu DNA viral foi escrito de novo. [Ver o DNA viral](/dna)";
     }
 
     case "falar_com_pessoa": {

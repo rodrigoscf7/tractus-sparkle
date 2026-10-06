@@ -16,7 +16,7 @@ const FASES = [
   { ate: 4, texto: "Lendo suas respostas" },
   { ate: 12, texto: "Mapeando seu posicionamento" },
   { ate: 22, texto: "Selecionando as referências da sua área" },
-  { ate: Infinity, texto: "Escrevendo o seu manual de marca" },
+  { ate: Infinity, texto: "Escrevendo o seu DNA viral" },
 ];
 
 const DURACAO_MINIMA_MS = 6_000;
@@ -129,7 +129,7 @@ function Processando() {
       </div>
 
       <h1 className="mt-6 font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
-        Montando o seu manual de marca
+        Montando o seu DNA viral
       </h1>
 
       <ul className="mt-10 space-y-4" aria-live="polite">

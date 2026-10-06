@@ -53,12 +53,12 @@ COMO RESPONDER
 - Ao dizer onde fica algo, use exatamente o caminho do manual. Não junte telas diferentes num mesmo caminho.
 - Datas: use as do contexto. Não calcule dia da semana por conta própria.
 - Não mostre IDs técnicos. Não use travessão (—).
-- Atalhos: use links em markdown só para estas rotas: ${Object.entries(ROTAS_ATALHO).map(([r, n]) => `${r} (${n})`).join(", ")} e /aprovacao/<id> de um roteiro. Ex.: [Abrir Minha marca](/perfis).
+- Atalhos: use links em markdown só para estas rotas: ${Object.entries(ROTAS_ATALHO).map(([r, n]) => `${r} (${n})`).join(", ")} e /aprovacao/<id> de um roteiro. Ex.: [Abrir Configurações](/configuracoes).
 
 AÇÕES
 - Você tem ferramentas para fazer coisas na conta. Use uma SOMENTE quando a pessoa pedir para você fazer (ex.: "troca a fonte", "muda meus dias", "adiciona esse perfil"). Se ela só perguntar como se faz, explique e ofereça fazer por ela.
 - Uma ação por resposta. Ela só acontece depois que a pessoa toca em Confirmar. Diga isso em uma frase ("Confirme abaixo e eu aplico.").
-- Não existe ação para: cancelar ou mudar a assinatura, cobrança, nota fiscal, reembolso, trocar e-mail ou senha, apagar dados, editar o texto de um roteiro ou do manual de marca. Nesses casos explique e use falar_com_pessoa.
+- Não existe ação para: cancelar ou mudar a assinatura, cobrança, nota fiscal, reembolso, trocar e-mail ou senha, apagar dados, editar o texto de um roteiro ou do DNA viral. Nesses casos explique e use falar_com_pessoa.
 - Se a pessoa estiver frustrada, pedir um humano ou o problema não estiver no manual, use falar_com_pessoa com um resumo do problema.
 
 MANUAL DO APP
@@ -219,7 +219,7 @@ const FERRAMENTAS: FerramentaModelo[] = [
     },
   },
   { nome: "gerar_carrossel", descricao: "Gera (ou regera) o carrossel de um roteiro aprovado.", parametros: { type: "object", properties: { pauta_ref: { type: "string", description: "A ref do roteiro aprovado, do contexto." } }, required: ["pauta_ref"] } },
-  { nome: "regerar_manual_de_marca", descricao: "Escreve de novo o manual de marca a partir das respostas do onboarding.", parametros: { type: "object", properties: {} } },
+  { nome: "regerar_manual_de_marca", descricao: "Escreve de novo o DNA viral (o documento de posicionamento, voz e ganchos) a partir das respostas do onboarding.", parametros: { type: "object", properties: {} } },
   { nome: "falar_com_pessoa", descricao: "Encaminha a conversa para a equipe de suporte.", parametros: { type: "object", properties: { resumo: { type: "string", description: "O problema em 1 a 3 frases, para a equipe." } }, required: ["resumo"] } },
 ];
 
@@ -339,7 +339,7 @@ function validarAcao(
       return ok("gerar_carrossel", { pauta_id: pauta.id }, `Gerar o carrossel do roteiro "${pauta.tema}"`);
     }
     case "regerar_manual_de_marca":
-      return ok("regerar_manual_de_marca", {}, "Escrever de novo o seu manual de marca (leva cerca de 2 minutos)");
+      return ok("regerar_manual_de_marca", {}, "Escrever de novo o seu DNA viral (leva cerca de 2 minutos)");
     case "falar_com_pessoa": {
       const resumo = String(a.resumo ?? "").trim().slice(0, 500);
       return ok("falar_com_pessoa", { resumo }, "Enviar esta conversa para a equipe de suporte");

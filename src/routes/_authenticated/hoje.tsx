@@ -218,7 +218,7 @@ function AcaoDeHoje({
         apoio="Ela está assistindo aos vídeos que mais performaram nos perfis que você acompanha. Você é avisado quando ficar pronto."
       >
         <Button variant="outline" asChild>
-          <Link to="/plano">Acompanhar</Link>
+          <Link to="/plano">Ver o andamento</Link>
         </Button>
       </Cartao>
     );
@@ -295,7 +295,7 @@ function EsperandoVoce({
         )}
         {aprovacoesPendentes > 0 && (
           <LinhaPendencia
-            para="/pipeline"
+            para="/roteiros"
             contagem={aprovacoesPendentes}
             singular="roteiro para aprovar"
             plural="roteiros para aprovar"

@@ -18,12 +18,14 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
 import { Route as AuthenticatedDnaRouteImport } from './routes/_authenticated/dna'
 import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
 import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
 import { Route as AuthenticatedPlanoRouteImport } from './routes/_authenticated/plano'
+import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as DnaViralTokenRouteImport } from './routes/dna-viral.$token'
 import { Route as OfertaProcessandoRouteImport } from './routes/oferta.processando'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
@@ -77,6 +79,12 @@ const AuthenticatedAssinaturaRoute = AuthenticatedAssinaturaRouteImport.update({
   path: '/assinatura',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCuradoriaRoute = AuthenticatedCuradoriaRouteImport.update({
   id: '/curadoria',
   path: '/curadoria',
@@ -105,6 +113,11 @@ const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
 const AuthenticatedPlanoRoute = AuthenticatedPlanoRouteImport.update({
   id: '/plano',
   path: '/plano',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRoteirosRoute = AuthenticatedRoteirosRouteImport.update({
+  id: '/roteiros',
+  path: '/roteiros',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const DnaViralTokenRoute = DnaViralTokenRouteImport.update({
@@ -160,12 +173,14 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/assinatura': typeof AuthenticatedAssinaturaRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/dna': typeof AuthenticatedDnaRoute
   '/hoje': typeof AuthenticatedHojeRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/plano': typeof AuthenticatedPlanoRoute
+  '/roteiros': typeof AuthenticatedRoteirosRoute
   '/dna-viral/$token': typeof DnaViralTokenRoute
   '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -182,12 +197,14 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assinatura': typeof AuthenticatedAssinaturaRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/dna': typeof AuthenticatedDnaRoute
   '/hoje': typeof AuthenticatedHojeRoute
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/plano': typeof AuthenticatedPlanoRoute
+  '/roteiros': typeof AuthenticatedRoteirosRoute
   '/dna-viral/$token': typeof DnaViralTokenRoute
   '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -208,12 +225,14 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
+  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/curadoria': typeof AuthenticatedCuradoriaRoute
   '/_authenticated/dna': typeof AuthenticatedDnaRoute
   '/_authenticated/hoje': typeof AuthenticatedHojeRoute
   '/_authenticated/perfis': typeof AuthenticatedPerfisRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/_authenticated/plano': typeof AuthenticatedPlanoRoute
+  '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
   '/dna-viral/$token': typeof DnaViralTokenRoute
   '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -234,12 +253,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agentes'
     | '/assinatura'
+    | '/configuracoes'
     | '/curadoria'
     | '/dna'
     | '/hoje'
     | '/perfis'
     | '/pipeline'
     | '/plano'
+    | '/roteiros'
     | '/dna-viral/$token'
     | '/oferta/processando'
     | '/onboarding/processando'
@@ -256,12 +277,14 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/admin'
     | '/assinatura'
+    | '/configuracoes'
     | '/curadoria'
     | '/dna'
     | '/hoje'
     | '/perfis'
     | '/pipeline'
     | '/plano'
+    | '/roteiros'
     | '/dna-viral/$token'
     | '/oferta/processando'
     | '/onboarding/processando'
@@ -281,12 +304,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
     | '/_authenticated/assinatura'
+    | '/_authenticated/configuracoes'
     | '/_authenticated/curadoria'
     | '/_authenticated/dna'
     | '/_authenticated/hoje'
     | '/_authenticated/perfis'
     | '/_authenticated/pipeline'
     | '/_authenticated/plano'
+    | '/_authenticated/roteiros'
     | '/dna-viral/$token'
     | '/oferta/processando'
     | '/onboarding/processando'
@@ -374,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAssinaturaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/curadoria': {
       id: '/_authenticated/curadoria'
       path: '/curadoria'
@@ -414,6 +446,13 @@ declare module '@tanstack/react-router' {
       path: '/plano'
       fullPath: '/plano'
       preLoaderRoute: typeof AuthenticatedPlanoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/roteiros': {
+      id: '/_authenticated/roteiros'
+      path: '/roteiros'
+      fullPath: '/roteiros'
+      preLoaderRoute: typeof AuthenticatedRoteirosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/dna-viral/$token': {
@@ -492,12 +531,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRouteWithChildren
   AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
+  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCuradoriaRoute: typeof AuthenticatedCuradoriaRoute
   AuthenticatedDnaRoute: typeof AuthenticatedDnaRoute
   AuthenticatedHojeRoute: typeof AuthenticatedHojeRoute
   AuthenticatedPerfisRoute: typeof AuthenticatedPerfisRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedPlanoRoute: typeof AuthenticatedPlanoRoute
+  AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
   AuthenticatedAprovacaoPautaIdRoute: typeof AuthenticatedAprovacaoPautaIdRoute
 }
 
@@ -505,12 +546,14 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAgentesRoute: AuthenticatedAgentesRouteWithChildren,
   AuthenticatedAssinaturaRoute: AuthenticatedAssinaturaRoute,
+  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCuradoriaRoute: AuthenticatedCuradoriaRoute,
   AuthenticatedDnaRoute: AuthenticatedDnaRoute,
   AuthenticatedHojeRoute: AuthenticatedHojeRoute,
   AuthenticatedPerfisRoute: AuthenticatedPerfisRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedPlanoRoute: AuthenticatedPlanoRoute,
+  AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
   AuthenticatedAprovacaoPautaIdRoute: AuthenticatedAprovacaoPautaIdRoute,
 }
 

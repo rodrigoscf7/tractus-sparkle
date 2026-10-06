@@ -18,9 +18,10 @@ import { linkWhatsappSuporte, type AcaoSuporte, type MensagemSuporte } from "@/l
 /** Perguntas de partida, pela tela em que a pessoa está. */
 const SUGESTOES: Record<string, string[]> = {
   "/plano": ["Por que meu plano ainda não chegou?", "Como troco um vídeo do plano?"],
-  "/perfis": ["Como mudo a fonte do carrossel?", "Quantas referências posso ter?"],
+  "/configuracoes": ["Como mudo a fonte do carrossel?", "Quantas referências posso ter?"],
+  "/roteiros": ["Como marco um vídeo como postado?", "Posso gerar o carrossel antes de aprovar?"],
   "/hoje": ["O que eu faço primeiro?", "Como mudo meus dias de postar?"],
-  "/dna": ["Para que serve o manual de marca?", "Posso gerar o manual de novo?"],
+  "/dna": ["Para que serve o DNA viral?", "Posso gerar o DNA viral de novo?"],
   "/assinatura": ["O que meu plano inclui?", "Quando meu limite renova?"],
 };
 const SUGESTOES_PADRAO = ["Como funciona o plano da semana?", "Como ativo as notificações?"];
@@ -293,7 +294,8 @@ export function AssistenteSuporte() {
     campoRef.current?.focus();
   }
 
-  // Na tela do plano há uma barra fixa de aprovar no rodapé: o botão sobe.
+  // No celular há a barra de navegação embaixo, e na tela do plano ainda a barra
+  // fixa de aprovar por cima dela: o botão sobe o quanto for preciso.
   const acimaDaBarra = rota === "/plano";
   const sugestoes = SUGESTOES[rota] ?? SUGESTOES_PADRAO;
 
@@ -308,7 +310,7 @@ export function AssistenteSuporte() {
           "fixed right-4 sm:right-6 z-40 flex items-center gap-2.5 rounded-full border border-border bg-surface text-foreground shadow-md",
           "h-12 p-2 sm:pr-4 font-medium text-sm hover:bg-surface-elevated transition motion-reduce:transition-none",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          acimaDaBarra ? "bottom-28 sm:bottom-24" : "bottom-4 sm:bottom-6",
+          acimaDaBarra ? "bottom-44 md:bottom-24" : "bottom-20 md:bottom-6",
         )}
         style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
       >

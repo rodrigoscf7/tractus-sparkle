@@ -305,7 +305,7 @@ function Continuidade({
       </h1>
       <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
         Trouxemos as suas respostas do diagnóstico. Confira se continua valendo — dá para mudar
-        qualquer coisa depois, em Minha marca.
+        qualquer coisa depois, em Configurações.
       </p>
 
       <dl className="mt-8 divide-y divide-divider border-y border-border">
