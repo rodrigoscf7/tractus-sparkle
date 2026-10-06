@@ -304,16 +304,16 @@ export function AssistenteSuporte() {
         onClick={() => setAberto(true)}
         aria-label="Abrir a ajuda da prevIA"
         className={cn(
-          // Grafite (claro no tema escuro) para não competir com os botões amarelos da tela.
-          "fixed right-4 sm:right-6 z-40 flex items-center gap-2.5 rounded-full bg-foreground text-background shadow-lg",
-          "h-12 p-2 sm:pr-4 font-medium text-sm hover:bg-foreground/90 transition motion-reduce:transition-none",
+          // Superfície de card, não cor cheia: o selo IA já marca o botão sem disputar com a tela.
+          "fixed right-4 sm:right-6 z-40 flex items-center gap-2.5 rounded-full border border-border bg-surface text-foreground shadow-md",
+          "h-12 p-2 sm:pr-4 font-medium text-sm hover:bg-surface-elevated transition motion-reduce:transition-none",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           acimaDaBarra ? "bottom-28 sm:bottom-24" : "bottom-4 sm:bottom-6",
         )}
         style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <SeloIA className="size-8 text-sm" />
-        <span className="hidden sm:inline">Pergunte à prevIA</span>
+        <span className="hidden sm:inline">Suporte prevIA</span>
       </button>
     );
   }
