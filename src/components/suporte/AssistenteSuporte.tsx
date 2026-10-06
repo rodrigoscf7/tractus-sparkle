@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Loader2, MessageCircle, RotateCcw, Send, Sparkles, X } from "lucide-react";
+import { Check, Loader2, MessageCircle, RotateCcw, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { mensagemErro } from "@/lib/mensagem-erro";
@@ -104,6 +104,25 @@ function Markdown({ texto, irPara }: { texto: string; irPara: (rota: string) => 
 }
 
 // ---------------------------------------------------------------------------
+
+/**
+ * O bloco amarelo com "IA" da logo, no lugar de um ícone genérico de IA.
+ * Amarelo com texto grafite é o marcador de IA do manual de marca.
+ */
+function SeloIA({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center rounded-md bg-ai text-ai-foreground",
+        "font-display font-bold leading-none tracking-tight",
+        className,
+      )}
+    >
+      IA
+    </span>
+  );
+}
 
 function CartaoAcao({
   acao,
@@ -285,15 +304,16 @@ export function AssistenteSuporte() {
         onClick={() => setAberto(true)}
         aria-label="Abrir a ajuda da prevIA"
         className={cn(
-          "fixed right-4 sm:right-6 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg",
-          "h-12 px-4 font-medium text-sm hover:bg-primary/90 transition motion-reduce:transition-none",
+          // Grafite (claro no tema escuro) para não competir com os botões amarelos da tela.
+          "fixed right-4 sm:right-6 z-40 flex items-center gap-2.5 rounded-full bg-foreground text-background shadow-lg",
+          "h-12 p-2 sm:pr-4 font-medium text-sm hover:bg-foreground/90 transition motion-reduce:transition-none",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           acimaDaBarra ? "bottom-28 sm:bottom-24" : "bottom-4 sm:bottom-6",
         )}
         style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <Sparkles className="w-4 h-4" />
-        <span className="hidden sm:inline">Ajuda</span>
+        <SeloIA className="size-8 text-sm" />
+        <span className="hidden sm:inline">Pergunte à prevIA</span>
       </button>
     );
   }
@@ -310,7 +330,7 @@ export function AssistenteSuporte() {
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <header className="flex items-center gap-2 px-4 h-14 border-b border-border shrink-0">
-        <Sparkles className="w-4 h-4 text-primary-foreground bg-primary rounded p-0.5 box-content" />
+        <SeloIA className="size-7 text-xs" />
         <h2 className="font-display font-semibold flex-1">Ajuda da prevIA</h2>
         {mensagens.length > 0 && (
           <Button
