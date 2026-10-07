@@ -396,11 +396,93 @@ export const MODELO_IMAGEM =
   Deno.env.get("OPENROUTER_IMAGE_MODEL") ?? "black-forest-labs/flux.2-pro";
 
 /**
- * Modelos que só devolvem imagem (FLUX) exigem `modalities: ["image"]`; os que
- * também escrevem texto (Gemini) exigem `["image", "text"]`.
+ * Modelos que só devolvem imagem (FLUX, GPT Image) exigem
+ * `modalities: ["image"]`; os que também escrevem texto (Gemini, GPT-5 Image)
+ * exigem `["image", "text"]`.
  */
 function modalidadesDoModelo(modelo: string) {
-  return modelo.startsWith("black-forest-labs/") ? ["image"] : ["image", "text"];
+  const soImagem = modelo.startsWith("black-forest-labs/") || modelo.startsWith("openai/gpt-image");
+  return soImagem ? ["image"] : ["image", "text"];
+}
+
+const OPENROUTER_IMAGES_URL = "https://openrouter.ai/api/v1/images";
+
+/** Os GPT Image não aceitam chat/completions: só o endpoint de imagens. */
+function usaEndpointDeImagens(modelo: string) {
+  return modelo.startsWith("openai/gpt-image");
+}
+
+/** Proporções que o GPT Image aceita (não há 4:5). */
+const PROPORCOES_GPT_IMAGE = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"];
+
+/** A proporção aceita mais próxima da pedida: 4:5 vira 3:4 (a capa recorta o excesso). */
+function proporcaoMaisProxima(pedida: string, aceitas: string[]) {
+  const valor = (r: string) => {
+    const [a, b] = r.split(":").map(Number);
+    return a / b;
+  };
+  const alvo = valor(pedida);
+  return aceitas.reduce((melhor, r) =>
+    Math.abs(valor(r) - alvo) < Math.abs(valor(melhor) - alvo) ? r : melhor
+  );
+}
+
+function base64ParaBytes(b64: string) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+/**
+ * Endpoint de imagens do OpenRouter (formato da API de imagens da OpenAI). Pede
+ * JPEG em qualidade média: PNG em qualidade alta passaria de 4 MB e custaria
+ * várias vezes mais, sem diferença visível numa capa de 1080 px.
+ */
+async function gerarPeloEndpointDeImagens(
+  key: string,
+  modelo: string,
+  prompt: string,
+  proporcao: string,
+): Promise<{ bytes: Uint8Array; mimeType: string }> {
+  const res = await fetch(OPENROUTER_IMAGES_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "content-type": "application/json",
+      "X-Title": "Tractus Content Hub",
+    },
+    body: JSON.stringify({
+      model: modelo,
+      prompt,
+      n: 1,
+      aspect_ratio: proporcaoMaisProxima(proporcao, PROPORCOES_GPT_IMAGE),
+      quality: "medium",
+      output_format: "jpeg",
+    }),
+  });
+
+  if (!res.ok) {
+    const t = await res.text();
+    let message = t;
+    try {
+      message = JSON.parse(t)?.error?.message ?? t;
+    } catch {
+      // keep raw response text
+    }
+    throw new Error(`OpenRouter error ${res.status}: ${message}`);
+  }
+  const data = await res.json();
+  if (data?.error) {
+    throw new Error(`OpenRouter error: ${data.error.message ?? JSON.stringify(data.error)}`);
+  }
+
+  await registrarCustoModelo(data?.usage, modelo);
+
+  const imagem = data?.data?.[0];
+  const b64: string | undefined = imagem?.b64_json;
+  if (!b64) throw new Error("O modelo de imagem não devolveu imagem.");
+  return { bytes: base64ParaBytes(b64), mimeType: imagem?.media_type ?? "image/jpeg" };
 }
 
 /**
@@ -415,6 +497,10 @@ export async function gerarImagemModelo(
   const key = Deno.env.get("OPENROUTER_API_KEY");
   if (!key) throw new Error("OPENROUTER_API_KEY missing");
   const modelo = opts.modelo ?? MODELO_IMAGEM;
+
+  if (usaEndpointDeImagens(modelo)) {
+    return await gerarPeloEndpointDeImagens(key, modelo, prompt, opts.proporcao ?? "4:5");
+  }
 
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -465,10 +551,7 @@ export async function gerarImagemModelo(
       }${texto ? `, texto: ${texto}` : ""})`,
     );
   }
-  const bin = atob(m[2]);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return { bytes, mimeType: m[1] };
+  return { bytes: base64ParaBytes(m[2]), mimeType: m[1] };
 }
 
 

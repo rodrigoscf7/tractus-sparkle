@@ -93,7 +93,9 @@ Deno.serve(async (req) => {
   const supabase = getServiceClient();
 
   try {
-    const { carrossel_id, ideia } = await req.json();
+    // `modelo` só chega em chamadas internas (comparar modelos); o app chama
+    // pela server function gerarImagemCapa, que não repassa esse campo.
+    const { carrossel_id, ideia, modelo } = await req.json();
     if (!carrossel_id) throw new Error("carrossel_id obrigatório");
 
     const { data: carrossel, error } = await supabase
@@ -147,7 +149,10 @@ Deno.serve(async (req) => {
 
     // O FLUX.2 Pro no OpenRouter só aceita a proporção: tamanho e resolução
     // são ignorados e a imagem sai com ~3 MP (1536×1920, ~4 MB em PNG).
-    const { bytes, mimeType } = await gerarImagemModelo(pedido, { proporcao: "4:5" });
+    const { bytes, mimeType } = await gerarImagemModelo(pedido, {
+      proporcao: "4:5",
+      ...(typeof modelo === "string" && modelo ? { modelo } : {}),
+    });
     const extensao = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
     const caminho = `${contaId}/${carrossel.id}/${Date.now()}-ia.${extensao}`;
 
