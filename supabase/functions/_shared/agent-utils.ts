@@ -214,13 +214,16 @@ export function setCustoContexto(ctx: CustoContexto | null) {
   custoContexto = ctx;
 }
 
-async function registrarCustoModelo(
-  tokensEntrada: number,
-  tokensSaida: number,
-  modelo: string = MODEL,
-) {
+/**
+ * Grava tokens e o valor cobrado de uma chamada ao OpenRouter. O `usage.cost`
+ * (dólares) só vem quando a requisição pede `usage: { include: true }`; sem
+ * ele, o painel estima pelo preço em custo_precos.
+ */
+async function registrarCustoModelo(usage: unknown, modelo: string = MODEL) {
   const ctx = custoContexto;
   if (!ctx) return;
+  const u = (usage ?? {}) as { prompt_tokens?: unknown; completion_tokens?: unknown; cost?: unknown };
+  const custoUsd = typeof u.cost === "number" && Number.isFinite(u.cost) ? u.cost : null;
   try {
     const supabase = getServiceClient();
     await supabase.from("custo_eventos").insert({
@@ -229,9 +232,11 @@ async function registrarCustoModelo(
       agente: ctx.agente,
       tipo: ctx.tipo,
       modelo,
-      tokens_entrada: tokensEntrada,
-      tokens_saida: tokensSaida,
+      tokens_entrada: Number(u.prompt_tokens ?? 0),
+      tokens_saida: Number(u.completion_tokens ?? 0),
       itens: 1,
+      // Centavos de dólar, a mesma unidade de custo_precos.
+      custo_real_centavos: custoUsd === null ? null : custoUsd * 100,
     });
   } catch (e) {
     console.error("registrarCustoModelo falhou", e);
@@ -336,6 +341,8 @@ export async function callModelo(
     body: JSON.stringify({
       model: modelo,
       max_tokens: maxTokens,
+      // Devolve o valor cobrado em usage.cost (registrado em custo_eventos).
+      usage: { include: true },
       // Sem isso, Sonnet 5 gasta o max_tokens em thinking e devolve content "".
       reasoning: { effort: reasoningEffort },
       messages: [
@@ -370,11 +377,7 @@ export async function callModelo(
     data?.usage?.completion_tokens_details?.reasoning_tokens ?? 0,
   );
 
-  await registrarCustoModelo(
-    Number(data?.usage?.prompt_tokens ?? 0),
-    completion,
-    modelo,
-  );
+  await registrarCustoModelo(data?.usage, modelo);
 
   if (!text) {
     throw new Error(
@@ -415,6 +418,8 @@ export async function gerarImagemModelo(
     body: JSON.stringify({
       model: modelo,
       modalities: ["image", "text"],
+      // Devolve o valor cobrado em usage.cost (registrado em custo_eventos).
+      usage: { include: true },
       image_config: { aspect_ratio: opts.proporcao ?? "4:5" },
       messages: [{ role: "user", content: prompt }],
     }),
@@ -435,11 +440,7 @@ export async function gerarImagemModelo(
     throw new Error(`OpenRouter error: ${data.error.message ?? JSON.stringify(data.error)}`);
   }
 
-  await registrarCustoModelo(
-    Number(data?.usage?.prompt_tokens ?? 0),
-    Number(data?.usage?.completion_tokens ?? 0),
-    modelo,
-  );
+  await registrarCustoModelo(data?.usage, modelo);
 
   const message = data?.choices?.[0]?.message;
   const url: string | undefined = message?.images?.[0]?.image_url?.url;
@@ -502,6 +503,8 @@ export async function chamarModeloComFerramentas(input: {
     body: JSON.stringify({
       model: input.model,
       max_tokens: input.maxTokens ?? 1200,
+      // Devolve o valor cobrado em usage.cost (registrado em custo_eventos).
+      usage: { include: true },
       reasoning: { effort: "low" },
       messages: [
         {
@@ -539,11 +542,7 @@ export async function chamarModeloComFerramentas(input: {
     throw new Error(`OpenRouter error: ${data.error.message ?? JSON.stringify(data.error)}`);
   }
 
-  await registrarCustoModelo(
-    Number(data?.usage?.prompt_tokens ?? 0),
-    Number(data?.usage?.completion_tokens ?? 0),
-    input.model,
-  );
+  await registrarCustoModelo(data?.usage, input.model);
 
   const mensagem = data?.choices?.[0]?.message ?? {};
   const texto = textoDoContent(mensagem.content).trim();
