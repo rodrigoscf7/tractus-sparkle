@@ -388,6 +388,76 @@ export async function callModelo(
   return text;
 }
 
+/** Modelo de imagem. Trocar não exige deploy: basta ajustar o secret. */
+export const MODELO_IMAGEM =
+  Deno.env.get("OPENROUTER_IMAGE_MODEL") ?? "google/gemini-3.1-flash-image";
+
+/**
+ * Gera uma imagem pelo OpenRouter (modelos com saída de imagem) e devolve os
+ * bytes. O custo vai para custo_eventos como os outros modelos: a imagem é
+ * cobrada em tokens de saída.
+ */
+export async function gerarImagemModelo(
+  prompt: string,
+  opts: { proporcao?: string; modelo?: string } = {},
+): Promise<{ bytes: Uint8Array; mimeType: string }> {
+  const key = Deno.env.get("OPENROUTER_API_KEY");
+  if (!key) throw new Error("OPENROUTER_API_KEY missing");
+  const modelo = opts.modelo ?? MODELO_IMAGEM;
+
+  const res = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "content-type": "application/json",
+      "X-Title": "Tractus Content Hub",
+    },
+    body: JSON.stringify({
+      model: modelo,
+      modalities: ["image", "text"],
+      image_config: { aspect_ratio: opts.proporcao ?? "4:5" },
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const t = await res.text();
+    let message = t;
+    try {
+      message = JSON.parse(t)?.error?.message ?? t;
+    } catch {
+      // keep raw response text
+    }
+    throw new Error(`OpenRouter error ${res.status}: ${message}`);
+  }
+  const data = await res.json();
+  if (data?.error) {
+    throw new Error(`OpenRouter error: ${data.error.message ?? JSON.stringify(data.error)}`);
+  }
+
+  await registrarCustoModelo(
+    Number(data?.usage?.prompt_tokens ?? 0),
+    Number(data?.usage?.completion_tokens ?? 0),
+    modelo,
+  );
+
+  const message = data?.choices?.[0]?.message;
+  const url: string | undefined = message?.images?.[0]?.image_url?.url;
+  const m = url?.match(/^data:(image\/[a-z+]+);base64,(.+)$/s);
+  if (!m) {
+    const texto = textoDoContent(message?.content).trim().slice(0, 200);
+    throw new Error(
+      `O modelo de imagem não devolveu imagem (finish_reason=${
+        data?.choices?.[0]?.finish_reason ?? "?"
+      }${texto ? `, texto: ${texto}` : ""})`,
+    );
+  }
+  const bin = atob(m[2]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return { bytes, mimeType: m[1] };
+}
+
 
 export type FerramentaModelo = {
   nome: string;
@@ -642,7 +712,7 @@ export function formatHistorico(rows: any[]): string {
  */
 export async function limiteDisponivel(
   contaId: string | null | undefined,
-  tipo: "curadoria" | "roteiro" | "carrossel",
+  tipo: "curadoria" | "roteiro" | "carrossel" | "imagem",
 ): Promise<{ permitido: boolean; motivo: string }> {
   if (!contaId) return { permitido: false, motivo: "conta_ausente" };
   const supabase = getServiceClient();

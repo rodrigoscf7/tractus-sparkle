@@ -28,6 +28,7 @@ const AGENTES = [
   "push-agent",
   "planejador-agent",
   "suporte-agent",
+  "imagem-agent",
 ] as const;
 
 export type Agente = (typeof AGENTES)[number];

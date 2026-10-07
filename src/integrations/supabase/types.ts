@@ -1074,6 +1074,7 @@ export type Database = {
           kiwify_oferta_id: string | null
           kiwify_produto_id: string | null
           limite_carrosseis_mes: number
+          limite_imagens_mes: number
           limite_curadorias_mes: number
           limite_perfis: number
           limite_referencias: number
@@ -1098,6 +1099,7 @@ export type Database = {
           kiwify_oferta_id?: string | null
           kiwify_produto_id?: string | null
           limite_carrosseis_mes?: number
+          limite_imagens_mes?: number
           limite_curadorias_mes?: number
           limite_perfis?: number
           limite_referencias?: number
@@ -1122,6 +1124,7 @@ export type Database = {
           kiwify_oferta_id?: string | null
           kiwify_produto_id?: string | null
           limite_carrosseis_mes?: number
+          limite_imagens_mes?: number
           limite_curadorias_mes?: number
           limite_perfis?: number
           limite_referencias?: number

@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type TipoUso = "curadoria" | "roteiro" | "carrossel";
+export type TipoUso = "curadoria" | "roteiro" | "carrossel" | "imagem";
 
 export const TIPOS_USO: { tipo: TipoUso; label: string; campoLimite: string }[] = [
   { tipo: "roteiro", label: "Roteiros produzidos", campoLimite: "limite_roteiros_mes" },
   { tipo: "carrossel", label: "Carrosséis gerados", campoLimite: "limite_carrosseis_mes" },
+  { tipo: "imagem", label: "Imagens de capa geradas", campoLimite: "limite_imagens_mes" },
 ];
 
 /** Conta (workspace) do usuário atual, com plano e consumo do ciclo corrente. */

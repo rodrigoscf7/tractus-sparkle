@@ -24,7 +24,9 @@ export const gerarCarrossel = createServerFn({ method: "POST" })
 
     if (!pauta) throw new Error("Pauta não encontrada nesta conta.");
     if (!temRoteiroEscrito(pauta.status)) {
-      throw new Error("O carrossel sai assim que o roteiro estiver escrito. Ele ainda está sendo escrito.");
+      throw new Error(
+        "O carrossel sai assim que o roteiro estiver escrito. Ele ainda está sendo escrito.",
+      );
     }
 
     const { invocarAgente } = await import("@/lib/agentes.server");
@@ -39,6 +41,40 @@ export const gerarCarrossel = createServerFn({ method: "POST" })
   });
 
 /**
+ * Gera por IA a imagem da capa de um carrossel da conta do usuário. A leitura
+ * passa pela RLS: carrossel de outra conta não é encontrado. Cota e custo
+ * ficam no imagem-agent.
+ */
+export const gerarImagemCapa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { carrosselId: string; ideia?: string }) => ({
+    carrosselId: data.carrosselId,
+    ideia: (data.ideia ?? "").slice(0, 300),
+  }))
+  .handler(async ({ data, context }) => {
+    const { data: carrossel } = await context.supabase
+      .from("carrosseis")
+      .select("id, status")
+      .eq("id", data.carrosselId)
+      .maybeSingle();
+
+    if (!carrossel) throw new Error("Carrossel não encontrado nesta conta.");
+    if (carrossel.status !== "pronto") {
+      throw new Error("Gere o carrossel antes de criar a imagem da capa.");
+    }
+
+    const { invocarAgente } = await import("@/lib/agentes.server");
+    const resposta = await invocarAgente<{ caminho?: string }>(
+      "imagem-agent",
+      { carrossel_id: data.carrosselId, ideia: data.ideia },
+      { timeoutMs: 120_000 },
+    );
+
+    if (!resposta.ok) throw new Error(resposta.erro ?? "Não consegui gerar a imagem.");
+    return { ok: true as const, caminho: resposta.data?.caminho ?? null };
+  });
+
+/**
  * Coleta sob demanda das referências da conta.
  *
  * Sem isso, a primeira curadoria de um cliente novo só aparece no cron diário
@@ -49,11 +85,7 @@ export const rodarCuradoriaAgora = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { perfilId?: string } | undefined) => data ?? {})
   .handler(async ({ data, context }) => {
-    let query = context.supabase
-      .from("perfis_referencia")
-      .select("id")
-      .eq("ativo", true)
-      .limit(5);
+    let query = context.supabase.from("perfis_referencia").select("id").eq("ativo", true).limit(5);
     if (data.perfilId) query = query.eq("perfil_id_relacionado", data.perfilId);
 
     const { data: refs } = await query;
