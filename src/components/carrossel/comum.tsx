@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { CarrosselSlideData, TemplateCarrossel } from "@/lib/carrossel-template";
+import type { CarrosselSlideData, ImagemCapa, TemplateCarrossel } from "@/lib/carrossel-template";
 
 export const WIDTH = 1080;
 export const HEIGHT = 1350;
@@ -11,6 +11,8 @@ export type ModeloProps = {
   fotoDataUrl: string;
   index: number;
   total: number;
+  /** Só chega no slide 0, e só quando o carrossel tem imagem na capa. */
+  imagemCapa?: ImagemCapa | null;
 };
 
 export function ehCapa(slide: CarrosselSlideData, index: number) {
@@ -36,7 +38,12 @@ export function renderTexto(texto: string, destaque: string | undefined, estilo:
  * Tamanhos em px no slide de 1080 de largura. O título cresce quando está
  * sozinho (capa ou slide de respiro) e encolhe quando divide espaço com o corpo.
  */
-export function tamanhos(slide: CarrosselSlideData, capa: boolean) {
+export function tamanhos(slide: CarrosselSlideData, capa: boolean, fator = 1) {
+  const base = tamanhosBase(slide, capa);
+  return { titulo: Math.round(base.titulo * fator), corpo: Math.round(base.corpo * fator) };
+}
+
+function tamanhosBase(slide: CarrosselSlideData, capa: boolean) {
   const t = slide.titulo?.length ?? 0;
   const c = slide.corpo?.length ?? 0;
   if (!slide.corpo) {
@@ -67,4 +74,12 @@ export function corLegivelSobre(hex: string) {
 
 export function doisDigitos(n: number) {
   return String(n).padStart(2, "0");
+}
+
+/** `#RRGGBB` com transparência, para degradês na cor do fundo do template. */
+export function hexComAlfa(hex: string, alfa: number) {
+  const m = hex.replace("#", "").match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return `rgba(15, 23, 42, ${alfa})`;
+  const [r, g, b] = m.slice(1).map((h) => parseInt(h, 16));
+  return `rgba(${r}, ${g}, ${b}, ${alfa})`;
 }

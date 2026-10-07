@@ -1,13 +1,30 @@
 import { familiaCss } from "@/lib/carrossel-fontes";
-import { corLegivelSobre, ehCapa, renderTexto, tamanhos, type ModeloProps } from "./comum";
+import {
+  corLegivelSobre,
+  ehCapa,
+  hexComAlfa,
+  renderTexto,
+  tamanhos,
+  type ModeloProps,
+} from "./comum";
+import { ImagemDaCapa } from "./ImagemDaCapa";
 
 /**
  * Texto limpo com o trecho de destaque grifado na cor de acento, como marca-texto.
  * A identidade fica no rodapé (foto pequena e arroba) para o texto ocupar o slide.
  */
-export function ModeloMarcaTexto({ slide, template, fotoDataUrl, index, total }: ModeloProps) {
+export function ModeloMarcaTexto({
+  slide,
+  template,
+  fotoDataUrl,
+  index,
+  total,
+  imagemCapa,
+}: ModeloProps) {
   const capa = ehCapa(slide, index);
-  const tam = tamanhos(slide, capa);
+  // Com a foto emoldurada no alto, o texto da capa encolhe para caber embaixo.
+  const comImagem = capa && Boolean(imagemCapa);
+  const tam = tamanhos(slide, capa, comImagem ? 0.8 : 1);
   const grifo = {
     background: template.cor_destaque,
     color: corLegivelSobre(template.cor_destaque),
@@ -36,10 +53,24 @@ export function ModeloMarcaTexto({ slide, template, fotoDataUrl, index, total }:
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          gap: 40,
-          paddingBottom: 64,
+          gap: comImagem ? 32 : 40,
+          paddingBottom: comImagem ? 48 : 64,
         }}
       >
+        {comImagem && imagemCapa && (
+          <div
+            style={{
+              height: 520,
+              marginBottom: 8,
+              borderRadius: 24,
+              overflow: "hidden",
+              border: `2px solid ${hexComAlfa(template.cor_texto, 0.12)}`,
+              flexShrink: 0,
+            }}
+          >
+            <ImagemDaCapa imagem={imagemCapa} />
+          </div>
+        )}
         {slide.titulo && (
           <div
             style={{

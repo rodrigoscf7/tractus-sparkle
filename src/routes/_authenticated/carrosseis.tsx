@@ -11,7 +11,9 @@ import { BotaoCarrossel } from "@/components/roteiro/BotaoCarrossel";
 import { useConta } from "@/hooks/use-conta";
 import { useFontesCarrossel } from "@/hooks/use-fontes-carrossel";
 import {
-  fotoAsDataUrl,
+  FOTO_BUCKET,
+  IMAGEM_BUCKET,
+  imagemAsDataUrl,
   mergeSlides,
   parseTemplate,
   type CarrosselRow,
@@ -49,11 +51,12 @@ type RoteiroSemCarrossel = {
   carrosseis: { id: string }[];
 };
 
-/** A mesma foto serve a todos os cartões: baixa uma vez por página. */
-const fotos = new Map<string, Promise<string>>();
-function fotoEmCache(caminho: string) {
-  if (!fotos.has(caminho)) fotos.set(caminho, fotoAsDataUrl(caminho));
-  return fotos.get(caminho)!;
+/** A mesma foto de perfil serve a todos os cartões: cada arquivo baixa uma vez por página. */
+const arquivos = new Map<string, Promise<string>>();
+function arquivoEmCache(bucket: string, caminho: string) {
+  const chave = `${bucket}:${caminho}`;
+  if (!arquivos.has(chave)) arquivos.set(chave, imagemAsDataUrl(bucket, caminho));
+  return arquivos.get(chave)!;
 }
 
 function CarrosseisPage() {
@@ -67,7 +70,7 @@ function CarrosseisPage() {
       const { data, error } = await supabase
         .from("carrosseis")
         .select(
-          "id, status, erro, copy, visual, pauta_id, atualizado_em, pautas_geradas:pautas_geradas(id, tema, data_prevista), perfis:perfis(template_carrossel)",
+          "id, status, erro, copy, visual, pauta_id, atualizado_em, imagem_capa_path, imagem_capa_foco, pautas_geradas:pautas_geradas(id, tema, data_prevista), perfis:perfis(template_carrossel)",
         )
         .eq("conta_id", contaId as string)
         .order("atualizado_em", { ascending: false });
@@ -223,12 +226,19 @@ function CartaoCarrossel({ carrossel }: { carrossel: Carrossel }) {
   const slides = mergeSlides(carrossel);
   const pauta = carrossel.pautas_geradas;
   const [foto, setFoto] = useState("");
+  const [imagem, setImagem] = useState("");
   // Sem a fonte carregada, a capa piscaria na fonte do sistema.
   const fontes = useFontesCarrossel(template.fonte_titulo, template.fonte_texto);
 
   useEffect(() => {
-    if (template.foto_path) fotoEmCache(template.foto_path).then(setFoto);
+    if (template.foto_path) arquivoEmCache(FOTO_BUCKET, template.foto_path).then(setFoto);
   }, [template.foto_path]);
+
+  const caminhoImagem = carrossel.imagem_capa_path;
+  useEffect(() => {
+    if (caminhoImagem) arquivoEmCache(IMAGEM_BUCKET, caminhoImagem).then(setImagem);
+    else setImagem("");
+  }, [caminhoImagem]);
 
   const pronto = carrossel.status === "pronto" && slides.length > 0;
 
@@ -244,6 +254,11 @@ function CartaoCarrossel({ carrossel }: { carrossel: Carrossel }) {
               index={0}
               total={slides.length}
               scale={0.2}
+              imagemCapa={
+                caminhoImagem && imagem
+                  ? { dataUrl: imagem, foco: carrossel.imagem_capa_foco ?? 50 }
+                  : null
+              }
             />
           </div>
         ) : carrossel.status === "erro" ? (

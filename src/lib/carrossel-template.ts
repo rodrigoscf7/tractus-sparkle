@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FONTE_PADRAO, fonteDoId } from "@/lib/carrossel-fontes";
 
 export const FOTO_BUCKET = "perfil-fotos";
+export const IMAGEM_BUCKET = "carrossel-imagens";
 
 export type ModeloCarrosselId = "tweet" | "editorial" | "marca-texto";
 
@@ -86,10 +87,13 @@ export function parseTemplate(raw: unknown): TemplateCarrossel {
   };
 }
 
-/** Baixa a foto do bucket privado e devolve um data URL (evita CORS na exportação). */
-export async function fotoAsDataUrl(path: string): Promise<string> {
+/** Baixa um arquivo de bucket privado e devolve um data URL (evita CORS na exportação). */
+export async function imagemAsDataUrl(
+  bucket: string,
+  path: string | null | undefined,
+): Promise<string> {
   if (!path) return "";
-  const { data, error } = await supabase.storage.from(FOTO_BUCKET).download(path);
+  const { data, error } = await supabase.storage.from(bucket).download(path);
   if (error || !data) return "";
   return await new Promise<string>((resolve) => {
     const reader = new FileReader();
@@ -97,6 +101,11 @@ export async function fotoAsDataUrl(path: string): Promise<string> {
     reader.onerror = () => resolve("");
     reader.readAsDataURL(data);
   });
+}
+
+/** A foto de perfil do template. */
+export function fotoAsDataUrl(path: string): Promise<string> {
+  return imagemAsDataUrl(FOTO_BUCKET, path);
 }
 
 export type CarrosselSlideData = {
@@ -117,6 +126,7 @@ type SlideCopy = {
 
 export type CarrosselRow = {
   id: string;
+  conta_id?: string | null;
   status: string;
   erro: string | null;
   copy: {
@@ -129,7 +139,15 @@ export type CarrosselRow = {
     slides?: Array<{ destaque?: string; ritmo?: string }>;
     observacao_geral?: string;
   } | null;
+  /** Imagem opcional da capa (bucket carrossel-imagens). Sobrevive a "Regerar". */
+  imagem_capa_path?: string | null;
+  /** Enquadramento vertical, em %: 0 = alto, 50 = centro, 100 = baixo. */
+  imagem_capa_foco?: number | null;
+  imagem_capa_origem?: "envio" | "ia" | null;
 };
+
+/** O que o slide da capa recebe para desenhar a imagem. */
+export type ImagemCapa = { dataUrl: string; foco: number };
 
 /** Capa e hook são títulos; no formato antigo, o resto era corpo. */
 const TIPOS_TITULO = new Set(["capa", "hook"]);

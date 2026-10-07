@@ -292,6 +292,9 @@ export type Database = {
           criado_em: string
           erro: string | null
           id: string
+          imagem_capa_foco: number
+          imagem_capa_origem: string | null
+          imagem_capa_path: string | null
           pauta_id: string | null
           perfil_id: string | null
           status: string
@@ -304,6 +307,9 @@ export type Database = {
           criado_em?: string
           erro?: string | null
           id?: string
+          imagem_capa_foco?: number
+          imagem_capa_origem?: string | null
+          imagem_capa_path?: string | null
           pauta_id?: string | null
           perfil_id?: string | null
           status?: string
@@ -316,6 +322,9 @@ export type Database = {
           criado_em?: string
           erro?: string | null
           id?: string
+          imagem_capa_foco?: number
+          imagem_capa_origem?: string | null
+          imagem_capa_path?: string | null
           pauta_id?: string | null
           perfil_id?: string | null
           status?: string

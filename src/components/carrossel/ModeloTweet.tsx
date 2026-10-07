@@ -1,5 +1,6 @@
 import { familiaCss } from "@/lib/carrossel-fontes";
-import { ehCapa, renderTexto, tamanhos, type ModeloProps } from "./comum";
+import { ehCapa, hexComAlfa, renderTexto, tamanhos, type ModeloProps } from "./comum";
+import { ImagemDaCapa } from "./ImagemDaCapa";
 
 function VerifiedBadge({ color }: { color: string }) {
   return (
@@ -10,8 +11,18 @@ function VerifiedBadge({ color }: { color: string }) {
 }
 
 /** Estilo "post de rede social": avatar, nome, arroba, selo, título e corpo. */
-export function ModeloTweet({ slide, template, fotoDataUrl, index, total }: ModeloProps) {
-  const tam = tamanhos(slide, ehCapa(slide, index));
+export function ModeloTweet({
+  slide,
+  template,
+  fotoDataUrl,
+  index,
+  total,
+  imagemCapa,
+}: ModeloProps) {
+  const capa = ehCapa(slide, index);
+  // Com foto anexada, o texto da capa encolhe para os dois caberem.
+  const comImagem = capa && Boolean(imagemCapa);
+  const tam = tamanhos(slide, capa, comImagem ? 0.8 : 1);
 
   return (
     <div
@@ -63,9 +74,9 @@ export function ModeloTweet({ slide, template, fotoDataUrl, index, total }: Mode
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          gap: 36,
-          paddingTop: 72,
-          paddingBottom: 72,
+          gap: comImagem ? 28 : 36,
+          paddingTop: comImagem ? 48 : 72,
+          paddingBottom: comImagem ? 48 : 72,
         }}
       >
         {slide.titulo && (
@@ -94,6 +105,21 @@ export function ModeloTweet({ slide, template, fotoDataUrl, index, total }: Mode
             }}
           >
             {renderTexto(slide.corpo, slide.destaque, { fontWeight: 700 })}
+          </div>
+        )}
+        {/* Como num post com foto: a imagem vem anexada abaixo do texto. */}
+        {comImagem && imagemCapa && (
+          <div
+            style={{
+              height: 480,
+              marginTop: 8,
+              borderRadius: 28,
+              overflow: "hidden",
+              border: `2px solid ${hexComAlfa(template.cor_texto, 0.14)}`,
+              flexShrink: 0,
+            }}
+          >
+            <ImagemDaCapa imagem={imagemCapa} />
           </div>
         )}
       </div>

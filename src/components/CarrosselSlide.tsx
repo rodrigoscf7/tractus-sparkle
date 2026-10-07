@@ -2,6 +2,7 @@ import { forwardRef, type ComponentType } from "react";
 import { familiaCss } from "@/lib/carrossel-fontes";
 import type {
   CarrosselSlideData,
+  ImagemCapa,
   ModeloCarrosselId,
   TemplateCarrossel,
 } from "@/lib/carrossel-template";
@@ -23,6 +24,8 @@ type Props = {
   index: number;
   total: number;
   scale?: number;
+  /** Imagem do carrossel: só a capa (slide 0) desenha. */
+  imagemCapa?: ImagemCapa | null;
 };
 
 /**
@@ -30,7 +33,7 @@ type Props = {
  * tamanho real, que é o nó exportado como PNG; `scale` só afeta a prévia.
  */
 export const CarrosselSlide = forwardRef<HTMLDivElement, Props>(function CarrosselSlide(
-  { slide, template, fotoDataUrl, index, total, scale = 1 },
+  { slide, template, fotoDataUrl, index, total, scale = 1, imagemCapa = null },
   ref,
 ) {
   const Modelo = MODELOS[template.modelo] ?? ModeloTweet;
@@ -65,6 +68,7 @@ export const CarrosselSlide = forwardRef<HTMLDivElement, Props>(function Carross
           fotoDataUrl={fotoDataUrl}
           index={index}
           total={total}
+          imagemCapa={index === 0 ? imagemCapa : null}
         />
       </div>
     </div>

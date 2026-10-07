@@ -11,8 +11,11 @@ import { Download, Images, Loader2, RefreshCw } from "lucide-react";
 import { toPng } from "html-to-image";
 import { CarrosselSlide } from "@/components/CarrosselSlide";
 import { useFontesCarrossel } from "@/hooks/use-fontes-carrossel";
+import { ImagemCapaControles } from "@/components/carrossel/ImagemCapaControles";
 import {
+  IMAGEM_BUCKET,
   fotoAsDataUrl,
+  imagemAsDataUrl,
   mergeSlides,
   parseTemplate,
   type CarrosselRow,
@@ -29,6 +32,7 @@ export function CarrosselPanel({
   const [loading, setLoading] = useState(true);
   const [gerando, setGerando] = useState(false);
   const [fotoDataUrl, setFotoDataUrl] = useState("");
+  const [imagemDataUrl, setImagemDataUrl] = useState("");
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
   const solicitarCarrossel = useServerFn(gerarCarrossel);
 
@@ -40,7 +44,9 @@ export function CarrosselPanel({
   async function load() {
     const { data } = await supabase
       .from("carrosseis")
-      .select("id, status, erro, copy, visual")
+      .select(
+        "id, conta_id, status, erro, copy, visual, imagem_capa_path, imagem_capa_foco, imagem_capa_origem",
+      )
       .eq("pauta_id", pautaId)
       .maybeSingle();
     setCarrossel((data as CarrosselRow | null) ?? null);
@@ -52,6 +58,23 @@ export function CarrosselPanel({
     load();
     fotoAsDataUrl(template.foto_path).then(setFotoDataUrl);
   }, [pautaId, template.foto_path]);
+
+  // Data URL e não link: a exportação para PNG não lê imagem de outro domínio.
+  const caminhoImagem = carrossel?.imagem_capa_path ?? null;
+  useEffect(() => {
+    let ativo = true;
+    imagemAsDataUrl(IMAGEM_BUCKET, caminhoImagem).then((url) => {
+      if (ativo) setImagemDataUrl(url);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [caminhoImagem]);
+
+  const imagemCapa =
+    caminhoImagem && imagemDataUrl
+      ? { dataUrl: imagemDataUrl, foco: carrossel?.imagem_capa_foco ?? 50 }
+      : null;
 
   async function gerar() {
     setGerando(true);
@@ -190,10 +213,22 @@ export function CarrosselPanel({
                   index={i}
                   total={slides.length}
                   scale={0.24}
+                  imagemCapa={imagemCapa}
                 />
               </div>
             ))}
           </div>
+          {carrossel && (
+            <div className="mt-3">
+              <ImagemCapaControles
+                carrossel={carrossel}
+                miniatura={imagemDataUrl}
+                onMudou={(mudanca) =>
+                  setCarrossel((atual) => (atual ? { ...atual, ...mudanca } : atual))
+                }
+              />
+            </div>
+          )}
           {carrossel?.copy?.legenda_sugerida && (
             <div className="mt-4">
               <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
