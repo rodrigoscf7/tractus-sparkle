@@ -393,7 +393,7 @@ export async function callModelo(
 
 /** Modelo de imagem. Trocar não exige deploy: basta ajustar o secret. */
 export const MODELO_IMAGEM =
-  Deno.env.get("OPENROUTER_IMAGE_MODEL") ?? "black-forest-labs/flux.2-pro";
+  Deno.env.get("OPENROUTER_IMAGE_MODEL") ?? "openai/gpt-image-2.5-sunburst";
 
 /**
  * Modelos que só devolvem imagem (FLUX, GPT Image) exigem
