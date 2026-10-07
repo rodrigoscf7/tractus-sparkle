@@ -145,6 +145,8 @@ Deno.serve(async (req) => {
     });
     const pedido = montarPedido(cena);
 
+    // O FLUX.2 Pro no OpenRouter só aceita a proporção: tamanho e resolução
+    // são ignorados e a imagem sai com ~3 MP (1536×1920, ~4 MB em PNG).
     const { bytes, mimeType } = await gerarImagemModelo(pedido, { proporcao: "4:5" });
     const extensao = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
     const caminho = `${contaId}/${carrossel.id}/${Date.now()}-ia.${extensao}`;

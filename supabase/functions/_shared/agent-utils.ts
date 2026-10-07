@@ -393,7 +393,15 @@ export async function callModelo(
 
 /** Modelo de imagem. Trocar não exige deploy: basta ajustar o secret. */
 export const MODELO_IMAGEM =
-  Deno.env.get("OPENROUTER_IMAGE_MODEL") ?? "google/gemini-3.1-flash-image";
+  Deno.env.get("OPENROUTER_IMAGE_MODEL") ?? "black-forest-labs/flux.2-pro";
+
+/**
+ * Modelos que só devolvem imagem (FLUX) exigem `modalities: ["image"]`; os que
+ * também escrevem texto (Gemini) exigem `["image", "text"]`.
+ */
+function modalidadesDoModelo(modelo: string) {
+  return modelo.startsWith("black-forest-labs/") ? ["image"] : ["image", "text"];
+}
 
 /**
  * Gera uma imagem pelo OpenRouter (modelos com saída de imagem) e devolve os
@@ -402,7 +410,7 @@ export const MODELO_IMAGEM =
  */
 export async function gerarImagemModelo(
   prompt: string,
-  opts: { proporcao?: string; modelo?: string } = {},
+  opts: { proporcao?: string; tamanho?: string; modelo?: string } = {},
 ): Promise<{ bytes: Uint8Array; mimeType: string }> {
   const key = Deno.env.get("OPENROUTER_API_KEY");
   if (!key) throw new Error("OPENROUTER_API_KEY missing");
@@ -417,10 +425,14 @@ export async function gerarImagemModelo(
     },
     body: JSON.stringify({
       model: modelo,
-      modalities: ["image", "text"],
+      modalities: modalidadesDoModelo(modelo),
       // Devolve o valor cobrado em usage.cost (registrado em custo_eventos).
       usage: { include: true },
-      image_config: { aspect_ratio: opts.proporcao ?? "4:5" },
+      // `resolution` é respeitada só por alguns provedores (o FLUX ignora).
+      image_config: {
+        aspect_ratio: opts.proporcao ?? "4:5",
+        ...(opts.tamanho ? { resolution: opts.tamanho } : {}),
+      },
       messages: [{ role: "user", content: prompt }],
     }),
   });
