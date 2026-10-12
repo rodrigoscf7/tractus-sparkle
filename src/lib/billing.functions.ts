@@ -10,7 +10,7 @@ const cicloAtual = () => {
 
 const num = (v: unknown) => (v === null || v === undefined ? 0 : Number(v));
 
-async function assertAdmin(
+export async function assertAdmin(
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }>;
   },
@@ -523,57 +523,32 @@ export const criarContaConvidado = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as any;
+    const { criarContaCortesia, EmailJaCadastrado } = await import("@/lib/cortesia.server");
 
     const senha = senhaProvisoria();
-    const { data: criado, error: erroUsuario } = await admin.auth.admin.createUser({
-      email,
-      password: senha,
-      email_confirm: true,
-    });
-
-    if (erroUsuario) {
-      // O Auth responde com mensagem própria quando o e-mail já existe; vale
-      // repassar em vez de mascarar, porque a saída é outra (o admin deve
-      // conceder cortesia à conta existente, não criar uma segunda).
-      const bruto = String(erroUsuario.message ?? "");
-      if (/already (been )?registered|already exists/i.test(bruto)) {
-        throw new Error("Já existe um usuário com esse e-mail. Use as ações da conta dele.");
-      }
-      throw new Error(bruto || "Não foi possível criar o usuário.");
-    }
-
-    const userId = criado?.user?.id as string | undefined;
-    if (!userId) throw new Error("O usuário foi criado sem id. Tente de novo.");
-
     const nome = data.nome?.trim() || email.split("@")[0] || "Convidado";
     const plano = data.planoCodigo || "starter";
-
-    // Mesmo caminho que o cadastro normal percorre: cria conta, vincula como
-    // owner e abre a assinatura. Reusar evita que a conta de convidado nasça
-    // diferente da dos outros.
-    const { data: contaId, error: erroConta } = await admin.rpc("iniciar_conta_trial", {
-      _user_id: userId,
-      _nome: nome,
-      _plano: plano,
-    });
-    if (erroConta) throw new Error(erroConta.message);
-
-    // O RPC marca a origem como kiwify, que é o caso comum. Aqui não é venda:
-    // corrigir a origem mantém o painel financeiro honesto.
     const dias = data.diasCortesia && data.diasCortesia > 0 ? data.diasCortesia : 30;
-    const fim = new Date(Date.now() + dias * 86400000);
-    await admin
-      .from("assinaturas")
-      .update({
-        situacao: "trial",
+
+    let contaId: string;
+    try {
+      ({ contaId } = await criarContaCortesia(supabaseAdmin, {
+        email,
+        senha,
+        nome,
+        plano,
+        dias,
         origem: "cortesia",
-        trial_fim: fim.toISOString(),
-        valor_centavos: 0,
-        cancelada_em: null,
         observacao: `Convidado por admin em ${new Date().toLocaleDateString("pt-BR")}`,
-      })
-      .eq("conta_id", contaId);
+      }));
+    } catch (erro) {
+      // A saída é outra: o admin deve conceder cortesia à conta existente, não
+      // criar uma segunda.
+      if (erro instanceof EmailJaCadastrado) {
+        throw new Error("Já existe um usuário com esse e-mail. Use as ações da conta dele.");
+      }
+      throw erro;
+    }
 
     await registrarAcao(supabaseAdmin, context.userId, String(contaId), "convidado_criado", {
       email,

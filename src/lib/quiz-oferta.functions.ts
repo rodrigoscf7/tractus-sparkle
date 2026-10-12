@@ -14,8 +14,7 @@
  */
 
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { createHash, randomBytes } from "crypto";
+import { randomBytes } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
@@ -30,6 +29,7 @@ import {
 } from "@/lib/dna-viral";
 import { calcularScore } from "@/lib/dna-viral-score";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { hashDaOrigem } from "@/lib/origem.server";
 import {
   PERGUNTAS,
   digitosWhatsapp,
@@ -59,26 +59,6 @@ type Db = SupabaseClient<Database>;
 async function admin(): Promise<Db> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
-}
-
-/**
- * Identificador de origem para o limite de geração.
- *
- * Guarda o hash, nunca o IP. O endereço é dado pessoal sob a LGPD e não temos
- * motivo para retê-lo: só precisamos saber que duas visitas vieram do mesmo
- * lugar. O sal vem do ambiente do servidor — se ele rodar, os contadores
- * zeram, o que é aceitável para uma janela de uma hora.
- */
-function hashDaOrigem(): string | null {
-  const request = getRequest();
-  const bruto =
-    request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request?.headers.get("x-real-ip")?.trim() ||
-    "";
-  if (!bruto) return null;
-
-  const sal = process.env["LEAD_IP_SALT"] ?? process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
-  return createHash("sha256").update(`${bruto}:${sal}`).digest("hex");
 }
 
 function novoToken(): string {

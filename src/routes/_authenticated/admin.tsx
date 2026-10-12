@@ -28,6 +28,7 @@ import {
 } from "@/lib/billing.functions";
 import { enviarNotificacaoTeste } from "@/lib/notificacoes.functions";
 import { ChamadosSuporte } from "@/components/suporte/ChamadosSuporte";
+import { GerirConvites } from "@/components/convites/GerirConvites";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -287,6 +288,7 @@ function AdminPage() {
         {/* ---------------- CONTAS ---------------- */}
         <TabsContent value="contas" className="space-y-3 mt-5">
           <ConvidarConta planos={data?.planos ?? []} aoCriar={refetch} />
+          <GerirConvites />
 
           {(data?.contas ?? []).map((conta) => (
             <Card key={conta.id} className="p-4 sm:p-5">

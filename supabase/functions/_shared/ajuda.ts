@@ -127,6 +127,12 @@ Documento com posicionamento, como você soa, público (dores e objeções), pil
 - A cobrança é feita pela Kiwify. Cancelamento, troca de cartão, nota fiscal e reembolso são tratados pelo suporte humano.
 - "Em teste" mostra quantos dias de teste restam. Quando o teste acaba sem assinatura, os planos semanais param.
 
+## Convite (link /convite/<código>)
+- Quem recebe um link de convite (por exemplo, pelo QR code do vídeo de demonstração) cria a conta ali mesmo: nome, e-mail, WhatsApp e uma senha de pelo menos 8 caracteres. Ao enviar, já entra no app e começa o onboarding.
+- A conta nasce com a cortesia do convite (em geral 30 dias, com tudo liberado), que aparece como "Em teste" em Configurações → Assinatura. Quando acaba, vale o mesmo que o fim do teste.
+- "Este convite não está disponível": o link está incompleto, expirou, foi desativado ou as vagas acabaram. É preciso pedir um link novo a quem enviou.
+- "Já existe uma conta com esse e-mail": entrar com esse e-mail ou usar "esqueci minha senha" na tela de entrar.
+
 ## Onboarding
 Perguntas sobre área, nicho, cliente ideal, objetivos, estilo de fala, referências (mínimo 2) e dias de postar. Ao concluir, a prevIA escreve o DNA viral e já começa o primeiro plano da semana, que fica pronto em alguns minutos.
 `;

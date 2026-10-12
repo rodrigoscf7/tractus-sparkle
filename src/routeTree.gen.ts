@@ -27,6 +27,7 @@ import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
 import { Route as AuthenticatedPlanoRouteImport } from './routes/_authenticated/plano'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
+import { Route as ConviteCodigoRouteImport } from './routes/convite.$codigo'
 import { Route as DnaViralTokenRouteImport } from './routes/dna-viral.$token'
 import { Route as OfertaProcessandoRouteImport } from './routes/oferta.processando'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
@@ -126,6 +127,11 @@ const AuthenticatedRoteirosRoute = AuthenticatedRoteirosRouteImport.update({
   path: '/roteiros',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ConviteCodigoRoute = ConviteCodigoRouteImport.update({
+  id: '/convite/$codigo',
+  path: '/convite/$codigo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DnaViralTokenRoute = DnaViralTokenRouteImport.update({
   id: '/dna-viral/$token',
   path: '/dna-viral/$token',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/plano': typeof AuthenticatedPlanoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
+  '/convite/$codigo': typeof ConviteCodigoRoute
   '/dna-viral/$token': typeof DnaViralTokenRoute
   '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/plano': typeof AuthenticatedPlanoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
+  '/convite/$codigo': typeof ConviteCodigoRoute
   '/dna-viral/$token': typeof DnaViralTokenRoute
   '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -242,6 +250,7 @@ export interface FileRoutesById {
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/_authenticated/plano': typeof AuthenticatedPlanoRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
+  '/convite/$codigo': typeof ConviteCodigoRoute
   '/dna-viral/$token': typeof DnaViralTokenRoute
   '/oferta/processando': typeof OfertaProcessandoRoute
   '/onboarding/processando': typeof OnboardingProcessandoRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/pipeline'
     | '/plano'
     | '/roteiros'
+    | '/convite/$codigo'
     | '/dna-viral/$token'
     | '/oferta/processando'
     | '/onboarding/processando'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/pipeline'
     | '/plano'
     | '/roteiros'
+    | '/convite/$codigo'
     | '/dna-viral/$token'
     | '/oferta/processando'
     | '/onboarding/processando'
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pipeline'
     | '/_authenticated/plano'
     | '/_authenticated/roteiros'
+    | '/convite/$codigo'
     | '/dna-viral/$token'
     | '/oferta/processando'
     | '/onboarding/processando'
@@ -341,6 +353,7 @@ export interface RootRouteChildren {
   BoasVindasRoute: typeof BoasVindasRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  ConviteCodigoRoute: typeof ConviteCodigoRoute
   DnaViralTokenRoute: typeof DnaViralTokenRoute
   OfertaProcessandoRoute: typeof OfertaProcessandoRoute
   ApiPublicWebhooksKiwifyRoute: typeof ApiPublicWebhooksKiwifyRoute
@@ -474,6 +487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRoteirosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/convite/$codigo': {
+      id: '/convite/$codigo'
+      path: '/convite/$codigo'
+      fullPath: '/convite/$codigo'
+      preLoaderRoute: typeof ConviteCodigoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dna-viral/$token': {
       id: '/dna-viral/$token'
       path: '/dna-viral/$token'
@@ -602,6 +622,7 @@ const rootRouteChildren: RootRouteChildren = {
   BoasVindasRoute: BoasVindasRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  ConviteCodigoRoute: ConviteCodigoRoute,
   DnaViralTokenRoute: DnaViralTokenRoute,
   OfertaProcessandoRoute: OfertaProcessandoRoute,
   ApiPublicWebhooksKiwifyRoute: ApiPublicWebhooksKiwifyRoute,
