@@ -181,7 +181,17 @@ export async function aprovarPlanoDoUsuario(
     _conta_id: plano.conta_id,
     _tipo: "roteiro",
   });
-  const c = (cota ?? {}) as { permitido?: boolean; limite?: number; usado?: number };
+  const c = (cota ?? {}) as {
+    permitido?: boolean;
+    motivo?: string;
+    limite?: number;
+    usado?: number;
+  };
+  if (c.permitido === false && c.motivo === "sem_assinatura") {
+    throw new Error(
+      "Sua assinatura não está ativa. Assine em Configurações › Assinatura para aprovar o plano.",
+    );
+  }
   if (c.permitido === false) {
     throw new Error("Você chegou ao limite de roteiros do seu plano neste mês.");
   }

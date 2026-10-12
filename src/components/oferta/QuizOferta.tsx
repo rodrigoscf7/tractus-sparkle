@@ -42,6 +42,8 @@ import {
 import { gravarRespostas, lerRespostas } from "@/lib/quiz-oferta.estado";
 import { salvarQuiz } from "@/lib/quiz-oferta.functions";
 import { capturarOrigem, obterLeadId } from "@/lib/oferta-variante";
+import { rastrear } from "@/lib/pixel";
+import { LinksLegais } from "@/components/legal/PaginaLegal";
 
 export function QuizOferta({ passo }: { passo: number }) {
   const navigate = useNavigate();
@@ -125,6 +127,8 @@ export function QuizOferta({ passo }: { passo: number }) {
       await salvar({
         data: { leadId: obterLeadId(), respostas, origem: capturarOrigem() },
       });
+      // A última pergunta é a de contato: aqui o visitante vira lead.
+      rastrear("Lead", { content_name: "quiz_dna_viral" }, obterLeadId());
       navigate({ to: "/oferta/processando" });
     } catch {
       setEnviando(false);
@@ -379,7 +383,16 @@ function Campo({
           </div>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Ao continuar, você concorda em receber o diagnóstico e comunicações
-            relacionadas a ele. Não enviamos spam.
+            relacionadas a ele, conforme a{" "}
+            <a
+              href="/privacidade"
+              target="_blank"
+              rel="noreferrer"
+              className="text-foreground underline underline-offset-4"
+            >
+              Política de Privacidade
+            </a>
+            . Não enviamos spam.
           </p>
         </div>
       )}
@@ -468,6 +481,8 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
             Leva menos de 2 minutos · Resultado na hora, sem esperar e-mail
           </p>
         </div>
+
+        <LinksLegais />
       </div>
     </div>
   );

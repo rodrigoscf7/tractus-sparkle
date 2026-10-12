@@ -8,6 +8,7 @@ import {
   gerarImagemModelo,
   getServiceClient,
   limiteDisponivel,
+  mensagemDeCota,
   requireAgentAuth,
   setCustoContexto,
 } from "../_shared/agent-utils.ts";
@@ -119,7 +120,7 @@ Deno.serve(async (req) => {
           ok: false,
           error: cota.motivo === "limite_atingido"
             ? "Você usou todas as imagens geradas do mês. Renova no dia 1; enviar uma imagem sua continua liberado."
-            : `Não dá para gerar imagem agora (${cota.motivo}).`,
+            : mensagemDeCota(cota.motivo, "imagens de capa"),
         },
         402,
       );

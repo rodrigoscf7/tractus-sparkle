@@ -821,3 +821,17 @@ export async function limiteDisponivel(
   const r = (data ?? {}) as { permitido?: boolean; motivo?: string };
   return { permitido: r.permitido === true, motivo: r.motivo ?? "desconhecido" };
 }
+
+/** Texto para a pessoa quando `limiteDisponivel` nega. */
+export function mensagemDeCota(motivo: string, oQue: string): string {
+  if (motivo === "sem_assinatura") {
+    return `Sua assinatura não está ativa, então não dá para gerar ${oQue}. Assine em Configurações › Assinatura para voltar.`;
+  }
+  if (motivo === "conta_suspensa") {
+    return "Sua conta está suspensa. Fale com o suporte.";
+  }
+  if (motivo === "limite_atingido") {
+    return `Você usou todo o limite de ${oQue} do mês. Renova no dia 1.`;
+  }
+  return `Não dá para gerar ${oQue} agora (${motivo}).`;
+}

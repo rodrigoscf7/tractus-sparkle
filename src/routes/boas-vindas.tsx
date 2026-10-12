@@ -20,7 +20,9 @@ import { obterLeadId } from "@/lib/oferta-variante";
  *
  * Ninguém se cadastra sozinho neste app — o cadastro público está desligado.
  * Quem paga tem a conta criada pelo webhook e define a própria senha aqui, sem
- * depender de e-mail chegar. O e-mail existe como reforço, não como caminho.
+ * depender de e-mail chegar. O e-mail de boas-vindas (email-agent) leva um link
+ * de criar senha para quem não consegue usar esta tela: outro aparelho, aba
+ * fechada, compra sem quiz.
  *
  * Quem identifica a pessoa é o identificador do lead, que ficou no navegador
  * desde o quiz. Não é credencial forte — ele viaja na query do checkout — e
@@ -111,7 +113,7 @@ function BoasVindas() {
       <Moldura>
         <Aviso
           titulo="O prazo deste link acabou"
-          texto={`Sua conta existe e está ativa em ${estado.email}. Use "esqueci minha senha" na tela de entrar para definir uma nova.`}
+          texto={`Sua conta existe e está ativa em ${estado.email}. Use o link "Criar minha senha" que enviamos para esse e-mail, ou "Esqueci minha senha" na tela de entrar.`}
         />
       </Moldura>
     );
@@ -122,7 +124,7 @@ function BoasVindas() {
       <Moldura>
         <Aviso
           titulo="Ainda não recebemos a confirmação do pagamento"
-          texto="Isso às vezes demora alguns minutos, e é normal em pagamento por Pix ou boleto. Sua conta é criada assim que o pagamento for confirmado — quando isso acontecer, use 'esqueci minha senha' na tela de entrar com o e-mail da compra."
+          texto="Isso às vezes demora alguns minutos, e é normal em pagamento por Pix ou boleto. Sua conta é criada assim que o pagamento for confirmado, e na hora enviamos para o e-mail da compra um link para criar a sua senha. Pode fechar esta página."
         />
       </Moldura>
     );

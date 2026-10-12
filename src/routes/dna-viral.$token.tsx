@@ -4,6 +4,8 @@ import { ArrowRight, Download } from "lucide-react";
 import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { getDnaViral, getOfertaPublica } from "@/lib/quiz-oferta.functions";
 import { capturarOrigem, obterLeadId } from "@/lib/oferta-variante";
+import { rastrear } from "@/lib/pixel";
+import { LinksLegais } from "@/components/legal/PaginaLegal";
 import { statusDoScore, type DimensaoScore, type FaixaScore } from "@/lib/dna-viral-score";
 import type { DnaViral } from "@/lib/dna-viral";
 
@@ -60,6 +62,10 @@ function Relatorio() {
   const gargalos = relatorio.gargalos ?? [];
   const score = relatorio.score;
 
+  useEffect(() => {
+    rastrear("ViewContent", { content_name: "relatorio_dna_viral" });
+  }, []);
+
   return (
     <div className="mx-auto max-w-3xl px-5 py-10 sm:px-10 sm:py-14" data-print-root>
       {/* ---- Cabeçalho + vídeo + CTA (fora do PDF) ---- */}
@@ -73,7 +79,7 @@ function Relatorio() {
           Assista o vídeo abaixo e descubra como atrair mais clientes.
         </p>
 
-        <VideoPlaceholder />
+        <VideoDiagnostico />
 
         <div className="mt-6 flex flex-wrap items-center gap-4">
           <BotaoCheckout oferta={oferta} rotulo="Resgatar bônus" />
@@ -262,6 +268,7 @@ function Relatorio() {
 
       <footer className="mt-16 border-t border-border pt-6" data-print-hide>
         <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-6 w-auto opacity-60" />
+        <LinksLegais className="mt-4" />
       </footer>
     </div>
   );
@@ -336,9 +343,72 @@ function PainelScore({ score }: { score: DimensaoScore[] }) {
 }
 
 /**
- * Placeholder vertical até o asset do vídeo existir.
- * O roteiro está em docs/superpowers/specs/2026-09-16-video-cta-dna-viral-design.md
+ * URL do vídeo do topo. Vazia, a página mostra o placeholder.
+ *
+ * Aceita arquivo direto (.mp4/.webm, por exemplo do Storage do Supabase ou do
+ * Bunny) ou link de YouTube/Vimeo. O roteiro está em
+ * docs/superpowers/specs/2026-09-16-video-cta-dna-viral-design.md
  */
+const VIDEO_URL = (import.meta.env.VITE_VIDEO_DIAGNOSTICO_URL as string | undefined)?.trim() || "";
+const VIDEO_POSTER =
+  (import.meta.env.VITE_VIDEO_DIAGNOSTICO_POSTER as string | undefined)?.trim() || undefined;
+
+/** Link de YouTube/Vimeo vira o endereço do player embutido; arquivo direto devolve null. */
+function urlDeEmbed(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+    if (host.endsWith("youtube.com")) {
+      const id = u.searchParams.get("v") ?? u.pathname.split("/").filter(Boolean).pop();
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    if (host === "vimeo.com") return `https://player.vimeo.com/video${u.pathname}`;
+    if (host === "player.vimeo.com" || host.includes("mediadelivery.net")) return url;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+const MOLDURA_VIDEO =
+  "mx-auto mt-6 aspect-[9/16] max-h-[min(70vh,520px)] w-full max-w-[280px] overflow-hidden rounded-xl border border-border bg-surface";
+
+function VideoDiagnostico() {
+  if (!VIDEO_URL) return <VideoPlaceholder />;
+
+  const embed = urlDeEmbed(VIDEO_URL);
+  if (embed) {
+    return (
+      <div className={MOLDURA_VIDEO} data-print-hide>
+        <iframe
+          src={embed}
+          title="Vídeo do diagnóstico"
+          className="h-full w-full"
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={MOLDURA_VIDEO} data-print-hide>
+      <video
+        src={VIDEO_URL}
+        poster={VIDEO_POSTER}
+        controls
+        playsInline
+        preload="metadata"
+        className="h-full w-full object-cover"
+      >
+        Seu navegador não reproduz este vídeo.
+      </video>
+    </div>
+  );
+}
+
+/** Enquanto o vídeo não existe. */
 function VideoPlaceholder() {
   return (
     <div
@@ -394,6 +464,17 @@ function BotaoCheckout({
   return (
     <a
       href={href ?? oferta.checkoutUrl}
+      onClick={() =>
+        rastrear(
+          "InitiateCheckout",
+          {
+            content_name: oferta.nome,
+            currency: "BRL",
+            ...(oferta.precoCentavos != null ? { value: oferta.precoCentavos / 100 } : {}),
+          },
+          obterLeadId(),
+        )
+      }
       data-print-hide
       className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-8 py-3.5 text-base
         font-medium text-primary-foreground transition hover:bg-primary/90

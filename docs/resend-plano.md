@@ -3,6 +3,24 @@
 Runbook para configurar o envio de e-mail do prevIA. Escrito para quem vai executar
 com acesso ao painel do Supabase, ao DNS do domínio e ao repositório.
 
+## Status (12/10/2026)
+
+O código das etapas 3 e 4 está pronto e fica inerte até os secrets existirem:
+
+- Edge Function `supabase/functions/email-agent/` (tipos `dna_viral` e `boas_vindas`),
+  disparada por `enviarEmailEmSegundoPlano` em `src/lib/agentes.server.ts`.
+- Etapa 4: disparo no fim de `gerarDnaViral` (o e-mail já vem do quiz; `salvarEmailLead`
+  não é usado pela tela). Idempotência por `oferta_leads.email_enviado_em`.
+- Etapa 3: disparo em `criarContaDoComprador` (e não em `prepararAcesso`, que sai cedo
+  quando não há lead), só para usuário recém-criado. O botão do e-mail é um link de
+  recuperação gerado por `auth.admin.generateLink`, então também cobre outro aparelho e
+  compra sem quiz.
+
+Falta: etapas 1 e 2, os secrets `RESEND_API_KEY`, `EMAIL_REMETENTE` e `SITE_URL`
+(`supabase secrets set ...`) e o deploy (`supabase functions deploy email-agent`).
+Vale subir **Email OTP Expiration** no Auth (até 24h): é a validade do botão
+"Criar minha senha".
+
 ## Por que isto existe
 
 Hoje o projeto **não tem SMTP configurado**. O Supabase está usando o remetente

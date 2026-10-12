@@ -469,8 +469,16 @@ export const reprocessarEventoKiwify = createServerFn({ method: "POST" })
       .eq("id", data.eventoId)
       .maybeSingle();
     if (!evento) throw new Error("Evento não encontrado.");
-    const { aplicarEventoKiwify } = await import("./kiwify.server");
-    const resultado = await aplicarEventoKiwify(admin, evento);
+    const { aplicarEventoKiwify, normalizarEventoKiwify } = await import("./kiwify.server");
+    // A linha gravada nao tem lead_id (s3): ele so existe no payload. Sem
+    // normalizar de novo, reprocessar nao marca o lead como comprado e a tela
+    // de boas-vindas nunca sai de "sem compra".
+    const normalizado = normalizarEventoKiwify(evento.payload ?? {});
+    const resultado = await aplicarEventoKiwify(admin, {
+      ...normalizado,
+      conta_id: evento.conta_id ?? normalizado.conta_id,
+      id: evento.id,
+    });
     await registrarAcao(admin, context.userId, evento.conta_id, "kiwify_reprocessado", {
       eventoId: data.eventoId,
       resultado,

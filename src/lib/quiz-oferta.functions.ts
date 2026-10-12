@@ -194,6 +194,13 @@ export const gerarDnaViral = createServerFn({ method: "POST" })
       })
       .eq("id", data.leadId);
 
+    // O link do relatório também vai por e-mail, sem segurar a tela. O agente
+    // carimba email_enviado_em, então uma segunda geração não reenvia.
+    if (contato.email) {
+      const { enviarEmailEmSegundoPlano } = await import("@/lib/agentes.server");
+      enviarEmailEmSegundoPlano({ tipo: "dna_viral", lead_id: data.leadId });
+    }
+
     return { token: lead.token as string };
   });
 

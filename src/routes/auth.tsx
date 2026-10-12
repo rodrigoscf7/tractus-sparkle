@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { mensagemErro } from "@/lib/mensagem-erro";
+import { LinksLegais } from "@/components/legal/PaginaLegal";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -27,11 +28,15 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-type Modo = "signin" | "signup" | "recuperar";
+/*
+ * Sem modo de cadastro: o cadastro público está desligado no Auth. Quem ainda
+ * não é cliente entra pelo diagnóstico (/) e compra; o convidado entra pelo
+ * link de convite.
+ */
+type Modo = "signin" | "recuperar";
 
 const ROTULO: Record<Modo, { acao: string; carregando: string }> = {
   signin: { acao: "Entrar", carregando: "Entrando…" },
-  signup: { acao: "Criar conta", carregando: "Criando conta…" },
   recuperar: { acao: "Enviar link de recuperação", carregando: "Enviando…" },
 };
 
@@ -54,14 +59,6 @@ function AuthPage() {
         // Não confirmamos se o e-mail existe: isso revelaria quem tem conta.
         toast.success("Se existir uma conta com esse e-mail, o link de recuperação chegou nele.");
         setMode("signin");
-      } else if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/hoje` },
-        });
-        if (error) throw error;
-        toast.success("Conta criada. Verifique seu e-mail se a confirmação estiver ativa.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -106,11 +103,8 @@ function AuthPage() {
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                autoComplete="current-password"
               />
-              {mode === "signup" && (
-                <p className="text-xs text-muted-foreground">Pelo menos 6 caracteres.</p>
-              )}
             </div>
           )}
 
@@ -126,14 +120,6 @@ function AuthPage() {
         </form>
 
         <div className="mt-6 space-y-2 text-center">
-          <button
-            type="button"
-            onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-            className="w-full min-h-11 rounded-md text-sm text-muted-foreground hover:text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            {mode === "signup" ? "Já tem conta? Entrar" : "Criar nova conta"}
-          </button>
-
           {mode !== "recuperar" ? (
             <button
               type="button"
@@ -151,7 +137,16 @@ function AuthPage() {
               Voltar para o acesso
             </button>
           )}
+
+          <Link
+            to="/"
+            className="flex w-full min-h-11 items-center justify-center rounded-md text-sm text-muted-foreground hover:text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            Ainda não é cliente? Faça o diagnóstico gratuito
+          </Link>
         </div>
+
+        <LinksLegais className="mt-6 justify-center" />
       </Card>
     </div>
   );

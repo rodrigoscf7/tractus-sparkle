@@ -11,6 +11,7 @@ import {
   formatRestricoes,
   getServiceClient,
   limiteDisponivel,
+  mensagemDeCota,
   requireAgentAuth,
   setCustoContexto,
   setStatus,
@@ -146,9 +147,7 @@ Deno.serve(async (req) => {
     // Cota do plano validada no servidor antes de gastar tokens.
     const cotaCarrossel = await limiteDisponivel(contaId, "carrossel");
     if (!cotaCarrossel.permitido) {
-      throw new Error(
-        `Limite de carrosséis do plano atingido (${cotaCarrossel.motivo}). Renova no próximo ciclo.`,
-      );
+      throw new Error(mensagemDeCota(cotaCarrossel.motivo, "carrosséis"));
     }
 
     const [{ data: roteiro }, { data: manual }, { data: analise }] = await Promise.all([

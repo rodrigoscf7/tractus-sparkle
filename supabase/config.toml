@@ -41,3 +41,8 @@ verify_jwt = false
 
 [functions.suporte-agent]
 verify_jwt = false
+
+# E-mails do funil (DNA Viral e boas-vindas pos-compra) pela API do Resend.
+# Chamado so pelo servidor do app, via invocarAgente, com x-agent-secret.
+[functions.email-agent]
+verify_jwt = false

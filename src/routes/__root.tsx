@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
+import { registrarPageView, rotaDoFunil } from "@/lib/pixel";
 
 function NotFoundComponent() {
   return (
@@ -129,6 +130,16 @@ function RootComponent() {
     });
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
+
+  // Meta Pixel só nas páginas do funil; o app logado fica de fora.
+  useEffect(() => {
+    function talvezRegistrar() {
+      const { pathname, search } = window.location;
+      if (rotaDoFunil(pathname)) registrarPageView(pathname + search);
+    }
+    talvezRegistrar();
+    return router.subscribe("onResolved", talvezRegistrar);
+  }, [router]);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {

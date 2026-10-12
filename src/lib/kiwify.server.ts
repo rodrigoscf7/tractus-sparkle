@@ -139,6 +139,7 @@ async function criarContaDoComprador(
 
   try {
     let userId = await acharUsuarioPorEmail(admin, email);
+    const usuarioNovo = !userId;
 
     if (!userId) {
       const { data: criado, error } = await admin.auth.admin.createUser({
@@ -167,7 +168,16 @@ async function criarContaDoComprador(
       return null;
     }
 
-    await prepararAcesso(admin, evento, String(contaId));
+    const leadId = await prepararAcesso(admin, evento, String(contaId));
+
+    // Rede de seguranca da tela de boas-vindas: quem fechou a aba, pagou em
+    // outro aparelho ou comprou sem passar pelo quiz recebe o link para criar
+    // a senha. So para usuario criado agora -- quem ja tinha conta tem senha.
+    if (usuarioNovo) {
+      const { enviarEmailEmSegundoPlano } = await import("@/lib/agentes.server");
+      enviarEmailEmSegundoPlano({ tipo: "boas_vindas", email, lead_id: leadId });
+    }
+
     return String(contaId);
   } catch (e) {
     console.error("kiwify: erro ao criar conta do comprador", e);
@@ -194,9 +204,13 @@ async function acharUsuarioPorEmail(admin: AnyClient, email: string): Promise<st
  * passo simplesmente nao faz nada.
  *
  * O carimbo em conta_criada_em abre a janela em que a tela de boas-vindas
- * aceita definir a senha.
+ * aceita definir a senha. Devolve o lead ligado, se houver.
  */
-async function prepararAcesso(admin: AnyClient, evento: KiwifyEventoRow, contaId: string) {
+async function prepararAcesso(
+  admin: AnyClient,
+  evento: KiwifyEventoRow,
+  contaId: string,
+): Promise<string | null> {
   const agora = new Date().toISOString();
 
   let lead: { id: string; respostas: Record<string, unknown>; importado_em: string | null } | null =
@@ -223,7 +237,7 @@ async function prepararAcesso(admin: AnyClient, evento: KiwifyEventoRow, contaId
     lead = data ?? null;
   }
 
-  if (!lead) return;
+  if (!lead) return null;
 
   await admin
     .from("oferta_leads")
@@ -231,7 +245,7 @@ async function prepararAcesso(admin: AnyClient, evento: KiwifyEventoRow, contaId
     .eq("id", lead.id);
 
   const respostas = (lead.respostas ?? {}) as Record<string, unknown>;
-  if (lead.importado_em || !Object.keys(respostas).length) return;
+  if (lead.importado_em || !Object.keys(respostas).length) return lead.id;
 
   // Nao sobrescreve: se a conta ja tem onboarding em andamento, o que a pessoa
   // fez dentro do app manda.
@@ -241,8 +255,8 @@ async function prepararAcesso(admin: AnyClient, evento: KiwifyEventoRow, contaId
     .eq("conta_id", contaId)
     .maybeSingle();
 
-  if (existente?.concluido_em) return;
-  if (existente?.respostas && Object.keys(existente.respostas).length > 0) return;
+  if (existente?.concluido_em) return lead.id;
+  if (existente?.respostas && Object.keys(existente.respostas).length > 0) return lead.id;
 
   if (existente) {
     await admin
@@ -256,6 +270,41 @@ async function prepararAcesso(admin: AnyClient, evento: KiwifyEventoRow, contaId
   }
 
   await admin.from("oferta_leads").update({ importado_em: agora }).eq("id", lead.id);
+  return lead.id;
+}
+
+/**
+ * Quem ja tinha usuario (convidado, ou comprou de novo) e comprou pelo quiz.
+ *
+ * A conta nao nasce aqui, entao `prepararAcesso` nao roda e, sem isto, o lead
+ * ficaria sem `conta_criada_em` -- a tela de boas-vindas giraria em
+ * "confirmando o pagamento" ate desistir. Essa pessoa ja tem senha: o lead
+ * nasce com o convite consumido e a tela manda direto para o login.
+ *
+ * So toca lead que ainda nao foi ligado a conta nenhuma. Silenciosa.
+ */
+async function vincularLeadAContaExistente(
+  admin: AnyClient,
+  evento: KiwifyEventoRow,
+  contaId: string,
+) {
+  if (!evento.lead_id) return;
+  if (!APROVA.has(evento.evento.toLowerCase())) return;
+  try {
+    const agora = new Date().toISOString();
+    await admin
+      .from("oferta_leads")
+      .update({
+        conta_id: contaId,
+        conta_criada_em: agora,
+        senha_definida_em: agora,
+        atualizado_em: agora,
+      })
+      .eq("id", evento.lead_id)
+      .is("conta_id", null);
+  } catch (e) {
+    console.error("kiwify: falha ao vincular lead a conta existente", e);
+  }
 }
 
 async function resolverConta(admin: AnyClient, evento: KiwifyEventoRow): Promise<string | null> {
@@ -320,6 +369,8 @@ export async function aplicarEventoKiwify(admin: AnyClient, evento: KiwifyEvento
    */
   if (!contaId && APROVA.has(evento.evento.toLowerCase())) {
     contaId = await criarContaDoComprador(admin, evento);
+  } else if (contaId) {
+    await vincularLeadAContaExistente(admin, evento, contaId);
   }
 
   if (!contaId) {

@@ -126,6 +126,15 @@ Documento com posicionamento, como você soa, público (dores e objeções), pil
 - Plano Starter: R$ 47,90 por mês, com até 5 referências, 30 roteiros e 30 carrosséis por mês. O consumo zera no dia 1 de cada mês.
 - A cobrança é feita pela Kiwify. Cancelamento, troca de cartão, nota fiscal e reembolso são tratados pelo suporte humano.
 - "Em teste" mostra quantos dias de teste restam. Quando o teste acaba sem assinatura, os planos semanais param.
+- Sem assinatura ativa (teste vencido, cancelamento, reembolso ou chargeback), a conta vai para o plano Gratuito, que não gera nada: nem plano da semana, nem roteiro, nem carrossel, nem imagem. Login e tudo o que já foi produzido continuam acessíveis. Uma faixa no topo do app avisa "Sua assinatura não está ativa" com o link "Assinar". Para voltar, assinar o Starter pelo botão "Assinar" em Configurações → Assinatura; libera sozinho depois que a Kiwify aprova o pagamento.
+
+## Acesso depois da compra
+- Não existe cadastro aberto: a conta nasce sozinha quando a Kiwify confirma o pagamento, no e-mail usado na compra. Na tela de entrar, quem ainda não é cliente vê "Ainda não é cliente? Faça o diagnóstico gratuito".
+- Depois de pagar, a página de obrigado leva para "Confirmando o seu pagamento". Em segundos aparece "Falta só criar a sua senha"; ao criar, a pessoa já entra e cai no cadastro preenchido com as respostas do diagnóstico.
+- Na mesma hora sai um e-mail de boas-vindas com o botão "Criar minha senha". Serve para quem fechou a página, pagou em outro aparelho ou comprou sem fazer o diagnóstico. Se o botão tiver expirado, usar "Esqueci minha senha" na tela de entrar com o e-mail da compra.
+- Pix e boleto podem demorar alguns minutos para confirmar; o e-mail chega assim que confirmar.
+- Quem respondeu o diagnóstico também recebe por e-mail o link do relatório (DNA Viral), para voltar a ele quando quiser.
+- E-mail que não chegou: conferir spam/promoções e se o endereço da compra está certo. Se não resolver, suporte humano.
 
 ## Convite (link /convite/<código>)
 - Quem recebe um link de convite (por exemplo, pelo QR code do vídeo de demonstração) cria a conta ali mesmo: nome, e-mail, WhatsApp e uma senha de pelo menos 8 caracteres. Ao enviar, já entra no app e começa o onboarding.

@@ -18,6 +18,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIsPlatformAdmin } from "@/hooks/use-platform-admin";
 import { useAvisosMenu } from "@/hooks/use-avisos-menu";
+import { useConta } from "@/hooks/use-conta";
 import { ICONE_MARCA, LOGO_FUNDO_CLARO, LOGO_FUNDO_ESCURO, MARCA_ALT } from "@/lib/marca";
 import { cn } from "@/lib/utils";
 import { SininhoNotificacoes } from "@/components/notificacoes/SininhoNotificacoes";
@@ -85,6 +86,8 @@ function AuthenticatedLayout() {
   const { theme, toggle } = useTheme();
   const { data: isAdmin } = useIsPlatformAdmin();
   const { roteirosParaLer, planoParaAprovar } = useAvisosMenu();
+  const { data: conta } = useConta();
+  const semAssinatura = conta?.conta?.plano_codigo === "free";
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
@@ -206,6 +209,7 @@ function AuthenticatedLayout() {
             overflow-x-clip, e não overflow-auto: assim o main não vira contêiner de
             rolagem e as barras "sticky" das telas grudam na janela. */}
         <main className="flex-1 min-w-0 overflow-x-clip pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+          {semAssinatura && <AvisoSemAssinatura />}
           <Outlet />
         </main>
       </div>
@@ -217,6 +221,25 @@ function AuthenticatedLayout() {
       />
 
       <AssistenteSuporte />
+    </div>
+  );
+}
+
+/**
+ * Quem cancelou, pediu reembolso ou deixou o teste vencer cai no plano free,
+ * que não gera nada. A faixa explica antes de a pessoa esbarrar num erro.
+ */
+function AvisoSemAssinatura() {
+  return (
+    <div className="border-b border-border bg-surface px-4 py-3 text-sm sm:px-6">
+      Sua assinatura não está ativa. O que você já produziu continua aqui, mas nada novo é gerado.{" "}
+      <Link
+        to="/configuracoes"
+        search={{ aba: "assinatura" }}
+        className="font-medium text-primary underline-offset-4 hover:underline"
+      >
+        Assinar
+      </Link>
     </div>
   );
 }

@@ -14,7 +14,9 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BoasVindasRouteImport } from './routes/boas-vindas'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
@@ -61,9 +63,19 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -181,7 +193,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/boas-vindas': typeof BoasVindasRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/privacidade': typeof PrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos': typeof TermosRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/assinatura': typeof AuthenticatedAssinaturaRoute
@@ -208,7 +222,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/boas-vindas': typeof BoasVindasRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos': typeof TermosRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/carrosseis': typeof AuthenticatedCarrosseisRoute
@@ -237,7 +253,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/boas-vindas': typeof BoasVindasRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/privacidade': typeof PrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos': typeof TermosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/agentes': typeof AuthenticatedAgentesRouteWithChildren
   '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
@@ -267,7 +285,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/boas-vindas'
     | '/onboarding'
+    | '/privacidade'
     | '/redefinir-senha'
+    | '/termos'
     | '/admin'
     | '/agentes'
     | '/assinatura'
@@ -294,7 +314,9 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/boas-vindas'
+    | '/privacidade'
     | '/redefinir-senha'
+    | '/termos'
     | '/admin'
     | '/assinatura'
     | '/carrosseis'
@@ -322,7 +344,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/boas-vindas'
     | '/onboarding'
+    | '/privacidade'
     | '/redefinir-senha'
+    | '/termos'
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
     | '/_authenticated/assinatura'
@@ -352,7 +376,9 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BoasVindasRoute: typeof BoasVindasRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
+  PrivacidadeRoute: typeof PrivacidadeRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  TermosRoute: typeof TermosRoute
   ConviteCodigoRoute: typeof ConviteCodigoRoute
   DnaViralTokenRoute: typeof DnaViralTokenRoute
   OfertaProcessandoRoute: typeof OfertaProcessandoRoute
@@ -396,11 +422,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/redefinir-senha': {
       id: '/redefinir-senha'
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -621,7 +661,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BoasVindasRoute: BoasVindasRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
+  PrivacidadeRoute: PrivacidadeRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  TermosRoute: TermosRoute,
   ConviteCodigoRoute: ConviteCodigoRoute,
   DnaViralTokenRoute: DnaViralTokenRoute,
   OfertaProcessandoRoute: OfertaProcessandoRoute,

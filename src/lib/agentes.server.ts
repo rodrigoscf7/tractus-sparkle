@@ -29,6 +29,7 @@ const AGENTES = [
   "planejador-agent",
   "suporte-agent",
   "imagem-agent",
+  "email-agent",
 ] as const;
 
 export type Agente = (typeof AGENTES)[number];
@@ -149,4 +150,23 @@ export function dispararCuradoria(referenciaIds: string[]): void {
       })
       .catch((e) => console.error("curador-agent erro", id, e));
   }
+}
+
+export type PedidoEmail =
+  | { tipo: "dna_viral"; lead_id: string }
+  | { tipo: "boas_vindas"; email: string; lead_id?: string | null };
+
+/**
+ * Envia um e-mail do funil sem segurar quem chamou.
+ *
+ * E-mail é reforço, nunca o caminho crítico: uma falha do Resend não pode
+ * travar a tela do relatório nem o processamento de um pagamento. O
+ * email-agent é idempotente, então uma repetição não manda duas vezes.
+ */
+export function enviarEmailEmSegundoPlano(pedido: PedidoEmail): void {
+  void invocarAgente("email-agent", pedido, { timeoutMs: 30_000 })
+    .then((r) => {
+      if (!r.ok) console.error(`email-agent (${pedido.tipo}) falhou`, r.status, r.erro);
+    })
+    .catch((e) => console.error(`email-agent (${pedido.tipo}) erro`, e));
 }
