@@ -1,0 +1,134 @@
+{
+  "gancho": {
+    "modelo": "v3",
+    "falas": {
+      "gancho-1": {
+        "inicio": 0.27,
+        "fim": 1.82
+      },
+      "gancho-2": {
+        "inicio": 2.68,
+        "fim": 5.42
+      }
+    }
+  },
+  "configuracao": {
+    "modelo": "v3",
+    "falas": {
+      "config-1": {
+        "inicio": 0.14,
+        "fim": 2.62
+      },
+      "config-2": {
+        "inicio": 2.93,
+        "fim": 4.38
+      },
+      "config-3": {
+        "inicio": 4.44,
+        "fim": 5.82
+      },
+      "config-4": {
+        "inicio": 6.23,
+        "fim": 8.54
+      }
+    }
+  },
+  "plano": {
+    "modelo": "v3",
+    "falas": {
+      "plano-1": {
+        "inicio": 0.13,
+        "fim": 2.7
+      },
+      "plano-2": {
+        "inicio": 2.72,
+        "fim": 4.54
+      },
+      "plano-3": {
+        "inicio": 5.03,
+        "fim": 7.1
+      },
+      "plano-4": {
+        "inicio": 7.86,
+        "fim": 8.86
+      }
+    }
+  },
+  "roteiro": {
+    "modelo": "v3",
+    "falas": {
+      "roteiro-1": {
+        "inicio": 0.07,
+        "fim": 2.38
+      },
+      "roteiro-2": {
+        "inicio": 2.53,
+        "fim": 4.62
+      },
+      "roteiro-3": {
+        "inicio": 5.18,
+        "fim": 7.98
+      },
+      "roteiro-4": {
+        "inicio": 8.55,
+        "fim": 10.14
+      }
+    }
+  },
+  "teleprompter": {
+    "modelo": "v3",
+    "falas": {
+      "tele-1": {
+        "inicio": 0.07,
+        "fim": 2.54
+      },
+      "tele-2": {
+        "inicio": 2.78,
+        "fim": 5.3
+      },
+      "tele-3": {
+        "inicio": 5.65,
+        "fim": 6.7
+      }
+    }
+  },
+  "carrossel": {
+    "modelo": "v3",
+    "falas": {
+      "carrossel-1": {
+        "inicio": 0.07,
+        "fim": 2.14
+      },
+      "carrossel-2": {
+        "inicio": 2.22,
+        "fim": 3.9
+      },
+      "carrossel-3": {
+        "inicio": 4.13,
+        "fim": 5.58
+      }
+    }
+  },
+  "ritmo": {
+    "modelo": "v3",
+    "falas": {
+      "ritmo-1": {
+        "inicio": 0.2,
+        "fim": 2.7
+      }
+    }
+  },
+  "oferta": {
+    "modelo": "v3",
+    "falas": {
+      "oferta-1": {
+        "inicio": 0.24,
+        "fim": 2.06
+      },
+      "oferta-2": {
+        "inicio": 2.51,
+        "fim": 4.62
+      }
+    }
+  }
+}
