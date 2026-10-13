@@ -9,7 +9,7 @@ export const EMPRESA = {
   razaoSocial: "[RAZÃO SOCIAL]",
   cnpj: "[CNPJ]",
   endereco: "[ENDEREÇO COMPLETO]",
-  emailContato: "[E-MAIL DE CONTATO]",
+  emailContato: "contato@tractusoficial.com",
   /** Encarregado pelo tratamento de dados (DPO), art. 41 da LGPD. */
   encarregado: "[NOME DO ENCARREGADO]",
   emailEncarregado: "[E-MAIL DO ENCARREGADO]",

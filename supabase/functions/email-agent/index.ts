@@ -99,6 +99,9 @@ async function enviar(opts: {
 }) {
   const chave = Deno.env.get("RESEND_API_KEY");
   const remetente = Deno.env.get("EMAIL_REMETENTE");
+  // O remetente é do subdomínio de envio, que não recebe e-mail. Sem isto, a
+  // resposta de um cliente (comum no pós-compra) voltaria como não entregue.
+  const responderPara = Deno.env.get("EMAIL_RESPONDER_PARA");
   if (!chave || !remetente) {
     throw new Error("RESEND_API_KEY ou EMAIL_REMETENTE ausente nos secrets das Edge Functions.");
   }
@@ -113,6 +116,7 @@ async function enviar(opts: {
     },
     body: JSON.stringify({
       from: remetente,
+      ...(responderPara ? { reply_to: responderPara } : {}),
       to: [opts.para],
       subject: opts.assunto,
       html: opts.html,
