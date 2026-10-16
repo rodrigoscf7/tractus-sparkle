@@ -1,4 +1,4 @@
-import { Composition, Folder } from "remotion";
+import { Composition, Folder, Still } from "remotion";
 import { Carrossel, DURACAO_CARROSSEL } from "./cenas/Carrossel";
 import { Configuracao, DURACAO_CONFIGURACAO } from "./cenas/Configuracao";
 import { DURACAO_GANCHO, Gancho } from "./cenas/Gancho";
@@ -9,6 +9,20 @@ import { DURACAO_ROTEIRO, Roteiro } from "./cenas/Roteiro";
 import { DURACAO_TELEPROMPTER, Teleprompter } from "./cenas/Teleprompter";
 import { DURACAO_MESTRE, Mestre } from "./Mestre";
 import { duracaoPilula, Pilula } from "./Pilula";
+import { Nota } from "./estaticos/Nota";
+import { Quiz } from "./estaticos/Quiz";
+import { RoteiroCelular } from "./estaticos/RoteiroCelular";
+
+// Criativos estáticos do funil: 3 formatos × 2 textos (A/B) × 2 tamanhos.
+const FORMATOS_ESTATICOS = [
+  { nome: "1-Quiz", componente: Quiz },
+  { nome: "2-Nota", componente: Nota },
+  { nome: "4-Roteiro", componente: RoteiroCelular },
+] as const;
+const TAMANHOS_ESTATICOS = [
+  { nome: "4x5", width: 1080, height: 1350 },
+  { nome: "9x16", width: 1080, height: 1920 },
+] as const;
 
 // Em 1080×1920 (9:16, WhatsApp) e 1920×1080 (16:9, reuniões), a 30 fps; as
 // mesmas cenas servem aos dois (ui/Palco.tsx). As durações vêm da
@@ -127,6 +141,23 @@ export const RemotionRoot: React.FC = () => {
           height={1920}
           defaultProps={{ cena: "carrossel" as const }}
         />
+      </Folder>
+
+      <Folder name="Estaticos">
+        {FORMATOS_ESTATICOS.flatMap((f) =>
+          TAMANHOS_ESTATICOS.flatMap((t) =>
+            (["A", "B"] as const).map((v) => (
+              <Still
+                key={`${f.nome}-${v}-${t.nome}`}
+                id={`Estatico-${f.nome}-${v}-${t.nome}`}
+                component={f.componente}
+                width={t.width}
+                height={t.height}
+                defaultProps={{ variante: v }}
+              />
+            )),
+          ),
+        )}
       </Folder>
 
       <Folder name="Cenas">
