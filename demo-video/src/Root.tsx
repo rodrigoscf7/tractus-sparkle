@@ -14,6 +14,8 @@ import { Quiz } from "./estaticos/Quiz";
 import { RoteiroCelular } from "./estaticos/RoteiroCelular";
 import type { Area } from "./estaticos/areas";
 import { DoisPerfis } from "./estaticos/DoisPerfis";
+import { Espelho } from "./estaticos/Espelho";
+import { ARQUETIPOS_DO_QUIZ } from "@/lib/dna-viral";
 import { DuvidaCliente } from "./estaticos/DuvidaCliente";
 import { GanchoAnotado } from "./estaticos/GanchoAnotado";
 import { SemanaDecidida } from "./estaticos/SemanaDecidida";
@@ -208,6 +210,21 @@ export const RemotionRoot: React.FC = () => {
             />,
           ]),
         ])}
+      </Folder>
+
+      <Folder name="Estaticos-espelho">
+        {TAMANHOS_ESTATICOS.flatMap((t) =>
+          ARQUETIPOS_DO_QUIZ.map((a, i) => (
+            <Still
+              key={`espelho-${a.situacao}-${t.nome}`}
+              id={`Criativo-5-Espelho-${i + 1}-${t.nome}`}
+              component={Espelho}
+              width={t.width}
+              height={t.height}
+              defaultProps={{ situacao: a.situacao }}
+            />
+          )),
+        )}
       </Folder>
 
       <Folder name="Cenas">

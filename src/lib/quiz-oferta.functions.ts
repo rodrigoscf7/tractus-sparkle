@@ -24,7 +24,7 @@ import {
   dnaViralCurado,
   normalizarDnaViral,
   roteirosTemProfundidade,
-  temSubsidioArquetipo,
+  arquetipoFixo,
   type DnaViral,
 } from "@/lib/dna-viral";
 import { calcularScore } from "@/lib/dna-viral-score";
@@ -232,10 +232,9 @@ async function gerarComFallback(
         // que tem menos nuance mas é texto que a pessoa grava hoje.
         console.error("dna-viral: roteiros rasos, servindo curado");
       } else if (normalizado) {
-        // Sem base concreta, arquétipo some — evita rótulo de prateleira.
-        if (!temSubsidioArquetipo(respostas)) {
-          normalizado.arquetipo = null;
-        }
+        // Nome e frase sempre de um dos arquétipos fixos (o anúncio promete
+        // um deles); sem base concreta nas respostas, arquétipo some.
+        normalizado.arquetipo = arquetipoFixo(respostas, normalizado.arquetipo);
         return { conteudo: comScore(normalizado, respostas), origem: "ia" };
       } else {
         const bruto = resposta.data?.relatorio as Record<string, unknown> | undefined;

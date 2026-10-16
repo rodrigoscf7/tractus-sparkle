@@ -20,6 +20,7 @@ import {
   calcularScore,
   type DimensaoScore,
 } from "@/lib/dna-viral-score";
+import { PERGUNTAS } from "@/lib/quiz-oferta";
 
 export type Roteiro = {
   /** Nome curto do formato (ex.: "Curiosidade & Alerta"). */
@@ -276,6 +277,61 @@ function limparRelatorio(relatorio: DnaViral): DnaViral {
     })),
     o_que_falta: limparTravessao(relatorio.o_que_falta),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Arquétipo: sempre um dos fixos
+// ---------------------------------------------------------------------------
+
+/**
+ * O arquétipo do relatório, escolhido pela resposta de "o que acontece hoje
+ * quando você senta pra gravar?". Nome e frase são sempre os de
+ * ARQUETIPO_POR_SITUACAO, venha o relatório da IA ou do curado.
+ *
+ * Antes o modelo inventava o nome. O anúncio promete "um dos 6 perfis" (são
+ * 6 as respostas do quiz; os outros 2 só existem no onboarding do app) e o
+ * resultado precisa ser um deles, além de ser o que o e-mail cita.
+ *
+ * A descrição da IA é mais específica e fica, a não ser que cite o nome que
+ * ela mesma tinha inventado: aí o parágrafo contradiria o título.
+ */
+export function arquetipoFixo(
+  r: Respostas,
+  ia?: { nome?: string | null; descricao?: string | null } | null,
+): Arquetipo | null {
+  if (!temSubsidioArquetipo(r)) return null;
+  const arq = ARQUETIPO_POR_SITUACAO[r.situacao ?? ""] ?? ARQUETIPO_POR_SITUACAO["nao_sei_postar"]!;
+
+  const descricaoIa = ia?.descricao?.trim() ?? "";
+  const nomeIa = ia?.nome?.trim() ?? "";
+  const citaOutroNome =
+    nomeIa.length > 0 &&
+    nomeIa.toLowerCase() !== arq.nome.toLowerCase() &&
+    descricaoIa.toLowerCase().includes(nomeIa.toLowerCase());
+
+  return {
+    nome: arq.nome,
+    uma_linha: arq.uma_linha,
+    descricao: descricaoIa && !citaOutroNome ? descricaoIa : descricaoCurada(r),
+  };
+}
+
+function descricaoCurada(r: Respostas): string {
+  // "Outro" é o rótulo do botão, não uma área: quem marcou escreveu a dela em
+  // `area_outro`. Sem isso sai "você atua com outro".
+  const area =
+    (r.area_atuacao === "outro" ? r.area_outro?.trim() : labelArea(r.area_atuacao)) || "a sua área";
+  const cliente = r.cliente_ideal?.trim() || "";
+  // O cliente ideal entra como citação, nunca como sujeito de uma oração
+  // pronta: texto livre colado no meio de frase quebra a concordância.
+  const clienteTrecho = cliente
+    ? ` Você descreveu o seu público assim: "${cliente}". É esse o filtro de cada peça.`
+    : "";
+  return (
+    `Você atua com ${area}. Nesse terreno, o diferencial não vem de publicar mais que os outros. Vem de ` +
+    `publicar com uma posição reconhecível.${clienteTrecho} O caminho mais curto é escolher poucos temas e ` +
+    `voltar neles com constância, até que o seu nome e o assunto passem a andar juntos na cabeça de quem assiste.`
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -731,14 +787,7 @@ function gargalosCurados(r: Respostas, score: DimensaoScore[]): Gargalo[] {
  * gerada, mas recebe algo verdadeiro sobre o que respondeu.
  */
 export function dnaViralCurado(r: Respostas): DnaViral {
-  // "Outro" é o rótulo do botão, não uma área: quem marcou escreveu a dela em
-  // `area_outro`, e é esse texto que precisa entrar nos roteiros. Sem isso sai
-  // "quem trabalha com outro".
-  const area =
-    (r.area_atuacao === "outro" ? r.area_outro?.trim() : labelArea(r.area_atuacao)) || "a sua área";
-  const situacao = r.situacao ?? "nao_sei_postar";
   const score = calcularScore(r);
-  const cliente = r.cliente_ideal?.trim() || "";
 
   const objetivos = r.objetivos ?? [];
   const pilares = objetivos
@@ -754,26 +803,8 @@ export function dnaViralCurado(r: Respostas): DnaViral {
 
   const estilo = ESTILOS.find((e) => e.valor === r.estilo_narrativo) ?? ESTILOS[0]!;
 
-  let arquetipo: Arquetipo | null = null;
-  if (temSubsidioArquetipo(r)) {
-    const arq = ARQUETIPO_POR_SITUACAO[situacao] ?? ARQUETIPO_POR_SITUACAO["nao_sei_postar"]!;
-    // O cliente ideal entra como citação, nunca como sujeito de uma oração
-    // pronta: texto livre colado no meio de frase quebra a concordância.
-    const clienteTrecho = cliente
-      ? ` Você descreveu o seu público assim: "${cliente}". É esse o filtro de cada peça.`
-      : "";
-    arquetipo = {
-      nome: arq.nome,
-      uma_linha: arq.uma_linha,
-      descricao:
-        `Você atua com ${area}. Nesse terreno, o diferencial não vem de publicar mais que os outros. Vem de ` +
-        `publicar com uma posição reconhecível.${clienteTrecho} O caminho mais curto é escolher poucos temas e ` +
-        `voltar neles com constância, até que o seu nome e o assunto passem a andar juntos na cabeça de quem assiste.`,
-    };
-  }
-
   return limparRelatorio({
-    arquetipo,
+    arquetipo: arquetipoFixo(r),
     gargalos: gargalosCurados(r, score),
     pilares: pilares.slice(0, 3),
     roteiros: roteirosPara(estilo.valor, publicoDe(r)),
@@ -784,3 +815,17 @@ export function dnaViralCurado(r: Respostas): DnaViral {
     score,
   });
 }
+
+/**
+ * Os 6 arquétipos que o quiz pode dar, na ordem das opções da pergunta da
+ * situação. Os criativos de anúncio (demo-video) leem daqui: o que o anúncio
+ * mostra é exatamente o que o relatório entrega.
+ */
+export const ARQUETIPOS_DO_QUIZ: { situacao: string; nome: string; uma_linha: string }[] = (
+  PERGUNTAS.find((p) => p.campo === "situacao")?.opcoes ?? []
+).flatMap((o) => {
+  const arq = ARQUETIPO_POR_SITUACAO[o.valor];
+  return arq
+    ? [{ situacao: o.valor, nome: arq.nome, uma_linha: limparTravessao(arq.uma_linha) }]
+    : [];
+});
