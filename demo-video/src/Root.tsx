@@ -12,6 +12,11 @@ import { duracaoPilula, Pilula } from "./Pilula";
 import { Nota } from "./estaticos/Nota";
 import { Quiz } from "./estaticos/Quiz";
 import { RoteiroCelular } from "./estaticos/RoteiroCelular";
+import type { Area } from "./estaticos/areas";
+import { DoisPerfis } from "./estaticos/DoisPerfis";
+import { DuvidaCliente } from "./estaticos/DuvidaCliente";
+import { GanchoAnotado } from "./estaticos/GanchoAnotado";
+import { SemanaDecidida } from "./estaticos/SemanaDecidida";
 
 // Criativos estáticos do funil: 3 formatos × 2 textos (A/B) × 2 tamanhos.
 const FORMATOS_ESTATICOS = [
@@ -23,6 +28,10 @@ const TAMANHOS_ESTATICOS = [
   { nome: "4x5", width: 1080, height: 1350 },
   { nome: "9x16", width: 1080, height: 1920 },
 ] as const;
+
+// Segunda leva: curiosidade e lead qualificado. 1 e 2 variam o título (A/B);
+// 3 e 4 têm uma versão por área de atuação.
+const AREAS_ESTATICOS: Area[] = ["familia", "previdenciario", "trabalhista"];
 
 // Em 1080×1920 (9:16, WhatsApp) e 1920×1080 (16:9, reuniões), a 30 fps; as
 // mesmas cenas servem aos dois (ui/Palco.tsx). As durações vêm da
@@ -158,6 +167,47 @@ export const RemotionRoot: React.FC = () => {
             )),
           ),
         )}
+      </Folder>
+
+      <Folder name="Estaticos-curiosidade">
+        {TAMANHOS_ESTATICOS.flatMap((t) => [
+          ...(["A", "B"] as const).flatMap((v) => [
+            <Still
+              key={`perfis-${v}-${t.nome}`}
+              id={`Criativo-1-DoisPerfis-${v}-${t.nome}`}
+              component={DoisPerfis}
+              width={t.width}
+              height={t.height}
+              defaultProps={{ variante: v }}
+            />,
+            <Still
+              key={`gancho-${v}-${t.nome}`}
+              id={`Criativo-2-GanchoAnotado-${v}-${t.nome}`}
+              component={GanchoAnotado}
+              width={t.width}
+              height={t.height}
+              defaultProps={{ variante: v }}
+            />,
+          ]),
+          ...AREAS_ESTATICOS.flatMap((area) => [
+            <Still
+              key={`duvida-${area}-${t.nome}`}
+              id={`Criativo-3-Duvida-${area}-${t.nome}`}
+              component={DuvidaCliente}
+              width={t.width}
+              height={t.height}
+              defaultProps={{ area }}
+            />,
+            <Still
+              key={`semana-${area}-${t.nome}`}
+              id={`Criativo-4-Semana-${area}-${t.nome}`}
+              component={SemanaDecidida}
+              width={t.width}
+              height={t.height}
+              defaultProps={{ area }}
+            />,
+          ]),
+        ])}
       </Folder>
 
       <Folder name="Cenas">
