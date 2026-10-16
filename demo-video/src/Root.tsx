@@ -15,6 +15,8 @@ import { RoteiroCelular } from "./estaticos/RoteiroCelular";
 import type { Area } from "./estaticos/areas";
 import { DoisPerfis } from "./estaticos/DoisPerfis";
 import { Espelho } from "./estaticos/Espelho";
+import { CardCarrossel } from "./carrosseis/CardCarrossel";
+import { CARROSSEIS } from "./carrosseis/textos";
 import { ARQUETIPOS_DO_QUIZ } from "@/lib/dna-viral";
 import { DuvidaCliente } from "./estaticos/DuvidaCliente";
 import { GanchoAnotado } from "./estaticos/GanchoAnotado";
@@ -222,6 +224,21 @@ export const RemotionRoot: React.FC = () => {
               width={t.width}
               height={t.height}
               defaultProps={{ situacao: a.situacao }}
+            />
+          )),
+        )}
+      </Folder>
+
+      <Folder name="Carrosseis">
+        {CARROSSEIS.flatMap((c) =>
+          c.cards.map((_, i) => (
+            <Still
+              key={`carrossel-${c.id}-${i}`}
+              id={`Carrossel-${c.id}-${String(i + 1).padStart(2, "0")}`}
+              component={CardCarrossel}
+              width={1080}
+              height={1350}
+              defaultProps={{ carrossel: c.id, indice: i }}
             />
           )),
         )}
