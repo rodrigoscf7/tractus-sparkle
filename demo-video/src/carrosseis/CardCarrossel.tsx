@@ -136,6 +136,14 @@ const Conteudo: React.FC<{ card: Card }> = ({ card }) => {
         >
           {card.frase}
         </p>
+        {card.comeco && (
+          <div style={{ marginTop: 56 }}>
+            <div style={{ ...rotulo, marginBottom: 14 }}>Por onde começar</div>
+            <p style={{ margin: 0, fontSize: 40, lineHeight: 1.35, color: cor.muted, textWrap: "pretty" }}>
+              {card.comeco}
+            </p>
+          </div>
+        )}
       </>
     );
   }

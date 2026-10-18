@@ -7,10 +7,24 @@ import { ARQUETIPOS_DO_QUIZ } from "@/lib/dna-viral";
 export type Card =
   | { tipo: "capa"; texto: string; apoio?: string }
   | { tipo: "texto"; texto: string; rotulo?: string }
-  | { tipo: "perfil"; rotulo: string; nome: string; frase: string }
+  | { tipo: "perfil"; rotulo: string; nome: string; frase: string; comeco: string }
   | { tipo: "cta"; texto: string; apoio: string; botao: string; micro: string };
 
 export type Carrossel = { id: string; cards: Card[] };
+
+/**
+ * O primeiro passo de cada perfil, tirado do gargalo principal que o relatório
+ * dá para a mesma situação (GARGALO_PRINCIPAL em src/lib/dna-viral.ts). É o
+ * que o gancho do carrossel promete: achar o seu e saber por onde começar.
+ */
+const POR_ONDE_COMECAR: Record<string, string> = {
+  nao_sei_postar: "Escolha o tema pela dúvida que o cliente mais repete no atendimento.",
+  ideias_sem_conteudo: "Use um formato fixo para levar a anotação até a gravação.",
+  sem_tempo: "Monte o ritmo pela pior semana do mês, não pela melhor.",
+  sem_constancia: "Decida os temas antes de a semana começar, não entre uma audiência e outra.",
+  poucas_views: "Reescreva só os 3 primeiros segundos: comece pelo problema do cliente.",
+  views_sem_cliente: "Diga em todo vídeo para quem você resolve e o que acontece depois do contato.",
+};
 
 export const CARROSSEIS: Carrossel[] = [
   {
@@ -18,8 +32,8 @@ export const CARROSSEIS: Carrossel[] = [
     cards: [
       {
         tipo: "capa",
-        texto: "6 perfis de advogado no Instagram.",
-        apoio: "Arrasta até achar o seu.",
+        texto: "Em qual destes 6 perfis o seu Instagram travou?",
+        apoio: "Arrasta, acha o seu e veja por onde começar a destravar.",
       },
       ...ARQUETIPOS_DO_QUIZ.map(
         (a, i): Card => ({
@@ -27,6 +41,7 @@ export const CARROSSEIS: Carrossel[] = [
           rotulo: `Perfil ${i + 1} de ${ARQUETIPOS_DO_QUIZ.length}`,
           nome: a.nome,
           frase: a.uma_linha,
+          comeco: POR_ONDE_COMECAR[a.situacao] ?? "",
         }),
       ),
       {
@@ -43,30 +58,39 @@ export const CARROSSEIS: Carrossel[] = [
     cards: [
       {
         tipo: "capa",
-        texto: "Domingo, 21h. Você abre o Instagram pra decidir o que gravar na semana.",
+        texto: "Toda sexta você promete: semana que vem eu posto.",
+        apoio: "Arrasta e veja em que momento exato a semana se perde.",
+      },
+      {
+        tipo: "texto",
+        rotulo: "Domingo, 21h",
+        texto:
+          "Você abre três perfis de referência e salva onze posts. Nenhum fala do caso do jeito que você atende.",
+      },
+      {
+        tipo: "texto",
+        rotulo: "Segunda",
+        texto: "Audiência às 9h, cliente às 14h. O vídeo fica pra terça.",
+      },
+      {
+        tipo: "texto",
+        rotulo: "Terça",
+        texto: "Você escreve o roteiro. Ele sai longo, você corta e grava duas vezes.",
+      },
+      {
+        tipo: "texto",
+        rotulo: "Sexta",
+        texto: "O vídeo não saiu. E a promessa volta: semana que vem eu posto.",
       },
       {
         tipo: "texto",
         texto:
-          "Abre três perfis de referência. Salva onze posts. Nenhum fala do caso do jeito que você atende.",
-      },
-      { tipo: "texto", texto: "Segunda tem audiência às 9h e cliente às 14h. O vídeo fica pra terça." },
-      {
-        tipo: "texto",
-        texto: "Na terça você escreve o roteiro. Ele sai longo, você corta, grava duas vezes.",
-      },
-      {
-        tipo: "texto",
-        texto: "Sexta à noite. O vídeo não saiu, e o próximo domingo começa do zero.",
+          "A semana se perde no domingo, na hora de decidir o tema. Sem tema decidido, cada dia empurra o vídeo para o seguinte.",
       },
       {
         tipo: "texto",
         texto:
-          "A prevIA faz esse domingo por você. Ela lê o que mais performou nos perfis que você acompanha e monta o plano da semana.",
-      },
-      {
-        tipo: "texto",
-        texto: "Na segunda de manhã, o tema e o roteiro de cada vídeo já estão lá. Você abre, lê e grava.",
+          "A prevIA faz esse domingo por você. Na segunda de manhã, o tema e o roteiro de cada vídeo já estão lá. Você abre, lê e grava.",
       },
       {
         tipo: "cta",
