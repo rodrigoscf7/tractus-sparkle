@@ -86,7 +86,7 @@ Cada cartão tem o dia previsto do vídeo e atalhos: "Ler e aprovar" ou "Abrir r
 - Baixar: cada slide sai como imagem PNG 1080×1350 (formato 4:5 do Instagram); há "Baixar todos".
 - Imagem da capa (opcional): na tela do roteiro, seção Carrossel, logo abaixo dos slides, no bloco "Imagem da capa". "Enviar imagem" escolhe uma foto do celular ou do computador (JPG, PNG ou WebP; foto HEIC do iPhone precisa ser exportada como JPG). A imagem entra só na capa; os outros slides continuam só com texto. Depois de colocar, dá para escolher o enquadramento (Alto, Centro ou Baixo), "Trocar imagem" e "Remover". A imagem continua na capa se o carrossel for regerado.
   - "Gerar com IA" (no mesmo bloco) cria uma foto a partir do tema, do ângulo e do título da capa. Abre um campo opcional "Quer algo específico?" para descrever a cena (ex.: "uma senhora conferindo documentos na mesa da cozinha"). Leva até 1 minuto. A foto sai sem texto, sem rostos em close, sem martelo ou balança e sem ostentação. Com imagem na capa, o botão vira "Gerar outra com IA".
-  - Limite de imagens geradas por IA: igual ao de carrosséis do plano (Starter: 30 por mês), renova no dia 1. O bloco mostra quantas foram usadas no mês. Enviar uma imagem própria não conta no limite. Remover uma imagem gerada não devolve a imagem ao limite.
+  - Limite de imagens geradas por IA: igual ao de carrosséis do plano (prevIA VIRAL: 30 por mês), renova no dia 1. O bloco mostra quantas foram usadas no mês. Enviar uma imagem própria não conta no limite. Remover uma imagem gerada não devolve a imagem ao limite.
   - O consumo de imagens geradas também aparece em Configurações → Assinatura.
   - Como fica em cada modelo: no Editorial, a foto ocupa o fundo da capa e se dissolve na cor do fundo antes do traço acima do título; no Tweet, a foto aparece anexada abaixo do texto, como num post com imagem; no Marca-texto, a foto fica emoldurada no alto, acima do título. No Tweet e no Marca-texto o texto da capa fica um pouco menor para caber.
 - Aparência (template), em Configurações (/configuracoes) → aba Carrossel. É preciso clicar em "Salvar" depois de mudar:
@@ -123,10 +123,10 @@ Documento com posicionamento, como você soa, público (dores e objeções), pil
 - Se a permissão foi negada sem querer, é preciso liberar nas configurações do navegador para o site da prevIA.
 
 ## Assinatura (Configurações → aba Assinatura)
-- Plano Starter: R$ 47,90 por mês, com até 5 referências, 30 roteiros e 30 carrosséis por mês. O consumo zera no dia 1 de cada mês.
+- Plano prevIA VIRAL: R$ 47,90 por mês (de R$ 197), no cartão ou no Pix, com até 5 referências, 30 roteiros e 30 carrosséis por mês. O consumo zera no dia 1 de cada mês. Cancelamento a qualquer momento, sem multa, e reembolso integral em até 7 dias após a primeira compra.
 - A cobrança é feita pela Hubla. Cancelamento, troca de cartão, nota fiscal e reembolso são tratados pelo suporte humano.
 - "Em teste" mostra quantos dias de teste restam. Quando o teste acaba sem assinatura, os planos semanais param.
-- Sem assinatura ativa (teste vencido, cancelamento, reembolso ou chargeback), a conta vai para o plano Gratuito, que não gera nada: nem plano da semana, nem roteiro, nem carrossel, nem imagem. Login e tudo o que já foi produzido continuam acessíveis. Uma faixa no topo do app avisa "Sua assinatura não está ativa" com o link "Assinar". Para voltar, assinar o Starter pelo botão "Assinar" em Configurações → Assinatura; libera sozinho depois que a Hubla aprova o pagamento.
+- Sem assinatura ativa (teste vencido, cancelamento, reembolso ou chargeback), a conta vai para o plano Gratuito, que não gera nada: nem plano da semana, nem roteiro, nem carrossel, nem imagem. Login e tudo o que já foi produzido continuam acessíveis. Uma faixa no topo do app avisa "Sua assinatura não está ativa" com o link "Assinar". Para voltar, assinar o prevIA VIRAL pelo botão "Assinar" em Configurações → Assinatura; libera sozinho depois que a Hubla aprova o pagamento.
 
 ## Acesso depois da compra
 - Não existe cadastro aberto: a conta nasce sozinha quando a Hubla confirma o pagamento, no e-mail usado na compra. Na tela de entrar, quem ainda não é cliente vê "Ainda não é cliente? Faça o diagnóstico gratuito".

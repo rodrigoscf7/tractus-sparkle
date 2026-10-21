@@ -16,7 +16,7 @@ import type { Area } from "./estaticos/areas";
 import { DoisPerfis } from "./estaticos/DoisPerfis";
 import { Espelho } from "./estaticos/Espelho";
 import { CardCarrossel } from "./carrosseis/CardCarrossel";
-import { Banner, CapaProduto, Lateral, Rodape, SeloGarantia } from "./checkout/Assets";
+import { Banner, CapaProduto, CapaProdutoHorizontal, Lateral, Rodape, SeloGarantia } from "./checkout/Assets";
 import { CARROSSEIS } from "./carrosseis/textos";
 import { ARQUETIPOS_DO_QUIZ } from "@/lib/dna-viral";
 import { DuvidaCliente } from "./estaticos/DuvidaCliente";
@@ -253,6 +253,7 @@ export const RemotionRoot: React.FC = () => {
         <Still id="Checkout-Rodape-Mobile" component={Rodape} width={1080} height={360} />
         <Still id="Checkout-Selo-Garantia" component={SeloGarantia} width={600} height={600} />
         <Still id="Produto-Capa" component={CapaProduto} width={1080} height={1080} />
+        <Still id="Produto-Capa-Horizontal" component={CapaProdutoHorizontal} width={1640} height={880} />
       </Folder>
 
       <Folder name="Cenas">

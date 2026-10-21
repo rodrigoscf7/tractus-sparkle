@@ -251,3 +251,41 @@ export const CapaProduto: React.FC = () => (
     </div>
   </AbsoluteFill>
 );
+
+/** Capa horizontal do produto na Hubla (mínimo 820×440; renderizada em 2×). */
+export const CapaProdutoHorizontal: React.FC = () => (
+  <AbsoluteFill
+    style={{
+      ...base,
+      padding: "88px 104px",
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 80,
+      borderBottom: `8px solid ${cor.primary}`,
+    }}
+  >
+    <div style={{ display: "flex", flexDirection: "column", maxWidth: 860 }}>
+      <Logo altura={52} />
+      <div style={{ ...eyebrow, fontSize: 26, marginTop: 56 }}>Para advogados</div>
+      <h1 style={{ ...display, fontSize: 132, marginTop: 16 }}>
+        prevIA{" "}
+        <span style={{ background: cor.primary, padding: "0 16px", borderRadius: 14 }}>VIRAL</span>
+      </h1>
+      <p style={{ margin: "32px 0 0", fontSize: 40, lineHeight: 1.3, color: cor.muted }}>
+        O plano de conteúdo da sua semana, com o roteiro de cada vídeo pronto.
+      </p>
+    </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 26, flexShrink: 0 }}>
+      {["Plano da semana todo domingo", "Roteiro no seu tom de voz", "Modo gravação", "Carrossel pronto"].map(
+        (t) => (
+          <div key={t} style={{ display: "flex", alignItems: "center", gap: 18, fontSize: 34, fontWeight: 500 }}>
+            <Check size={38} strokeWidth={2.6} color={cor.oliva} />
+            {t}
+          </div>
+        ),
+      )}
+    </div>
+  </AbsoluteFill>
+);
