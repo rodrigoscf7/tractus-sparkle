@@ -16,6 +16,7 @@ import type { Area } from "./estaticos/areas";
 import { DoisPerfis } from "./estaticos/DoisPerfis";
 import { Espelho } from "./estaticos/Espelho";
 import { CardCarrossel } from "./carrosseis/CardCarrossel";
+import { CapaLogo, LogoAlta } from "./checkout/LogoVetor";
 import { Banner, CapaProduto, CapaProdutoHorizontal, Lateral, Rodape, SeloGarantia } from "./checkout/Assets";
 import { CARROSSEIS } from "./carrosseis/textos";
 import { ARQUETIPOS_DO_QUIZ } from "@/lib/dna-viral";
@@ -246,6 +247,8 @@ export const RemotionRoot: React.FC = () => {
       </Folder>
 
       <Folder name="Checkout-Hubla">
+        <Still id="Produto-Capa-Logo" component={CapaLogo} width={1640} height={880} />
+        <Still id="Logo-Alta-Resolucao" component={LogoAlta} width={2600} height={1100} />
         <Still id="Checkout-Banner-Desktop" component={Banner} width={2400} height={600} />
         <Still id="Checkout-Banner-Mobile" component={Banner} width={1080} height={540} />
         <Still id="Checkout-Lateral" component={Lateral} width={720} height={1440} />
