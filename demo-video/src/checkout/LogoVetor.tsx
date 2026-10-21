@@ -1,12 +1,12 @@
 // O logo da prevIA redesenhado em vetor (texto + caixa), para sair nítido em
 // qualquer tamanho. Proporções tiradas de public/logo-fundo-claro.png
-// (600×216): "prev" em Poppins leve, "IA" em Poppins negrito na caixa amarela.
+// (600×216): "prev" em Poppins regular, "IA" em Poppins negrito na caixa amarela.
 
 import type React from "react";
 import { AbsoluteFill } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Poppins";
 
-const { fontFamily: POPPINS } = loadFont("normal", { weights: ["300", "700"], subsets: ["latin"] });
+const { fontFamily: POPPINS } = loadFont("normal", { weights: ["400", "700"], subsets: ["latin"] });
 
 /** Amarelo do arquivo original do logo (um pouco mais vivo que o token da UI). */
 const AMARELO = "#FFE000";
@@ -20,7 +20,7 @@ export const LogoVetor: React.FC<{ largura: number }> = ({ largura }) => {
       <span
         style={{
           fontSize: 158 * u,
-          fontWeight: 300,
+          fontWeight: 400,
           lineHeight: 1,
           letterSpacing: "-0.01em",
           position: "relative",
