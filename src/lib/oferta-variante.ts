@@ -63,7 +63,7 @@ export function capturarOrigem(): Origem {
 
 /**
  * Identificador anônimo da visita. É o fio que vai costurar
- * quiz -> checkout -> conta quando o webhook da Kiwify avisar a compra.
+ * quiz -> checkout -> conta quando o webhook da Hubla avisar a compra.
  */
 export function obterLeadId(): string {
   if (typeof window === "undefined") return "";

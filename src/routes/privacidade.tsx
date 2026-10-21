@@ -84,7 +84,7 @@ function Privacidade() {
         </p>
         <ul className="list-disc space-y-2 pl-5">
           <li>Supabase e Railway: banco de dados e hospedagem do aplicativo.</li>
-          <li>Kiwify: processamento de pagamentos e assinaturas.</li>
+          <li>Hubla: processamento de pagamentos e assinaturas.</li>
           <li>Resend: envio de e-mails.</li>
           <li>
             Provedores de modelos de inteligência artificial (via OpenRouter): geração do

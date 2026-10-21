@@ -3,7 +3,7 @@
  *
  * Carrega só no navegador e só quando `VITE_META_PIXEL_ID` existe, então
  * desenvolvimento e o app logado não disparam nada. A compra (Purchase) não
- * sai daqui: quem a registra é a integração de Pixel da própria Kiwify, que
+ * sai daqui: quem a registra é a integração de Pixel do próprio checkout da Hubla, que
  * enxerga o pagamento aprovado.
  */
 

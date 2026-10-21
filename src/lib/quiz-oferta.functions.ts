@@ -366,11 +366,10 @@ export const getOfertaPublica = createServerFn({ method: "GET" }).handler(async 
 /**
  * Traz as respostas do quiz para o onboarding da conta recém-criada.
  *
- * POR QUE AQUI E NÃO NO WEBHOOK DA KIWIFY: o webhook não cria contas. O
- * `resolverConta` de `kiwify.server.ts` só encontra conta que já existe, e na
- * hora em que o aviso de pagamento chega a pessoa normalmente ainda nem se
- * cadastrou. Quem cria a conta é `iniciarConta`, quando ela entra no
- * onboarding — então é aqui, e não lá, que dá para costurar com segurança.
+ * Rede de segurança do webhook. Na compra pelo funil, quem costura o quiz ao
+ * onboarding é `prepararAcesso` em `hubla.server.ts`, quando a conta nasce.
+ * Este caminho cobre quem entrou por outra porta (convite, cortesia) depois
+ * de ter respondido o quiz.
  *
  * Duas formas de achar o lead, nesta ordem:
  *   1. O id que veio do navegador. É o caminho normal: quem comprou voltou
@@ -476,7 +475,7 @@ async function acharLead(db: Db, leadId: string | undefined, email: string | und
  * Quanto tempo depois da compra a tela aceita definir a senha.
  *
  * O identificador do lead viaja na query do checkout, então fica no histórico
- * do navegador e a Kiwify o enxerga. Sozinho ele não pode valer acesso para
+ * do navegador e a Hubla o enxerga. Sozinho ele não pode valer acesso para
  * sempre. Duas horas cobrem com folga quem paga no cartão (aprovação na hora)
  * e quem fecha a aba e volta; quem passar disso usa "esqueci minha senha",
  * que é o caminho normal e passa pelo e-mail.
@@ -494,7 +493,7 @@ export type EstadoCompra =
  * O que a tela de boas-vindas deve mostrar.
  *
  * `processando` é o caso comum nos primeiros segundos: a pessoa chega na
- * página de obrigado antes de o aviso da Kiwify ter sido entregue. A tela
+ * página de obrigado antes de o aviso da Hubla ter sido entregue. A tela
  * espera em vez de dizer que deu errado.
  */
 export const statusDaCompra = createServerFn({ method: "GET" })

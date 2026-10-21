@@ -5,6 +5,7 @@ import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { getDnaViral, getOfertaPublica } from "@/lib/quiz-oferta.functions";
 import { capturarOrigem, obterLeadId } from "@/lib/oferta-variante";
 import { rastrear } from "@/lib/pixel";
+import { lerRespostas } from "@/lib/quiz-oferta.estado";
 import { LinksLegais } from "@/components/legal/PaginaLegal";
 import { statusDoScore, type DimensaoScore, type FaixaScore } from "@/lib/dna-viral-score";
 import type { DnaViral } from "@/lib/dna-viral";
@@ -435,13 +436,18 @@ function useCheckoutHref(oferta: OfertaPublica): string | null {
     if (!oferta) return;
     try {
       const url = new URL(oferta.checkoutUrl);
-      url.searchParams.set("s2", oferta.codigo);
-      // `s3` e nunca `s1` — o webhook da Kiwify trata `s1` como conta_id sempre
-      // que tem 36 caracteres, e um randomUUID tem exatamente 36.
-      url.searchParams.set("s3", obterLeadId());
+      // `sck` volta no webhook da Hubla e liga a compra a este lead.
+      url.searchParams.set("sck", obterLeadId());
       for (const [chave, valor] of Object.entries(capturarOrigem())) {
         if (valor) url.searchParams.set(chave, valor);
       }
+      // Checkout já preenchido com o que a pessoa digitou no quiz. Vem do
+      // navegador dela, nunca do servidor: o relatório é público por link e
+      // não expõe o e-mail. Manter o mesmo e-mail é também o que permite ao
+      // webhook achar o lead se o `sck` se perder.
+      const { nome, email } = lerRespostas();
+      if (nome?.trim()) url.searchParams.set("name", nome.trim());
+      if (email?.trim()) url.searchParams.set("email", email.trim());
       setHref(url.toString());
     } catch {
       setHref(oferta.checkoutUrl);

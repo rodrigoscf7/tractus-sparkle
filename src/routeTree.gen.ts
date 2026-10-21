@@ -37,7 +37,7 @@ import { Route as OnboardingProcessandoRouteImport } from './routes/onboarding.p
 import { Route as AuthenticatedAgentesIndexRouteImport } from './routes/_authenticated/agentes.index'
 import { Route as AuthenticatedAgentesAgenteRouteImport } from './routes/_authenticated/agentes.$agente'
 import { Route as AuthenticatedAprovacaoPautaIdRouteImport } from './routes/_authenticated/aprovacao.$pautaId'
-import { Route as ApiPublicWebhooksKiwifyRouteImport } from './routes/api/public/webhooks/kiwify'
+import { Route as ApiPublicWebhooksHublaRouteImport } from './routes/api/public/webhooks/hubla'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -182,9 +182,9 @@ const AuthenticatedAprovacaoPautaIdRoute =
     path: '/aprovacao/$pautaId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const ApiPublicWebhooksKiwifyRoute = ApiPublicWebhooksKiwifyRouteImport.update({
-  id: '/api/public/webhooks/kiwify',
-  path: '/api/public/webhooks/kiwify',
+const ApiPublicWebhooksHublaRoute = ApiPublicWebhooksHublaRouteImport.update({
+  id: '/api/public/webhooks/hubla',
+  path: '/api/public/webhooks/hubla',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -216,7 +216,7 @@ export interface FileRoutesByFullPath {
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/agentes/': typeof AuthenticatedAgentesIndexRoute
-  '/api/public/webhooks/kiwify': typeof ApiPublicWebhooksKiwifyRoute
+  '/api/public/webhooks/hubla': typeof ApiPublicWebhooksHublaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -244,7 +244,7 @@ export interface FileRoutesByTo {
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/agentes': typeof AuthenticatedAgentesIndexRoute
-  '/api/public/webhooks/kiwify': typeof ApiPublicWebhooksKiwifyRoute
+  '/api/public/webhooks/hubla': typeof ApiPublicWebhooksHublaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -276,7 +276,7 @@ export interface FileRoutesById {
   '/_authenticated/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/_authenticated/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/_authenticated/agentes/': typeof AuthenticatedAgentesIndexRoute
-  '/api/public/webhooks/kiwify': typeof ApiPublicWebhooksKiwifyRoute
+  '/api/public/webhooks/hubla': typeof ApiPublicWebhooksHublaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -308,7 +308,7 @@ export interface FileRouteTypes {
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
     | '/agentes/'
-    | '/api/public/webhooks/kiwify'
+    | '/api/public/webhooks/hubla'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -336,7 +336,7 @@ export interface FileRouteTypes {
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
     | '/agentes'
-    | '/api/public/webhooks/kiwify'
+    | '/api/public/webhooks/hubla'
   id:
     | '__root__'
     | '/'
@@ -367,7 +367,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agentes/$agente'
     | '/_authenticated/aprovacao/$pautaId'
     | '/_authenticated/agentes/'
-    | '/api/public/webhooks/kiwify'
+    | '/api/public/webhooks/hubla'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -382,7 +382,7 @@ export interface RootRouteChildren {
   ConviteCodigoRoute: typeof ConviteCodigoRoute
   DnaViralTokenRoute: typeof DnaViralTokenRoute
   OfertaProcessandoRoute: typeof OfertaProcessandoRoute
-  ApiPublicWebhooksKiwifyRoute: typeof ApiPublicWebhooksKiwifyRoute
+  ApiPublicWebhooksHublaRoute: typeof ApiPublicWebhooksHublaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -583,11 +583,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAprovacaoPautaIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/webhooks/kiwify': {
-      id: '/api/public/webhooks/kiwify'
-      path: '/api/public/webhooks/kiwify'
-      fullPath: '/api/public/webhooks/kiwify'
-      preLoaderRoute: typeof ApiPublicWebhooksKiwifyRouteImport
+    '/api/public/webhooks/hubla': {
+      id: '/api/public/webhooks/hubla'
+      path: '/api/public/webhooks/hubla'
+      fullPath: '/api/public/webhooks/hubla'
+      preLoaderRoute: typeof ApiPublicWebhooksHublaRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -667,7 +667,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConviteCodigoRoute: ConviteCodigoRoute,
   DnaViralTokenRoute: DnaViralTokenRoute,
   OfertaProcessandoRoute: OfertaProcessandoRoute,
-  ApiPublicWebhooksKiwifyRoute: ApiPublicWebhooksKiwifyRoute,
+  ApiPublicWebhooksHublaRoute: ApiPublicWebhooksHublaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

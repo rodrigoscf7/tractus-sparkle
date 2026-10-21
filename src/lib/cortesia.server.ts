@@ -50,7 +50,7 @@ export async function criarContaCortesia(
     });
     if (erroConta) throw new Error(erroConta.message);
 
-    // O RPC marca a origem como kiwify, que é o caso comum. Aqui não é venda:
+    // O RPC marca a origem como venda, que é o caso comum. Aqui não é venda:
     // corrigir a origem mantém o painel financeiro honesto.
     const fim = new Date(Date.now() + dados.dias * 86400000);
     const { error: erroAssinatura } = await admin

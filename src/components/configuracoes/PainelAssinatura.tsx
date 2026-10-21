@@ -104,8 +104,9 @@ export function PainelAssinatura() {
     if (!p.checkout_url) return null;
     const url = new URL(String(p.checkout_url));
     if (billing?.email) url.searchParams.set("email", billing.email);
-    if (billing?.contaId) url.searchParams.set("s1", billing.contaId);
-    url.searchParams.set("s2", String(p.codigo));
+    // `c-<conta>` no sck: o webhook da Hubla libera esta conta mesmo que o
+    // e-mail do pagamento seja outro.
+    if (billing?.contaId) url.searchParams.set("sck", `c-${billing.contaId}`);
     return url.toString();
   }
 
@@ -243,7 +244,7 @@ export function PainelAssinatura() {
 
       <p className="text-xs text-muted-foreground mt-6">
         Ao atingir um limite, as gerações daquele tipo param até a renovação do ciclo. O pagamento é
-        processado pela Kiwify e o plano é liberado automaticamente após a aprovação.
+        processado pela Hubla e o plano é liberado automaticamente após a aprovação.
       </p>
     </div>
   );

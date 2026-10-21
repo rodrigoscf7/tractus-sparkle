@@ -32,7 +32,7 @@ Consequência prática: o botão **"esqueci minha senha"**, que já está no ar 
 independente do funil — precisa ser resolvido de qualquer forma.
 
 O cadastro público está desligado (`enable_signup = false`), de propósito. Quem entra
-no app ou comprou pela Kiwify, ou foi convidado pelo admin. Nenhum desses dois
+no app ou comprou pela Hubla, ou foi convidado pelo admin. Nenhum desses dois
 caminhos depende de e-mail hoje, e isso é deliberado: e-mail transacional falha,
 atrasa e cai em spam, então ele é o **reforço**, nunca o caminho crítico.
 
@@ -94,7 +94,7 @@ que o e-mail chega e que o link aponta para o domínio certo.
 ## Etapa 3 — E-mail de boas-vindas pós-compra
 
 Este é o e-mail mais caro do negócio: a pessoa acabou de pagar. Ele é **reforço** do
-fluxo que já funciona — a página de obrigado da Kiwify já leva direto para
+fluxo que já funciona — a página de obrigado da Hubla já leva direto para
 `/boas-vindas`, onde o comprador define a senha sem depender de e-mail nenhum.
 
 O e-mail cobre quem fechou a aba antes de definir a senha.

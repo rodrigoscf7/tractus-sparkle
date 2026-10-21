@@ -16,6 +16,7 @@ import type { Area } from "./estaticos/areas";
 import { DoisPerfis } from "./estaticos/DoisPerfis";
 import { Espelho } from "./estaticos/Espelho";
 import { CardCarrossel } from "./carrosseis/CardCarrossel";
+import { Banner, CapaProduto, Lateral, Rodape, SeloGarantia } from "./checkout/Assets";
 import { CARROSSEIS } from "./carrosseis/textos";
 import { ARQUETIPOS_DO_QUIZ } from "@/lib/dna-viral";
 import { DuvidaCliente } from "./estaticos/DuvidaCliente";
@@ -242,6 +243,16 @@ export const RemotionRoot: React.FC = () => {
             />
           )),
         )}
+      </Folder>
+
+      <Folder name="Checkout-Hubla">
+        <Still id="Checkout-Banner-Desktop" component={Banner} width={2400} height={600} />
+        <Still id="Checkout-Banner-Mobile" component={Banner} width={1080} height={540} />
+        <Still id="Checkout-Lateral" component={Lateral} width={720} height={1440} />
+        <Still id="Checkout-Rodape-Desktop" component={Rodape} width={2400} height={300} />
+        <Still id="Checkout-Rodape-Mobile" component={Rodape} width={1080} height={360} />
+        <Still id="Checkout-Selo-Garantia" component={SeloGarantia} width={600} height={600} />
+        <Still id="Produto-Capa" component={CapaProduto} width={1080} height={1080} />
       </Folder>
 
       <Folder name="Cenas">

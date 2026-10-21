@@ -23,7 +23,7 @@ import {
   acaoConta,
   salvarPlano,
   salvarPrecoCusto,
-  reprocessarEventoKiwify,
+  reprocessarEventoPagamento,
   criarContaConvidado,
 } from "@/lib/billing.functions";
 import { enviarNotificacaoTeste } from "@/lib/notificacoes.functions";
@@ -85,7 +85,7 @@ function AdminPage() {
   const executar = useServerFn(acaoConta);
   const gravarPlano = useServerFn(salvarPlano);
   const gravarPreco = useServerFn(salvarPrecoCusto);
-  const reprocessar = useServerFn(reprocessarEventoKiwify);
+  const reprocessar = useServerFn(reprocessarEventoPagamento);
   const testarPush = useServerFn(enviarNotificacaoTeste);
 
   const { data, refetch, isLoading } = useQuery({
@@ -122,7 +122,7 @@ function AdminPage() {
       <header className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-display font-semibold">Administração</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Receita recorrente, custo real de uso, margem por plano e cobrança pela Kiwify.
+          Receita recorrente, custo real de uso, margem por plano e cobrança pela Hubla.
         </p>
       </header>
 
@@ -132,7 +132,7 @@ function AdminPage() {
           <TabsTrigger value="contas">Contas</TabsTrigger>
           <TabsTrigger value="planos">Planos</TabsTrigger>
           <TabsTrigger value="custos">Custos</TabsTrigger>
-          <TabsTrigger value="kiwify">Cobrança</TabsTrigger>
+          <TabsTrigger value="cobranca">Cobrança</TabsTrigger>
           <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
           <TabsTrigger value="suporte">Suporte</TabsTrigger>
         </TabsList>
@@ -515,23 +515,25 @@ function AdminPage() {
           ))}
         </TabsContent>
 
-        {/* ---------------- COBRANÇA / KIWIFY ---------------- */}
-        <TabsContent value="kiwify" className="space-y-3 mt-5">
+        {/* ---------------- COBRANÇA / HUBLA ---------------- */}
+        <TabsContent value="cobranca" className="space-y-3 mt-5">
           <Card className="p-5">
             <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-              Endereço do webhook da Kiwify
+              Endereço do webhook da Hubla
             </div>
             <code className="block num text-xs mt-2 break-all">
               {typeof window !== "undefined" ? window.location.origin : ""}
-              /api/public/webhooks/kiwify
+              /api/public/webhooks/hubla
             </code>
             <p className="text-xs text-muted-foreground mt-2">
-              Cadastre esse endereço na Kiwify para compra aprovada, recusada, reembolso,
-              cancelamento e atraso de assinatura.
+              Cadastre em Integrações → Webhook da Hubla, para o produto prevIA VIRAL, com os
+              eventos de fatura (paga, falha no pagamento, expirada, reembolsada, status
+              atualizado) e de assinatura (desativada). O token da aba Autenticação vai na
+              variável HUBLA_WEBHOOK_TOKEN do servidor.
             </p>
           </Card>
 
-          {(data?.eventos_kiwify ?? []).map((e: any) => (
+          {(data?.eventos_pagamento ?? []).map((e: any) => (
             <Card key={e.id} className="p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -565,7 +567,7 @@ function AdminPage() {
               </div>
             </Card>
           ))}
-          {(data?.eventos_kiwify?.length ?? 0) === 0 && (
+          {(data?.eventos_pagamento?.length ?? 0) === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum evento recebido ainda.</p>
           )}
 
@@ -808,9 +810,9 @@ const CAMPOS_PLANO: { campo: string; label: string; tipo: "texto" | "numero" | "
   { campo: "limite_curadorias_mes", label: "Curadorias/mês", tipo: "numero" },
   { campo: "limite_roteiros_mes", label: "Roteiros/mês", tipo: "numero" },
   { campo: "limite_carrosseis_mes", label: "Carrosséis/mês", tipo: "numero" },
-  { campo: "checkout_url", label: "Link de checkout Kiwify", tipo: "texto" },
-  { campo: "kiwify_produto_id", label: "ID do produto Kiwify", tipo: "texto" },
-  { campo: "kiwify_oferta_id", label: "ID da oferta Kiwify", tipo: "texto" },
+  { campo: "checkout_url", label: "Link de checkout Hubla", tipo: "texto" },
+  { campo: "hubla_produto_id", label: "ID do produto Hubla", tipo: "texto" },
+  { campo: "hubla_oferta_id", label: "ID da oferta Hubla", tipo: "texto" },
   { campo: "descricao", label: "Descrição", tipo: "texto" },
   { campo: "ordem", label: "Ordem", tipo: "numero" },
 ];
@@ -886,8 +888,8 @@ function PlanoEditor({
               limite_roteiros_mes: Number(form.limite_roteiros_mes ?? 0),
               limite_carrosseis_mes: Number(form.limite_carrosseis_mes ?? 0),
               checkout_url: form.checkout_url || null,
-              kiwify_produto_id: form.kiwify_produto_id || null,
-              kiwify_oferta_id: form.kiwify_oferta_id || null,
+              hubla_produto_id: form.hubla_produto_id || null,
+              hubla_oferta_id: form.hubla_oferta_id || null,
               ordem: Number(form.ordem ?? 0),
               publico: !!form.publico,
               recomendado: !!form.recomendado,
@@ -976,7 +978,7 @@ function NovoPlano({
  * Convite de cortesia.
  *
  * O cadastro público está desligado no Auth do projeto: quem entra ou comprou
- * pela Kiwify, ou nasce aqui. Este card é a segunda porta — demonstração,
+ * pela Hubla, ou nasce aqui. Este card é a segunda porta — demonstração,
  * parceiro, teste — sem reabrir a primeira para a internet inteira.
  *
  * A senha aparece UMA vez e some ao fechar. Não é teatro de segurança: ela não
@@ -1093,7 +1095,7 @@ Troque a senha depois de entrar.`
       <div className="font-display text-lg font-semibold">Conta de convidado</div>
       <p className="text-sm text-muted-foreground mt-1">
         Cria o acesso na hora, com senha provisória. Use para demonstração, parceiro ou teste — quem
-        compra pela Kiwify não passa por aqui.
+        compra pela Hubla não passa por aqui.
       </p>
 
       <form onSubmit={enviar} className="mt-4 grid gap-4 sm:grid-cols-2">

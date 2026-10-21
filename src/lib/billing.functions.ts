@@ -48,7 +48,7 @@ async function carregarDashboard(supabase: any) {
     supabase.from("vw_plataforma_mensal").select("*").order("ciclo"),
     supabase.from("vw_custo_medio_tipo").select("*"),
     supabase.from("custo_precos").select("*").order("rotulo"),
-    supabase.from("kiwify_eventos").select("*").order("criado_em", { ascending: false }).limit(25),
+    supabase.from("hubla_eventos").select("*").order("criado_em", { ascending: false }).limit(25),
     supabase.from("admin_acoes").select("*").order("criado_em", { ascending: false }).limit(25),
     supabase
       .from("onboarding_respostas")
@@ -216,7 +216,7 @@ async function carregarDashboard(supabase: any) {
       custo_max_centavos: num(m.custo_max_centavos),
     })),
     precos: (precos.data ?? []) as any[],
-    eventos_kiwify: (eventos.data ?? []) as any[],
+    eventos_pagamento: (eventos.data ?? []) as any[],
     acoes: (acoes.data ?? []) as any[],
     onboarding: resumirOnboarding((onboarding.data ?? []) as any[], contasDetalhe),
     ciclo,
@@ -456,7 +456,7 @@ export const acaoConta = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const reprocessarEventoKiwify = createServerFn({ method: "POST" })
+export const reprocessarEventoPagamento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { eventoId: string }) => data)
   .handler(async ({ data, context }) => {
@@ -464,22 +464,21 @@ export const reprocessarEventoKiwify = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const { data: evento } = await admin
-      .from("kiwify_eventos")
+      .from("hubla_eventos")
       .select("*")
       .eq("id", data.eventoId)
       .maybeSingle();
     if (!evento) throw new Error("Evento não encontrado.");
-    const { aplicarEventoKiwify, normalizarEventoKiwify } = await import("./kiwify.server");
-    // A linha gravada nao tem lead_id (s3): ele so existe no payload. Sem
-    // normalizar de novo, reprocessar nao marca o lead como comprado e a tela
-    // de boas-vindas nunca sai de "sem compra".
-    const normalizado = normalizarEventoKiwify(evento.payload ?? {});
-    const resultado = await aplicarEventoKiwify(admin, {
+    const { aplicarEventoHubla, normalizarEventoHubla } = await import("./hubla.server");
+    // Normaliza de novo a partir do payload guardado: é lá que estão o lead
+    // (sck), o nome e a oferta, que a linha não guarda inteiros.
+    const normalizado = normalizarEventoHubla(evento.payload ?? {}, evento.idempotencia ?? null);
+    const resultado = await aplicarEventoHubla(admin, {
       ...normalizado,
       conta_id: evento.conta_id ?? normalizado.conta_id,
       id: evento.id,
     });
-    await registrarAcao(admin, context.userId, evento.conta_id, "kiwify_reprocessado", {
+    await registrarAcao(admin, context.userId, evento.conta_id, "pagamento_reprocessado", {
       eventoId: data.eventoId,
       resultado,
     });
@@ -507,7 +506,7 @@ function senhaProvisoria(tamanho = 14): string {
  * Cria uma conta de convidado — o acesso de cortesia, feito pelo admin.
  *
  * O cadastro público está desligado no Auth do projeto, de propósito: quem
- * entra ou comprou pela Kiwify, ou é convidado e nasce aqui. Isso mantém a
+ * entra ou comprou pela Hubla, ou é convidado e nasce aqui. Isso mantém a
  * porta fechada sem impedir demonstração, parceiro e teste.
  *
  * O usuário nasce com o e-mail JÁ confirmado. Não é atalho: sem isso ele

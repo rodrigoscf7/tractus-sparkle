@@ -16,7 +16,7 @@ import { obterLeadId } from "@/lib/oferta-variante";
 
 /**
  * A primeira tela depois da compra. É para cá que a página de obrigado da
- * Kiwify manda o comprador.
+ * Hubla manda o comprador.
  *
  * Ninguém se cadastra sozinho neste app — o cadastro público está desligado.
  * Quem paga tem a conta criada pelo webhook e define a própria senha aqui, sem
@@ -39,7 +39,7 @@ export const Route = createFileRoute("/boas-vindas")({
   component: BoasVindas,
 });
 
-/** De quanto em quanto tempo perguntar se o aviso da Kiwify já chegou. */
+/** De quanto em quanto tempo perguntar se o aviso da Hubla já chegou. */
 const INTERVALO_ESPERA_MS = 2500;
 /** Depois disto, para de perguntar e oferece a saída pelo e-mail. */
 const LIMITE_ESPERA_MS = 90_000;

@@ -56,7 +56,7 @@ function Termos() {
 
       <SecaoLegal titulo="4. Assinatura, pagamento e limites">
         <p>
-          A assinatura é mensal, cobrada e renovada automaticamente pela Kiwify. Cada plano tem
+          A assinatura é mensal, cobrada e renovada automaticamente pela Hubla. Cada plano tem
           limites mensais de geração, informados na oferta e em Configurações › Assinatura, que
           reiniciam no dia 1 de cada mês.
         </p>

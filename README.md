@@ -25,7 +25,7 @@ npm run lint
 
 ## Arquitetura
 
-O app serve SSR e expõe o webhook da Kiwify em `/api/public/webhooks/kiwify`. A
+O app serve SSR e expõe o webhook da Hubla em `/api/public/webhooks/hubla`. A
 lógica de negócio de billing fica em server functions (`src/lib/*.functions.ts`),
 autenticadas pelo middleware em `src/integrations/supabase/auth-middleware.ts`.
 
