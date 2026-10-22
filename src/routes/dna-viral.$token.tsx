@@ -7,6 +7,7 @@ import { capturarOrigem, obterLeadId } from "@/lib/oferta-variante";
 import { rastrear } from "@/lib/pixel";
 import { lerRespostas } from "@/lib/quiz-oferta.estado";
 import { LinksLegais } from "@/components/legal/PaginaLegal";
+import { VslPlayer } from "@/components/oferta/VslPlayer";
 import { statusDoScore, type DimensaoScore, type FaixaScore } from "@/lib/dna-viral-score";
 import { ARQUETIPOS_DO_QUIZ, type DnaViral } from "@/lib/dna-viral";
 
@@ -60,7 +61,10 @@ type OfertaPublica = {
 
 function Relatorio() {
   const { dna, oferta } = Route.useLoaderData();
+  const { token } = Route.useParams();
   const { relatorio, primeiroNome, geradoEm, temEmail } = dna;
+  const { liberado, liberar } = useTravaVsl(token);
+  const trava = liberado ? "" : "hidden print:block";
 
   const gargalos = relatorio.gargalos ?? [];
   const score = relatorio.score;
@@ -84,8 +88,8 @@ function Relatorio() {
         </p>
         {temEmail && (
           <p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
-            <Mail className="mt-0.5 h-4 w-4 shrink-0" />O link deste diagnóstico também vai para o seu
-            e-mail, para você voltar a ele quando quiser.
+            <Mail className="mt-0.5 h-4 w-4 shrink-0" />O link deste diagnóstico também vai para o
+            seu e-mail, para você voltar a ele quando quiser.
           </p>
         )}
 
@@ -94,187 +98,198 @@ function Relatorio() {
             Assista ao vídeo: em 2 minutos, como manter isso toda semana.
           </p>
         )}
-        <VideoDiagnostico />
+        <VideoDiagnostico onMarco={liberar} onErro={liberar} />
+        {!liberado && (
+          <p className="mt-4 text-center text-sm text-muted-foreground" data-print-hide>
+            O seu diagnóstico completo aparece logo abaixo depois do primeiro minuto do vídeo.
+          </p>
+        )}
 
-        <div id="cta-topo" className="mt-6">
+        <div id="cta-topo" className={`mt-6 ${trava}`}>
           <BlocoCta oferta={oferta} rotulo="Resgatar meu bônus" />
         </div>
       </header>
 
-      {/* ---- Cabeçalho do PDF / arquétipo (só com substância) ---- */}
-      <div className="mt-10 border-b border-border pb-8">
-        <div className="flex items-start justify-between gap-6">
-          <div className="min-w-0">
-            <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-              DNA Viral · diagnóstico de conteúdo
+      <div className={trava}>
+        {/* ---- Cabeçalho do PDF / arquétipo (só com substância) ---- */}
+        <div className="mt-10 border-b border-border pb-8">
+          <div className="flex items-start justify-between gap-6">
+            <div className="min-w-0">
+              <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                DNA Viral · diagnóstico de conteúdo
+              </div>
+              {relatorio.arquetipo ? (
+                <>
+                  <h2 className="ai-mark mt-4 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-[2.5rem]">
+                    {relatorio.arquetipo.nome}
+                  </h2>
+                  <p className="num mt-3 text-sm text-muted-foreground">
+                    {[primeiroNome, geradoEm && new Date(geradoEm).toLocaleDateString("pt-BR")]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="mt-4 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-[2.5rem]">
+                    Seu diagnóstico de conteúdo
+                  </h2>
+                  <p className="num mt-3 text-sm text-muted-foreground">
+                    {[primeiroNome, geradoEm && new Date(geradoEm).toLocaleDateString("pt-BR")]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </>
+              )}
             </div>
-            {relatorio.arquetipo ? (
-              <>
-                <h2 className="ai-mark mt-4 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-[2.5rem]">
-                  {relatorio.arquetipo.nome}
-                </h2>
-                <p className="num mt-3 text-sm text-muted-foreground">
-                  {[primeiroNome, geradoEm && new Date(geradoEm).toLocaleDateString("pt-BR")]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              </>
-            ) : (
-              <>
-                <h2 className="mt-4 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-[2.5rem]">
-                  Seu diagnóstico de conteúdo
-                </h2>
-                <p className="num mt-3 text-sm text-muted-foreground">
-                  {[primeiroNome, geradoEm && new Date(geradoEm).toLocaleDateString("pt-BR")]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              </>
-            )}
-          </div>
 
-          <button
-            onClick={() => window.print()}
-            data-print-hide
-            className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border border-border px-4 py-2
+            <button
+              onClick={() => window.print()}
+              data-print-hide
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border border-border px-4 py-2
               text-sm transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2
               focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <Download className="h-4 w-4" />
-            Baixar PDF
-          </button>
+            >
+              <Download className="h-4 w-4" />
+              Baixar PDF
+            </button>
+          </div>
+
+          {relatorio.arquetipo && (
+            <>
+              <p className="mt-6 font-display text-lg leading-snug sm:text-xl">
+                {relatorio.arquetipo.uma_linha}
+              </p>
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+                {relatorio.arquetipo.descricao}
+              </p>
+            </>
+          )}
         </div>
 
-        {relatorio.arquetipo && (
-          <>
-            <p className="mt-6 font-display text-lg leading-snug sm:text-xl">
-              {relatorio.arquetipo.uma_linha}
-            </p>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              {relatorio.arquetipo.descricao}
-            </p>
-          </>
+        {score && score.length > 0 && <PainelScore score={score} />}
+
+        {gargalos.length > 0 && (
+          <Secao titulo="Gargalos que estão travando o seu perfil">
+            <div className="space-y-8">
+              {gargalos.map((g, i) => (
+                <div key={`${g.titulo}-${i}`}>
+                  <h3 className="font-display text-lg font-semibold tracking-tight">
+                    Gargalo #{i + 1}: {g.titulo}
+                  </h3>
+                  <p className="mt-2 text-base leading-relaxed text-muted-foreground">{g.texto}</p>
+                </div>
+              ))}
+            </div>
+          </Secao>
         )}
-      </div>
 
-      {score && score.length > 0 && <PainelScore score={score} />}
+        <PonteArquetipo
+          arquetipo={relatorio.arquetipo?.nome ?? null}
+          gargalo={gargalos[0]?.titulo ?? null}
+        />
 
-      {gargalos.length > 0 && (
-        <Secao titulo="Gargalos que estão travando o seu perfil">
-          <div className="space-y-8">
-            {gargalos.map((g, i) => (
-              <div key={`${g.titulo}-${i}`}>
-                <h3 className="font-display text-lg font-semibold tracking-tight">
-                  Gargalo #{i + 1}: {g.titulo}
-                </h3>
-                <p className="mt-2 text-base leading-relaxed text-muted-foreground">{g.texto}</p>
-              </div>
-            ))}
-          </div>
-        </Secao>
-      )}
-
-      <PonteArquetipo
-        arquetipo={relatorio.arquetipo?.nome ?? null}
-        gargalo={gargalos[0]?.titulo ?? null}
-      />
-
-      {relatorio.pilares.length > 0 && (
-        <Secao titulo="Seus pilares de autoridade">
-          <div className="space-y-8">
-            {relatorio.pilares.map((pilar) => (
-              <div key={pilar.nome}>
-                <h3 className="font-display text-lg font-semibold tracking-tight">{pilar.nome}</h3>
-                <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">
-                  {pilar.por_que}
-                </p>
-                {pilar.exemplos_de_tema.length > 0 && (
-                  <ul className="mt-3 space-y-1.5">
-                    {pilar.exemplos_de_tema.map((tema) => (
-                      <li key={tema} className="flex gap-2.5 text-base leading-relaxed">
-                        <span
-                          aria-hidden
-                          className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
-                        />
-                        {tema}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-        </Secao>
-      )}
-
-      {(relatorio.roteiros?.length ?? 0) > 0 && (
-        <Secao
-          titulo="Seus 3 roteiros prontos para gravar hoje"
-          apoio="Cada um tem de 30 a 50 segundos e está escrito palavra por palavra, na ordem em que você fala: abertura, miolo e fecho. É para abrir, ler e gravar."
-        >
-          <div className="space-y-6">
-            {relatorio.roteiros.map((roteiro, i) => (
-              <div
-                key={i}
-                className="break-inside-avoid rounded-lg border border-border bg-surface p-5 sm:p-6"
-              >
-                <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                  Roteiro {i + 1}
-                  {roteiro.formato ? ` · ${roteiro.formato}` : ""}
+        {relatorio.pilares.length > 0 && (
+          <Secao titulo="Seus pilares de autoridade">
+            <div className="space-y-8">
+              {relatorio.pilares.map((pilar) => (
+                <div key={pilar.nome}>
+                  <h3 className="font-display text-lg font-semibold tracking-tight">
+                    {pilar.nome}
+                  </h3>
+                  <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">
+                    {pilar.por_que}
+                  </p>
+                  {pilar.exemplos_de_tema.length > 0 && (
+                    <ul className="mt-3 space-y-1.5">
+                      {pilar.exemplos_de_tema.map((tema) => (
+                        <li key={tema} className="flex gap-2.5 text-base leading-relaxed">
+                          <span
+                            aria-hidden
+                            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                          />
+                          {tema}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground">Gancho</div>
-                    <p className="mt-1.5 font-display text-lg leading-snug sm:text-xl">
-                      <span aria-hidden>“</span>
-                      {roteiro.gancho}
-                      <span aria-hidden>”</span>
-                    </p>
+              ))}
+            </div>
+          </Secao>
+        )}
+
+        {(relatorio.roteiros?.length ?? 0) > 0 && (
+          <Secao
+            titulo="Seus 3 roteiros prontos para gravar hoje"
+            apoio="Cada um tem de 30 a 50 segundos e está escrito palavra por palavra, na ordem em que você fala: abertura, miolo e fecho. É para abrir, ler e gravar."
+          >
+            <div className="space-y-6">
+              {relatorio.roteiros.map((roteiro, i) => (
+                <div
+                  key={i}
+                  className="break-inside-avoid rounded-lg border border-border bg-surface p-5 sm:p-6"
+                >
+                  <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Roteiro {i + 1}
+                    {roteiro.formato ? ` · ${roteiro.formato}` : ""}
                   </div>
-                  {roteiro.desenvolvimento && (
+                  <div className="mt-4 space-y-4">
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">
-                        Desenvolvimento
+                      <div className="text-sm font-medium text-muted-foreground">Gancho</div>
+                      <p className="mt-1.5 font-display text-lg leading-snug sm:text-xl">
+                        <span aria-hidden>“</span>
+                        {roteiro.gancho}
+                        <span aria-hidden>”</span>
+                      </p>
+                    </div>
+                    {roteiro.desenvolvimento && (
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Desenvolvimento
+                        </div>
+                        <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">
+                          {roteiro.desenvolvimento}
+                        </p>
                       </div>
-                      <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">
-                        {roteiro.desenvolvimento}
-                      </p>
-                    </div>
-                  )}
-                  {roteiro.fecho && (
-                    <div>
-                      <div className="text-sm font-medium text-muted-foreground">Fecho</div>
-                      <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">
-                        {roteiro.fecho}
-                      </p>
-                    </div>
-                  )}
+                    )}
+                    {roteiro.fecho && (
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground">Fecho</div>
+                        <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">
+                          {roteiro.fecho}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          <p className="mt-6 text-base leading-relaxed text-muted-foreground">
-            Ajuste as palavras ao seu jeito de falar. A estrutura é o que sustenta a retenção, e ela
-            já está montada.
-          </p>
-          <CtaMeio oferta={oferta} />
-        </Secao>
-      )}
+              ))}
+            </div>
+            <p className="mt-6 text-base leading-relaxed text-muted-foreground">
+              Ajuste as palavras ao seu jeito de falar. A estrutura é o que sustenta a retenção, e
+              ela já está montada.
+            </p>
+            <CtaMeio oferta={oferta} />
+          </Secao>
+        )}
 
-      {relatorio.o_que_falta && (
-        <Secao titulo="O que este documento não faz">
-          <p className="text-base leading-relaxed text-muted-foreground">{relatorio.o_que_falta}</p>
-        </Secao>
-      )}
+        {relatorio.o_que_falta && (
+          <Secao titulo="O que este documento não faz">
+            <p className="text-base leading-relaxed text-muted-foreground">
+              {relatorio.o_que_falta}
+            </p>
+          </Secao>
+        )}
 
-      <Oferta oferta={oferta} />
+        <Oferta oferta={oferta} />
+      </div>
 
       <footer className="mt-16 border-t border-border pt-6" data-print-hide>
         <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-6 w-auto opacity-60" />
         <LinksLegais className="mt-4" />
       </footer>
 
-      <BarraFixa oferta={oferta} />
+      {liberado && <BarraFixa oferta={oferta} />}
     </div>
   );
 }
@@ -356,7 +371,11 @@ function PainelScore({ score }: { score: DimensaoScore[] }) {
  */
 const VIDEO_URL = (import.meta.env.VITE_VIDEO_DIAGNOSTICO_URL as string | undefined)?.trim() || "";
 const VIDEO_POSTER =
-  (import.meta.env.VITE_VIDEO_DIAGNOSTICO_POSTER as string | undefined)?.trim() || undefined;
+  (import.meta.env.VITE_VIDEO_DIAGNOSTICO_POSTER as string | undefined)?.trim() ||
+  // A Bunny Stream gera a miniatura ao lado da playlist.
+  (/b-cdn\.net\/.+\/playlist\.m3u8/.test(VIDEO_URL)
+    ? VIDEO_URL.replace(/playlist\.m3u8.*$/, "thumbnail.jpg")
+    : undefined);
 
 /** Link de YouTube/Vimeo vira o endereço do player embutido; arquivo direto devolve null. */
 function urlDeEmbed(url: string): string | null {
@@ -376,11 +395,66 @@ function urlDeEmbed(url: string): string | null {
   }
 }
 
+/**
+ * VSL: com URL direta do vídeo (HLS .m3u8 ou MP4), o vídeo toca no player
+ * próprio, sem controles, e o resto da página fica oculto até o primeiro
+ * minuto. Com link de embed (YouTube, Vimeo, iframe da Bunny) não há como
+ * saber o tempo assistido, então nada fica travado.
+ */
+const VSL_ATIVA = Boolean(VIDEO_URL) && urlDeEmbed(VIDEO_URL) === null;
+const MARCO_VSL_SEGUNDOS = 60;
+
+/**
+ * A trava do conteúdo abaixo do vídeo. Abre quando o vídeo passa do primeiro
+ * minuto (ou falha) e fica aberta para este relatório neste navegador. O link
+ * do e-mail traz `?ver=completo`: quem volta para reler os roteiros não
+ * precisa assistir de novo.
+ */
+function useTravaVsl(token: string) {
+  const chave = `previa.dna.liberado.${token}`;
+  const [liberado, setLiberado] = useState(!VSL_ATIVA);
+
+  useEffect(() => {
+    if (!VSL_ATIVA) return;
+    const porLink = new URLSearchParams(window.location.search).get("ver") === "completo";
+    let jaViu = false;
+    try {
+      jaViu = window.localStorage.getItem(chave) === "1";
+    } catch {
+      jaViu = false;
+    }
+    if (porLink || jaViu) setLiberado(true);
+  }, [chave]);
+
+  function liberar() {
+    setLiberado(true);
+    try {
+      window.localStorage.setItem(chave, "1");
+    } catch {
+      // sem storage: libera só nesta visita
+    }
+  }
+
+  return { liberado, liberar };
+}
+
 const MOLDURA_VIDEO =
   "mx-auto mt-6 aspect-[9/16] max-h-[min(70vh,520px)] w-full max-w-[280px] overflow-hidden rounded-xl border border-border bg-surface";
 
-function VideoDiagnostico() {
+function VideoDiagnostico({ onMarco, onErro }: { onMarco: () => void; onErro: () => void }) {
   if (!VIDEO_URL) return <VideoPlaceholder />;
+
+  if (VSL_ATIVA) {
+    return (
+      <VslPlayer
+        src={VIDEO_URL}
+        poster={VIDEO_POSTER}
+        marcoSegundos={MARCO_VSL_SEGUNDOS}
+        onMarco={onMarco}
+        onErro={onErro}
+      />
+    );
+  }
 
   const embed = urlDeEmbed(VIDEO_URL);
   if (embed) {

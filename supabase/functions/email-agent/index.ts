@@ -167,7 +167,8 @@ async function enviarDnaViral(leadId: string) {
     if (!lead?.email) throw new Error("Lead sem e-mail.");
 
     const site = siteUrl();
-    const link = `${site}/dna-viral/${lead.token}`;
+    // ?ver=completo: quem volta pelo e-mail não passa de novo pela trava do vídeo.
+    const link = `${site}/dna-viral/${lead.token}?ver=completo`;
     const nome = primeiroNome(lead.nome);
     const arquetipo = arquetipoDe(lead);
 
@@ -241,7 +242,8 @@ async function enviarBoasVindas(email: string, leadId: string | null | undefined
   const lead = leadId && UUID.test(leadId) ? await lerLead(supabase, leadId) : null;
   const nome = primeiroNome(lead?.nome);
   const arquetipo = arquetipoDe(lead);
-  const linkRelatorio = lead?.token && lead.relatorio ? `${site}/dna-viral/${lead.token}` : null;
+  const linkRelatorio =
+    lead?.token && lead.relatorio ? `${site}/dna-viral/${lead.token}?ver=completo` : null;
 
   const assunto = arquetipo
     ? `${nome ? `${nome}, o` : "O"} ${arquetipo} agora tem conteúdo toda semana`
