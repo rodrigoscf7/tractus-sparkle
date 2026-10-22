@@ -83,9 +83,11 @@ function Relatorio() {
           que você acompanha.
         </p>
 
-        <p className="mt-6 text-sm font-medium">
-          Assista ao vídeo: em 2 minutos, como manter isso toda semana.
-        </p>
+        {VIDEO_URL && (
+          <p className="mt-6 text-sm font-medium">
+            Assista ao vídeo: em 2 minutos, como manter isso toda semana.
+          </p>
+        )}
         <VideoDiagnostico />
 
         <div id="cta-topo" className="mt-6">
@@ -481,7 +483,7 @@ function BotaoCheckout({
       }
       data-print-hide
       className={`inline-flex items-center gap-2 rounded-md bg-primary font-medium text-primary-foreground
-        transition hover:bg-primary/90 ${compacto ? "min-h-11 shrink-0 px-4 py-2.5 text-sm" : "min-h-12 px-8 py-3.5 text-base"}
+        transition hover:bg-primary/90 ${compacto ? "min-h-11 shrink-0 px-4 py-2.5 text-sm" : "min-h-12 w-full justify-center px-6 py-3.5 text-base sm:w-auto sm:px-8"}
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
         focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
     >
@@ -607,7 +609,7 @@ function CtaMeio({ oferta }: { oferta: OfertaPublica }) {
         Esses três são para hoje. Na semana que vem, chegam os próximos, sem você pedir.
       </p>
       <div className="mt-5">
-        <BotaoCheckout oferta={oferta} rotulo="Quero os roteiros da próxima semana" />
+        <BotaoCheckout oferta={oferta} rotulo="Quero os próximos roteiros" />
       </div>
     </div>
   );
@@ -705,7 +707,7 @@ function Oferta({ oferta }: { oferta: OfertaPublica }) {
       </ol>
 
       <div className="mt-10 rounded-lg border border-border bg-background p-5 sm:p-6">
-        <BlocoCta oferta={oferta} rotulo="Assinar com o bônus de lançamento" />
+        <BlocoCta oferta={oferta} rotulo="Assinar com o bônus" />
       </div>
 
       <h3 className="mt-10 font-display text-lg font-semibold tracking-tight">
