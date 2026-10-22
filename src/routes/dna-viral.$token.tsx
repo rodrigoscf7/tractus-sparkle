@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Download } from "lucide-react";
+import { ArrowRight, Check, Download } from "lucide-react";
 import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { getDnaViral, getOfertaPublica } from "@/lib/quiz-oferta.functions";
 import { capturarOrigem, obterLeadId } from "@/lib/oferta-variante";
@@ -8,7 +8,7 @@ import { rastrear } from "@/lib/pixel";
 import { lerRespostas } from "@/lib/quiz-oferta.estado";
 import { LinksLegais } from "@/components/legal/PaginaLegal";
 import { statusDoScore, type DimensaoScore, type FaixaScore } from "@/lib/dna-viral-score";
-import type { DnaViral } from "@/lib/dna-viral";
+import { ARQUETIPOS_DO_QUIZ, type DnaViral } from "@/lib/dna-viral";
 
 /**
  * O DNA Viral — o relatório público, no seu endereço permanente.
@@ -17,9 +17,11 @@ import type { DnaViral } from "@/lib/dna-viral";
  * leitura devolve só o relatório e o primeiro nome, nunca o e-mail nem as
  * respostas cruas.
  *
- * Ordem (decisão da reunião): vídeo + CTA no topo, depois score, gargalos,
- * roteiros e oferta. O PDF (`data-print-hide`) continua como parecer — sem
- * vídeo nem checkout.
+ * Ordem: vídeo + CTA no topo, score, gargalos, a ponte entre o gargalo e a
+ * prevIA, pilares, roteiros, CTA do meio e a oferta completa (o que chega,
+ * como funciona, preço, perguntas). No celular, uma barra fixa com o preço
+ * aparece depois do topo. O PDF (`data-print-hide`) continua como parecer:
+ * sem vídeo, sem preço e sem checkout.
  */
 export const Route = createFileRoute("/dna-viral/$token")({
   // Sem `ssr: false`: o token está na URL, então o documento pode ser montado
@@ -73,37 +75,21 @@ function Relatorio() {
       <header className="border-b border-border pb-8" data-print-hide>
         <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="mb-6 h-7 w-auto" />
         <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
-          Obrigado{primeiroNome ? `, ${primeiroNome}` : ""}, recebemos as suas respostas e o seu
-          diagnóstico está pronto!
+          {primeiroNome ? `${primeiroNome}, o` : "O"} seu diagnóstico está pronto.
         </h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-          Assista o vídeo abaixo e descubra como atrair mais clientes.
+          Logo abaixo estão o seu perfil, a nota de cada ponto e 3 roteiros para gravar hoje. A
+          prevIA entrega isso toda semana, no seu tom, a partir do que está performando nos perfis
+          que você acompanha.
         </p>
 
+        <p className="mt-6 text-sm font-medium">
+          Assista ao vídeo: em 2 minutos, como manter isso toda semana.
+        </p>
         <VideoDiagnostico />
 
-        <div className="mt-6 flex flex-wrap items-center gap-4">
-          <BotaoCheckout oferta={oferta} rotulo="Resgatar bônus" />
-          {oferta && (oferta.precoCentavos != null || oferta.precoDeCentavos != null) && (
-            <span className="num text-sm text-muted-foreground">
-              {oferta.precoDeCentavos != null && (
-                <>
-                  <span className="line-through opacity-60">
-                    DE {formatarPreco(oferta.precoDeCentavos)}
-                  </span>
-                  {oferta.precoCentavos != null && " · "}
-                </>
-              )}
-              {oferta.precoCentavos != null && (
-                <>
-                  <span className="font-medium text-foreground">
-                    {formatarPreco(oferta.precoCentavos)}
-                  </span>{" "}
-                  por mês
-                </>
-              )}
-            </span>
-          )}
+        <div id="cta-topo" className="mt-6">
+          <BlocoCta oferta={oferta} rotulo="Resgatar meu bônus" />
         </div>
       </header>
 
@@ -180,6 +166,11 @@ function Relatorio() {
         </Secao>
       )}
 
+      <PonteArquetipo
+        arquetipo={relatorio.arquetipo?.nome ?? null}
+        gargalo={gargalos[0]?.titulo ?? null}
+      />
+
       {relatorio.pilares.length > 0 && (
         <Secao titulo="Seus pilares de autoridade">
           <div className="space-y-8">
@@ -234,7 +225,9 @@ function Relatorio() {
                   </div>
                   {roteiro.desenvolvimento && (
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">Desenvolvimento</div>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        Desenvolvimento
+                      </div>
                       <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">
                         {roteiro.desenvolvimento}
                       </p>
@@ -256,6 +249,7 @@ function Relatorio() {
             Ajuste as palavras ao seu jeito de falar. A estrutura é o que sustenta a retenção, e ela
             já está montada.
           </p>
+          <CtaMeio oferta={oferta} />
         </Secao>
       )}
 
@@ -271,6 +265,8 @@ function Relatorio() {
         <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-6 w-auto opacity-60" />
         <LinksLegais className="mt-4" />
       </footer>
+
+      <BarraFixa oferta={oferta} />
     </div>
   );
 }
@@ -460,9 +456,11 @@ function useCheckoutHref(oferta: OfertaPublica): string | null {
 function BotaoCheckout({
   oferta,
   rotulo,
+  compacto = false,
 }: {
   oferta: OfertaPublica;
   rotulo: string;
+  compacto?: boolean;
 }) {
   const href = useCheckoutHref(oferta);
   if (!oferta) return null;
@@ -482,10 +480,10 @@ function BotaoCheckout({
         )
       }
       data-print-hide
-      className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-8 py-3.5 text-base
-        font-medium text-primary-foreground transition hover:bg-primary/90
+      className={`inline-flex items-center gap-2 rounded-md bg-primary font-medium text-primary-foreground
+        transition hover:bg-primary/90 ${compacto ? "min-h-11 shrink-0 px-4 py-2.5 text-sm" : "min-h-12 px-8 py-3.5 text-base"}
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-        focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
     >
       {rotulo} <ArrowRight className="h-4 w-4" />
     </a>
@@ -493,27 +491,175 @@ function BotaoCheckout({
 }
 
 function formatarPreco(centavos: number): string {
+  // Centavos inteiros mostram "R$ 197"; quebrados, "R$ 47,90". Arredondar
+  // mostrava "R$ 48" para quem vai pagar R$ 47,90.
+  const inteiro = centavos % 100 === 0;
   return (centavos / 100).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: inteiro ? 0 : 2,
+    maximumFractionDigits: inteiro ? 0 : 2,
   });
 }
 
+/** Desconto do lançamento, arredondado para baixo: nunca anuncia mais do que dá. */
+function descontoPct(oferta: NonNullable<OfertaPublica>): number | null {
+  const { precoCentavos: por, precoDeCentavos: de } = oferta;
+  if (por == null || de == null || de <= por) return null;
+  return Math.floor((1 - por / de) * 100);
+}
+
+const GARANTIAS = "Cartão ou Pix · Cancele quando quiser · 7 dias de garantia";
+
 /**
- * A oferta, depois do documento inteiro.
- *
- * Vem no fim de propósito (além do CTA do topo): a pessoa já recebeu o que foi
- * prometido. Fora da impressão — o PDF que ela guarda é o diagnóstico, não o
- * anúncio.
+ * O bônus de lançamento (de R$ 197 por R$ 47,90 por mês), o botão e as
+ * garantias. Usado no topo e no fim da oferta.
+ */
+function BlocoCta({ oferta, rotulo }: { oferta: OfertaPublica; rotulo: string }) {
+  if (!oferta) return null;
+  const pct = descontoPct(oferta);
+  return (
+    <div data-print-hide>
+      {pct != null && oferta.precoDeCentavos != null && oferta.precoCentavos != null && (
+        <div className="mb-4">
+          <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+            Bônus de lançamento · {pct}% de desconto
+          </div>
+          <div className="num mt-1.5 text-base">
+            <span className="text-muted-foreground line-through">
+              de {formatarPreco(oferta.precoDeCentavos)}
+            </span>{" "}
+            por <span className="text-xl font-semibold">{formatarPreco(oferta.precoCentavos)}</span>{" "}
+            por mês
+          </div>
+        </div>
+      )}
+      <BotaoCheckout oferta={oferta} rotulo={rotulo} />
+      <p className="mt-3 text-sm text-muted-foreground">{GARANTIAS}</p>
+    </div>
+  );
+}
+
+/**
+ * Como a prevIA resolve o gargalo de cada perfil. A chave é a situação do
+ * arquétipo (sempre um dos 6 de ARQUETIPOS_DO_QUIZ); relatório antigo, com
+ * nome fora da lista, simplesmente não mostra a ponte.
+ */
+const SOLUCAO_POR_SITUACAO: Record<string, string> = {
+  nao_sei_postar:
+    "Todo domingo, o tema de cada vídeo chega decidido, a partir do que performou nos seus perfis de referência.",
+  ideias_sem_conteudo:
+    "Cada ideia vira roteiro completo, com gancho, desenvolvimento e fecho, no seu tom.",
+  sem_tempo:
+    "Você escolhe em quantos dias posta, e o plano cabe nesse ritmo. O roteiro chega pronto para ler e gravar.",
+  sem_constancia:
+    "O plano chega sozinho todo domingo. A constância deixa de depender de como foi a sua semana.",
+  poucas_views:
+    "Cada roteiro abre com um gancho modelado nos vídeos que mais seguraram a audiência nas suas referências.",
+  views_sem_cliente:
+    "Os temas partem das dúvidas que o seu cliente tem antes de contratar, e cada fecho convida quem assiste a comentar o caso.",
+};
+
+function PonteArquetipo({
+  arquetipo,
+  gargalo,
+}: {
+  arquetipo: string | null;
+  gargalo: string | null;
+}) {
+  const situacao = ARQUETIPOS_DO_QUIZ.find((a) => a.nome === arquetipo)?.situacao;
+  const solucao = situacao ? SOLUCAO_POR_SITUACAO[situacao] : null;
+  if (!arquetipo || !solucao) return null;
+
+  return (
+    <section
+      className="mt-14 rounded-lg border border-border bg-surface p-6 sm:p-8"
+      data-print-hide
+    >
+      <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+        O que trava você, e como isso sai da sua semana
+      </div>
+      <p className="mt-3 text-base leading-relaxed">
+        Seu perfil é <strong className="font-semibold">{arquetipo}</strong>
+        {gargalo ? (
+          <>
+            , e o gargalo principal é{" "}
+            <strong className="font-semibold">
+              {gargalo.charAt(0).toLowerCase() + gargalo.slice(1)}
+            </strong>
+            .
+          </>
+        ) : (
+          "."
+        )}
+      </p>
+      <p className="ai-mark mt-3 font-display text-lg leading-snug sm:text-xl">{solucao}</p>
+    </section>
+  );
+}
+
+/** O momento de maior desejo: acabou de ler os três roteiros. */
+function CtaMeio({ oferta }: { oferta: OfertaPublica }) {
+  if (!oferta) return null;
+  return (
+    <div className="mt-8 border-t border-border pt-8" data-print-hide>
+      <p className="font-display text-lg font-semibold leading-snug sm:text-xl">
+        Esses três são para hoje. Na semana que vem, chegam os próximos, sem você pedir.
+      </p>
+      <div className="mt-5">
+        <BotaoCheckout oferta={oferta} rotulo="Quero os roteiros da próxima semana" />
+      </div>
+    </div>
+  );
+}
+
+const ENTREGAS = [
+  "O plano da semana, todo domingo: um vídeo para cada dia que você escolheu postar, com o gancho já escrito.",
+  "O roteiro completo de cada vídeo, no seu tom de voz.",
+  "O modo gravação: o roteiro rola na tela enquanto você grava.",
+  "O carrossel pronto, gerado a partir do roteiro.",
+  "Até 30 roteiros e 30 carrosséis por mês, a partir de até 5 perfis de referência.",
+];
+
+const PASSOS = [
+  "Você assina e cria a sua senha. O cadastro já vem preenchido com as respostas deste diagnóstico.",
+  "Indica de 2 a 5 perfis do Instagram que você usa de referência.",
+  "Em poucos minutos chega o primeiro plano. Depois, todo domingo.",
+];
+
+const PERGUNTAS = [
+  {
+    p: "E as regras da OAB?",
+    r: "Os roteiros são escritos sem promessa de resultado, sem preço e sem captação direta. Você revisa antes de publicar.",
+  },
+  {
+    p: "Não tenho tempo.",
+    r: "O tempo vai antes da câmera, em decidir o tema e escrever. Isso chega pronto. Com o roteiro na tela, um vídeo curto sai em poucos minutos.",
+  },
+  {
+    p: "Já uso o ChatGPT.",
+    r: "Ele não sabe o que está performando agora nos perfis que você acompanha, nem escreve no seu tom. A prevIA parte disso, toda semana, sem você pedir.",
+  },
+  {
+    p: "Tenho vergonha de gravar.",
+    r: "Você lê o roteiro no modo gravação. E dá para começar pelos carrosséis, sem aparecer em vídeo.",
+  },
+  {
+    p: "E se eu não gostar?",
+    r: "Reembolso integral em até 7 dias após a assinatura, e cancelamento quando quiser, sem multa.",
+  },
+  {
+    p: "O preço vai subir?",
+    r: "R$ 47,90 é o preço de lançamento. Depois do lançamento, a assinatura passa a custar R$ 197 por mês.",
+  },
+];
+
+/**
+ * A oferta, depois do documento inteiro. Fora da impressão: o PDF que a
+ * pessoa guarda é o diagnóstico, não o anúncio.
  */
 function Oferta({ oferta }: { oferta: OfertaPublica }) {
   if (!oferta) return null;
-
-  const preco = oferta.precoCentavos != null ? formatarPreco(oferta.precoCentavos) : null;
-  const precoDe =
-    oferta.precoDeCentavos != null ? formatarPreco(oferta.precoDeCentavos) : null;
 
   return (
     <section
@@ -529,34 +675,98 @@ function Oferta({ oferta }: { oferta: OfertaPublica }) {
         tem. É por isso que quase todo perfil jurídico começa bem e para no primeiro mês.
       </p>
       <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-        A prevIA existe para essa parte. Ela acompanha o que está performando na sua área, transforma
-        isso em pauta na sua voz e deixa o roteiro pronto nos dias em que você se comprometeu a
-        publicar. Você abre, lê e grava.
+        A prevIA existe para essa parte. Ela acompanha o que está performando na sua área,
+        transforma isso em pauta na sua voz e deixa o roteiro pronto nos dias em que você se
+        comprometeu a publicar. Você abre, lê e grava.
       </p>
 
-      <div className="mt-6 flex flex-wrap items-center gap-4">
-        <BotaoCheckout oferta={oferta} rotulo="Resgatar bônus" />
-        {(preco || precoDe) && (
-          <span className="num text-sm text-muted-foreground">
-            {precoDe && (
-              <>
-                <span className="line-through opacity-60">DE {precoDe}</span>
-                {preco && " · "}
-              </>
-            )}
-            {preco && (
-              <>
-                <span className="font-medium text-foreground">{preco}</span> por mês
-              </>
-            )}
-          </span>
-        )}
+      <h3 className="mt-10 font-display text-lg font-semibold tracking-tight">
+        O que chega toda semana
+      </h3>
+      <ul className="mt-4 space-y-3">
+        {ENTREGAS.map((item) => (
+          <li key={item} className="flex gap-3 text-base leading-relaxed">
+            <Check className="mt-1 h-4 w-4 shrink-0 text-success" />
+            {item}
+          </li>
+        ))}
+      </ul>
+
+      <h3 className="mt-10 font-display text-lg font-semibold tracking-tight">Como funciona</h3>
+      <ol className="mt-4 space-y-3">
+        {PASSOS.map((passo, i) => (
+          <li key={passo} className="flex gap-3 text-base leading-relaxed">
+            <span className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-foreground text-xs text-background">
+              {i + 1}
+            </span>
+            {passo}
+          </li>
+        ))}
+      </ol>
+
+      <div className="mt-10 rounded-lg border border-border bg-background p-5 sm:p-6">
+        <BlocoCta oferta={oferta} rotulo="Assinar com o bônus de lançamento" />
       </div>
 
-      <p className="mt-4 text-sm text-muted-foreground">
-        Suas respostas já vão com você. O cadastro começa do ponto onde este diagnóstico parou.
-      </p>
+      <h3 className="mt-10 font-display text-lg font-semibold tracking-tight">
+        Perguntas frequentes
+      </h3>
+      <div className="mt-4 divide-y divide-border">
+        {PERGUNTAS.map(({ p, r }) => (
+          <details key={p} className="group py-4">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-base font-medium">
+              {p}
+              <span aria-hidden className="text-muted-foreground transition group-open:rotate-45">
+                +
+              </span>
+            </summary>
+            <p className="mt-2 text-base leading-relaxed text-muted-foreground">{r}</p>
+          </details>
+        ))}
+      </div>
+
+      <div className="mt-8">
+        <BotaoCheckout oferta={oferta} rotulo="Assinar a prevIA VIRAL" />
+      </div>
     </section>
+  );
+}
+
+/**
+ * Barra fixa no celular com preço e botão. Aparece depois que o CTA do topo
+ * sai da tela por cima, para não duplicar o botão que a pessoa já está vendo.
+ */
+function BarraFixa({ oferta }: { oferta: OfertaPublica }) {
+  const [visivel, setVisivel] = useState(false);
+
+  useEffect(() => {
+    const alvo = document.getElementById("cta-topo");
+    if (!alvo || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e) setVisivel(!e.isIntersecting && e.boundingClientRect.top < 0);
+    });
+    obs.observe(alvo);
+    return () => obs.disconnect();
+  }, []);
+
+  if (!oferta || oferta.precoCentavos == null) return null;
+
+  return (
+    <div
+      data-print-hide
+      aria-hidden={!visivel}
+      className={`fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur transition-transform duration-300 motion-reduce:transition-none md:hidden ${
+        visivel ? "translate-y-0" : "translate-y-full"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+        <div className="num text-sm leading-tight">
+          <div className="font-semibold">{formatarPreco(oferta.precoCentavos)}/mês</div>
+          <div className="text-xs text-muted-foreground">7 dias de garantia</div>
+        </div>
+        <BotaoCheckout oferta={oferta} rotulo="Resgatar bônus" compacto />
+      </div>
+    </div>
   );
 }
 
