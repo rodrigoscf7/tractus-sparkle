@@ -350,6 +350,15 @@ async function resolverConta(admin: AnyClient, evento: HublaEventoRow): Promise<
 export async function aplicarEventoHubla(admin: AnyClient, evento: HublaEventoRow) {
   const tipo = tipoEfetivo(evento);
 
+  // O "enviar evento de teste" do painel da Hubla manda uma fatura paga de
+  // verdade no formato, com e-mail de exemplo (teste@gmail.com) e o id da
+  // fatura terminando em "-tester". Processar criaria conta e mandaria o
+  // e-mail de boas-vindas para um endereço de terceiro.
+  if (evento.fatura_id?.endsWith("-tester")) {
+    await marcar(admin, evento, true, "Evento de teste da Hubla: registrado, nada alterado.");
+    return { ok: true, motivo: "evento_de_teste" as const };
+  }
+
   if (!APROVA.has(tipo) && !ATRASA.has(tipo) && !encerra(tipo)) {
     // Acesso concedido, assinatura criada, carrinho abandonado etc. ficam
     // registrados, mas quem move a assinatura é a fatura.
