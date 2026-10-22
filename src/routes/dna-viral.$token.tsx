@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Check, Download } from "lucide-react";
+import { ArrowRight, Check, Download, Mail } from "lucide-react";
 import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { getDnaViral, getOfertaPublica } from "@/lib/quiz-oferta.functions";
 import { capturarOrigem, obterLeadId } from "@/lib/oferta-variante";
@@ -60,7 +60,7 @@ type OfertaPublica = {
 
 function Relatorio() {
   const { dna, oferta } = Route.useLoaderData();
-  const { relatorio, primeiroNome, geradoEm } = dna;
+  const { relatorio, primeiroNome, geradoEm, temEmail } = dna;
 
   const gargalos = relatorio.gargalos ?? [];
   const score = relatorio.score;
@@ -82,6 +82,12 @@ function Relatorio() {
           prevIA entrega isso toda semana, no seu tom, a partir do que está performando nos perfis
           que você acompanha.
         </p>
+        {temEmail && (
+          <p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+            <Mail className="mt-0.5 h-4 w-4 shrink-0" />O link deste diagnóstico também vai para o seu
+            e-mail, para você voltar a ele quando quiser.
+          </p>
+        )}
 
         {VIDEO_URL && (
           <p className="mt-6 text-sm font-medium">

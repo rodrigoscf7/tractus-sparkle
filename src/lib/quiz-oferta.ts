@@ -46,14 +46,7 @@ export type { Opcao, Respostas };
 
 /** Widget que a pergunta usa. Cada um mapeia para uma primitiva de `components/onboarding/campos`. */
 export type TipoPergunta =
-  | "unica"
-  | "multipla"
-  | "estilo"
-  | "dias"
-  | "texto"
-  | "texto_longo"
-  | "sim_nao"
-  | "contato";
+  "unica" | "multipla" | "estilo" | "dias" | "texto" | "texto_longo" | "sim_nao" | "contato";
 
 export type Pergunta = {
   /** Onde a resposta é gravada. Tipado contra o `Respostas` do onboarding de propósito. */
@@ -143,10 +136,7 @@ const SITUACAO_QUIZ: Opcao[] = ORDEM_SITUACAO_QUIZ.map((valor) => {
  * Autoridade/sofisticação mapeia para Professor (D), não Direto: o tom
  * sofisticado combina com estrutura didática, não com abertura brusca.
  */
-const DERIVACAO_PERCEPCAO: Record<
-  string,
-  { estilo: string; atributos: string[] }
-> = {
+const DERIVACAO_PERCEPCAO: Record<string, { estilo: string; atributos: string[] }> = {
   A: { estilo: "D", atributos: ["autoridade", "sofisticado", "elegante"] },
   B: { estilo: "B", atributos: ["acolhedor", "didatico", "popular"] },
   C: { estilo: "A", atributos: ["direto", "tecnico"] },
@@ -273,7 +263,7 @@ export const PERGUNTAS: Pergunta[] = [
     tipo: "contato",
     titulo: "E por último, qual o seu melhor e-mail e WhatsApp?",
     apoio:
-      "Usamos só para entregar o diagnóstico e falar sobre ele. Sem spam.",
+      "O diagnóstico abre aqui na tela, e uma cópia com o link vai para o seu e-mail, para você voltar a ele quando quiser.",
   },
 ];
 
