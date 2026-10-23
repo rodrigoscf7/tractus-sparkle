@@ -10,14 +10,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "@/components/estados";
+import { Distribuicao, Kpi, Metrica } from "@/components/painel/metricas";
 import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { getConversaChamado, getPainelEquipe, type EtapaLead } from "@/lib/equipe.functions";
 
 /**
- * A área da equipe (social selling): leads do quiz, contas, onboarding e
- * suporte, só leitura. Fica fora de `_authenticated` porque quem trabalha aqui
- * não é cliente: não tem conta nem onboarding, e o gate do app mandaria para o
- * wizard. Quem não é `comercial` nem `admin` vê "acesso restrito".
+ * A área da equipe (social selling): contas, onboarding (o funil do quiz com a
+ * lista de leads, e o onboarding do app) e suporte. Só leitura. Fica fora de
+ * `_authenticated` porque quem trabalha aqui não é cliente: não tem conta nem
+ * onboarding, e o gate do app mandaria para o wizard.
  */
 export const Route = createFileRoute("/equipe")({
   ssr: false,
@@ -31,6 +32,8 @@ export const Route = createFileRoute("/equipe")({
   }),
   component: Equipe,
 });
+
+type Painel = Awaited<ReturnType<typeof getPainelEquipe>>;
 
 const ETAPA: Record<EtapaLead, { rotulo: string; variante: "outline" | "secondary" | "default" }> =
   {
@@ -46,7 +49,14 @@ const SITUACAO: Record<string, string> = {
   cancelada: "Cancelada",
 };
 
-const data = (iso: string | null) =>
+const ORIGEM: Record<string, string> = {
+  hubla: "compra",
+  kiwify: "compra",
+  cortesia: "cortesia",
+  manual: "manual",
+};
+
+const quando = (iso: string | null) =>
   iso
     ? new Date(iso).toLocaleString("pt-BR", {
         day: "2-digit",
@@ -56,10 +66,23 @@ const data = (iso: string | null) =>
       })
     : "—";
 
-/** wa.me exige DDI; o quiz guarda só os dígitos digitados (DDD + número). */
+/** wa.me exige DDI; o app guarda só os dígitos digitados (DDD + número). */
 function linkWhatsapp(digitos: string) {
   const d = digitos.replace(/\D/g, "");
   return `https://wa.me/${d.length <= 11 ? `55${d}` : d}`;
+}
+
+const ROTULO = "text-[11px] font-mono uppercase tracking-widest text-muted-foreground";
+
+function BotaoWhatsapp({ numero }: { numero: string | null }) {
+  if (!numero) return null;
+  return (
+    <Button asChild size="sm" variant="outline">
+      <a href={linkWhatsapp(numero)} target="_blank" rel="noreferrer">
+        <MessageCircle className="mr-1.5 h-4 w-4" /> WhatsApp
+      </a>
+    </Button>
+  );
 }
 
 function Equipe() {
@@ -72,11 +95,9 @@ function Equipe() {
     isError,
     error,
     refetch,
-  } = useQuery({
-    queryKey: ["painel-equipe"],
-    queryFn: () => carregar(),
-    retry: false,
-  });
+  } = useQuery({ queryKey: ["painel-equipe"], queryFn: () => carregar(), retry: false });
+
+  const abertos = painel?.chamados.filter((c) => c.status === "aberto").length ?? 0;
 
   async function sair() {
     await supabase.auth.signOut();
@@ -89,9 +110,7 @@ function Equipe() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
             <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-6 w-auto" />
-            <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-              Equipe
-            </span>
+            <span className={ROTULO}>Equipe</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:inline">{email}</span>
@@ -108,7 +127,7 @@ function Equipe() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        {isLoading && <EstadoCarregando linhas={4} rotulo="Carregando leads e contas" />}
+        {isLoading && <EstadoCarregando linhas={4} rotulo="Carregando a área da equipe" />}
         {isError && (
           <EstadoErro
             titulo="Não consegui abrir a área da equipe"
@@ -117,19 +136,19 @@ function Equipe() {
           />
         )}
         {painel && (
-          <Tabs defaultValue="leads">
+          <Tabs defaultValue="onboarding">
             <TabsList>
-              <TabsTrigger value="leads">Leads do quiz ({painel.leads.length})</TabsTrigger>
               <TabsTrigger value="contas">Contas ({painel.contas.length})</TabsTrigger>
+              <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
               <TabsTrigger value="suporte">
-                Suporte ({painel.chamados.filter((c) => c.status === "aberto").length} abertos)
+                Suporte ({abertos} {abertos === 1 ? "aberto" : "abertos"})
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="leads" className="mt-5">
-              <Leads leads={painel.leads} />
-            </TabsContent>
             <TabsContent value="contas" className="mt-5">
               <Contas contas={painel.contas} />
+            </TabsContent>
+            <TabsContent value="onboarding" className="mt-5">
+              <Onboarding painel={painel} />
             </TabsContent>
             <TabsContent value="suporte" className="mt-5">
               <Suporte chamados={painel.chamados} />
@@ -141,9 +160,167 @@ function Equipe() {
   );
 }
 
-type Painel = Awaited<ReturnType<typeof getPainelEquipe>>;
+// ---------------------------------------------------------------- CONTAS
 
-function Leads({ leads }: { leads: Painel["leads"] }) {
+function Contas({ contas }: { contas: Painel["contas"] }) {
+  const [busca, setBusca] = useState("");
+  const q = busca.trim().toLowerCase();
+  const filtradas = contas.filter(
+    (c) => !q || [c.nome, c.email].some((v) => v?.toLowerCase().includes(q)),
+  );
+
+  return (
+    <div className="space-y-3">
+      <Input
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar por nome ou e-mail…"
+        className="h-9 w-full sm:w-72"
+      />
+      {filtradas.map((c) => (
+        <Card key={c.id} className="p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="font-display text-lg font-semibold truncate">{c.nome}</div>
+              <div className="num mt-1 text-xs text-muted-foreground">
+                {c.membros} membro(s) · desde {new Date(c.criadoEm).toLocaleDateString("pt-BR")}
+                {c.email ? ` · ${c.email}` : ""}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {c.origem && <Badge variant="outline">{ORIGEM[c.origem] ?? c.origem}</Badge>}
+              <Badge variant="secondary">
+                {c.situacao ? (SITUACAO[c.situacao] ?? c.situacao) : "sem assinatura"}
+              </Badge>
+              {c.status !== "ativa" && <Badge variant="destructive">{c.status}</Badge>}
+              <BotaoWhatsapp numero={c.whatsapp} />
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <div className={ROTULO}>Plano</div>
+              <div className="mt-1 text-sm">{c.plano}</div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                Onboarding:{" "}
+                {c.onboarding === "concluido"
+                  ? "concluído"
+                  : c.onboarding === "nao_iniciado"
+                    ? "não iniciado"
+                    : c.onboarding}
+                {c.veioDoQuiz ? " · veio do quiz" : ""}
+              </div>
+            </div>
+            <Metrica label="Roteiros" usado={c.uso["roteiro"] ?? 0} limite={c.limites.roteiro} />
+            <Metrica
+              label="Carrosséis"
+              usado={c.uso["carrossel"] ?? 0}
+              limite={c.limites.carrossel}
+            />
+            <Metrica
+              label="Imagens de capa"
+              usado={c.uso["imagem"] ?? 0}
+              limite={c.limites.imagem}
+            />
+          </div>
+        </Card>
+      ))}
+      {filtradas.length === 0 && (
+        <EstadoVazio titulo="Nenhuma conta aqui" descricao="Mude a busca." />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- ONBOARDING
+
+function Onboarding({ painel }: { painel: Painel }) {
+  const [parte, setParte] = useState<"quiz" | "app">("quiz");
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant={parte === "quiz" ? "default" : "outline"}
+          onClick={() => setParte("quiz")}
+        >
+          Quiz (leads)
+        </Button>
+        <Button
+          size="sm"
+          variant={parte === "app" ? "default" : "outline"}
+          onClick={() => setParte("app")}
+        >
+          Onboarding do app (clientes)
+        </Button>
+      </div>
+      {parte === "quiz" ? (
+        <FunilQuiz quiz={painel.quiz} />
+      ) : (
+        <OnboardingApp onboarding={painel.onboarding} />
+      )}
+    </div>
+  );
+}
+
+function FunilQuiz({ quiz }: { quiz: Painel["quiz"] }) {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Kpi label="Começaram o quiz" valor={String(quiz.total)} />
+        <Kpi
+          label="Receberam o diagnóstico"
+          valor={String(quiz.comDiagnostico)}
+          detalhe={`${quiz.pctDiagnostico}% de quem começou`}
+        />
+        <Kpi
+          label="Compraram"
+          valor={String(quiz.compraram)}
+          detalhe={`${quiz.pctCompraSobreDiagnostico}% de quem recebeu o diagnóstico`}
+        />
+      </div>
+
+      <Card className="p-5">
+        <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+          Onde as pessoas param
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Quantos chegaram a cada pergunta e quantos pararam nela sem terminar o quiz.
+        </p>
+        <div className="mt-4 space-y-3">
+          {quiz.porPergunta.map((p) => (
+            <div key={p.numero}>
+              <div className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="min-w-0">
+                  <span className="num text-muted-foreground">{p.numero}.</span> {p.titulo}
+                </span>
+                <span className="num shrink-0 text-muted-foreground">
+                  {p.chegaram} · {p.pctChegaram}%
+                  {p.pararam > 0 && (
+                    <span className="text-destructive"> · {p.pararam} pararam</span>
+                  )}
+                </span>
+              </div>
+              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-md bg-secondary">
+                <div className="h-full bg-primary" style={{ width: `${p.pctChegaram}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {quiz.distribuicoes.map((d) => (
+          <Distribuicao key={d.titulo} titulo={d.titulo} itens={d.itens} total={d.total} />
+        ))}
+      </div>
+
+      <Leads leads={quiz.leads} />
+    </div>
+  );
+}
+
+function Leads({ leads }: { leads: Painel["quiz"]["leads"] }) {
   const [etapa, setEtapa] = useState<EtapaLead | "todas">("todas");
   const [busca, setBusca] = useState("");
 
@@ -162,8 +339,11 @@ function Leads({ leads }: { leads: Painel["leads"] }) {
   const contagem = (e: EtapaLead) => leads.filter((l) => l.etapa === e).length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+    <Card className="p-5">
+      <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+        Leads do quiz
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {(["todas", "quiz_incompleto", "diagnostico", "comprou"] as const).map((e) => (
           <Button
             key={e}
@@ -178,41 +358,36 @@ function Leads({ leads }: { leads: Painel["leads"] }) {
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar por nome, e-mail, WhatsApp, área…"
-          className="ml-auto h-9 w-full sm:w-72"
+          className="h-9 w-full sm:ml-auto sm:w-72"
         />
       </div>
 
-      {filtrados.length === 0 && (
-        <EstadoVazio titulo="Nenhum lead aqui" descricao="Mude o filtro ou a busca." />
-      )}
-
-      <div className="space-y-2">
+      <div className="mt-4 space-y-2">
         {filtrados.map((l) => (
-          <Card key={l.id} className="p-4">
+          <div key={l.id} className="rounded-md border border-border p-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-display font-semibold">{l.nome ?? "Sem nome"}</span>
                   <Badge variant={ETAPA[l.etapa].variante}>{ETAPA[l.etapa].rotulo}</Badge>
+                  {l.parouNaPergunta && (
+                    <Badge variant="outline" className="num">
+                      parou na pergunta {l.parouNaPergunta}
+                    </Badge>
+                  )}
                 </div>
                 <div className="mt-1 text-sm text-muted-foreground">
                   {[l.area, l.situacao, l.perfil].filter(Boolean).join(" · ") || "—"}
                 </div>
                 <div className="num mt-1 text-xs text-muted-foreground">
-                  {data(l.criadoEm)}
+                  {quando(l.criadoEm)}
                   {l.email ? ` · ${l.email}` : ""}
                   {l.origem ? ` · ${l.origem}` : ""}
-                  {l.comprouEm ? ` · comprou em ${data(l.comprouEm)}` : ""}
+                  {l.comprouEm ? ` · comprou em ${quando(l.comprouEm)}` : ""}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {l.whatsapp && (
-                  <Button asChild size="sm" variant="outline">
-                    <a href={linkWhatsapp(l.whatsapp)} target="_blank" rel="noreferrer">
-                      <MessageCircle className="mr-1.5 h-4 w-4" /> WhatsApp
-                    </a>
-                  </Button>
-                )}
+                <BotaoWhatsapp numero={l.whatsapp} />
                 {l.relatorio && (
                   <Button asChild size="sm" variant="outline">
                     <a href={l.relatorio} target="_blank" rel="noreferrer">
@@ -222,72 +397,111 @@ function Leads({ leads }: { leads: Painel["leads"] }) {
                 )}
               </div>
             </div>
-          </Card>
+          </div>
         ))}
+        {filtrados.length === 0 && (
+          <p className="text-sm text-muted-foreground">Nenhum lead com esse filtro.</p>
+        )}
       </div>
-    </div>
+    </Card>
   );
 }
 
-function Contas({ contas }: { contas: Painel["contas"] }) {
-  const [busca, setBusca] = useState("");
-  const filtradas = contas.filter((c) => {
-    const q = busca.trim().toLowerCase();
-    return !q || [c.nome, c.email].some((v) => v?.toLowerCase().includes(q));
-  });
-
+function OnboardingApp({ onboarding }: { onboarding: Painel["onboarding"] }) {
+  const total = onboarding.concluidos;
   return (
     <div className="space-y-4">
-      <Input
-        value={busca}
-        onChange={(e) => setBusca(e.target.value)}
-        placeholder="Buscar por nome ou e-mail…"
-        className="h-9 w-full sm:w-72"
-      />
-      <div className="space-y-2">
-        {filtradas.map((c) => (
-          <Card key={c.id} className="p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display font-semibold">{c.nome}</span>
-                  <Badge variant="outline">{c.plano}</Badge>
-                  {c.situacao && (
-                    <Badge variant={c.situacao === "ativa" ? "default" : "secondary"}>
-                      {SITUACAO[c.situacao] ?? c.situacao}
-                    </Badge>
-                  )}
-                  {c.status !== "ativa" && <Badge variant="destructive">Conta {c.status}</Badge>}
-                </div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  Onboarding:{" "}
-                  {c.onboarding === "concluido"
-                    ? "concluído"
-                    : c.onboarding === "nao_iniciado"
-                      ? "não iniciado"
-                      : c.onboarding}
-                  {c.veioDoQuiz ? " · veio do quiz" : ""}
-                  {c.origemAssinatura ? ` · origem: ${c.origemAssinatura}` : ""}
-                </div>
-                <div className="num mt-1 text-xs text-muted-foreground">
-                  Entrou em {data(c.criadoEm)}
-                  {c.email ? ` · ${c.email}` : ""}
-                </div>
-              </div>
-              {c.whatsapp && (
-                <Button asChild size="sm" variant="outline">
-                  <a href={linkWhatsapp(c.whatsapp)} target="_blank" rel="noreferrer">
-                    <MessageCircle className="mr-1.5 h-4 w-4" /> WhatsApp
-                  </a>
-                </Button>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Kpi
+          label="Onboardings iniciados"
+          valor={String(onboarding.iniciados)}
+          detalhe={`${onboarding.concluidos} concluídos`}
+        />
+        <Kpi
+          label="Conclusão do wizard"
+          valor={`${onboarding.conversao_pct}%`}
+          alerta={onboarding.iniciados > 0 && onboarding.conversao_pct < 70}
+        />
+        <Kpi label="Em aberto" valor={String(onboarding.iniciados - onboarding.concluidos)} />
+      </div>
+
+      <Card className="p-5">
+        <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+          Onde as pessoas param
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Contas que abriram o wizard e não terminaram, pelo passo em que estavam.
+        </p>
+        <div className="mt-4 space-y-2">
+          {onboarding.abandono_por_passo.map((p) => (
+            <div key={p.passo} className="num flex justify-between gap-3 text-sm">
+              <span>Passo {p.passo}</span>
+              <span className={p.quantidade > 0 ? "" : "text-muted-foreground"}>
+                {p.quantidade}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Distribuicao titulo="Como conheceram a prevIA" itens={onboarding.origem} total={total} />
+        <Distribuicao titulo="Área de atuação" itens={onboarding.area} total={total} />
+        <Distribuicao titulo="Situação declarada" itens={onboarding.situacao} total={total} />
+        <Distribuicao titulo="Tamanho do escritório" itens={onboarding.tamanho} total={total} />
+        <Distribuicao titulo="Tráfego pago" itens={onboarding.trafego} total={total} />
+        <Distribuicao titulo="Onde já publicam" itens={onboarding.canais} total={total} />
+      </div>
+
+      <Card className="p-5">
+        <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+          Respostas por conta
+        </div>
+        <div className="mt-4 space-y-2">
+          {onboarding.contas.map((c) => (
+            <div
+              key={c.conta_id}
+              className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-border p-3"
+            >
+              <span className="font-display font-semibold">{c.nome_informado ?? c.nome}</span>
+              {c.concluido_em ? (
+                <Badge variant="outline" className="num text-xs">
+                  {new Date(c.concluido_em).toLocaleDateString("pt-BR")}
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="text-xs">
+                  parou no passo {c.passo_atual}
+                </Badge>
+              )}
+              <span className="text-sm text-muted-foreground">
+                {[
+                  c.area,
+                  c.nicho,
+                  c.origem && `via ${c.origem}`,
+                  c.tamanho,
+                  c.trafego && `tráfego: ${c.trafego}`,
+                  `${c.referencias} referência(s)`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+              {c.situacao && (
+                <span className="basis-full text-sm text-muted-foreground">“{c.situacao}”</span>
               )}
             </div>
-          </Card>
-        ))}
-      </div>
+          ))}
+          {onboarding.contas.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Nenhuma conta passou pelo onboarding ainda.
+            </p>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
+
+// ---------------------------------------------------------------- SUPORTE
 
 function Suporte({ chamados }: { chamados: Painel["chamados"] }) {
   const [aberta, setAberta] = useState<string | null>(null);
@@ -313,9 +527,9 @@ function Suporte({ chamados }: { chamados: Painel["chamados"] }) {
               </div>
               <p className="mt-1 text-sm">{ch.resumo}</p>
               <div className="num mt-1 text-xs text-muted-foreground">
-                {data(ch.criadoEm)}
+                {quando(ch.criadoEm)}
                 {ch.email ? ` · ${ch.email}` : ""}
-                {ch.resolvidoEm ? ` · resolvido em ${data(ch.resolvidoEm)}` : ""}
+                {ch.resolvidoEm ? ` · resolvido em ${quando(ch.resolvidoEm)}` : ""}
               </div>
             </div>
             {ch.conversaId && (
@@ -355,7 +569,7 @@ function Conversa({ conversaId }: { conversaId: string }) {
           }`}
         >
           <div className="mb-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            {m.papel === "usuario" ? "Cliente" : "Assistente"} · {data(m.criadoEm)}
+            {m.papel === "usuario" ? "Cliente" : "Assistente"} · {quando(m.criadoEm)}
           </div>
           <p className="whitespace-pre-wrap">{m.conteudo}</p>
         </div>

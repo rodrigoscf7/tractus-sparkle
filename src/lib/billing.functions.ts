@@ -229,7 +229,7 @@ async function carregarDashboard(supabase: any) {
  * painel da plataforma. A área de atuação entra junto porque é o corte mais
  * útil para decidir quais referências curar.
  */
-function resumirOnboarding(registros: any[], contas: { id: string; nome: string }[]) {
+export function resumirOnboarding(registros: any[], contas: { id: string; nome: string }[]) {
   const nomePorConta = new Map(contas.map((c) => [c.id, c.nome]));
   const concluidos = registros.filter((r) => r.concluido_em);
 

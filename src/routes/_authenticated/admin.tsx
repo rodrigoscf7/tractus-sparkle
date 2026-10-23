@@ -28,6 +28,7 @@ import {
 } from "@/lib/billing.functions";
 import { enviarNotificacaoTeste } from "@/lib/notificacoes.functions";
 import { ChamadosSuporte } from "@/components/suporte/ChamadosSuporte";
+import { Distribuicao, Kpi, Metrica } from "@/components/painel/metricas";
 import { GerirConvites } from "@/components/convites/GerirConvites";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -54,30 +55,6 @@ const brl = (centavos: number) =>
     currency: "BRL",
     maximumFractionDigits: 2,
   });
-
-function Kpi({
-  label,
-  valor,
-  detalhe,
-  alerta,
-}: {
-  label: string;
-  valor: string;
-  detalhe?: string;
-  alerta?: boolean;
-}) {
-  return (
-    <Card className="p-4">
-      <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-        {label}
-      </div>
-      <div className={`num font-display text-2xl mt-1 ${alerta ? "text-destructive" : ""}`}>
-        {valor}
-      </div>
-      {detalhe && <div className="num text-xs text-muted-foreground mt-1">{detalhe}</div>}
-    </Card>
-  );
-}
 
 function AdminPage() {
   const { data: isAdmin, isLoading: loadingRole } = useIsPlatformAdmin();
@@ -527,9 +504,9 @@ function AdminPage() {
             </code>
             <p className="text-xs text-muted-foreground mt-2">
               Cadastre em Integrações → Webhook da Hubla, para o produto prevIA VIRAL, com os
-              eventos de fatura (paga, falha no pagamento, expirada, reembolsada, status
-              atualizado) e de assinatura (desativada). O token da aba Autenticação vai na
-              variável HUBLA_WEBHOOK_TOKEN do servidor.
+              eventos de fatura (paga, falha no pagamento, expirada, reembolsada, status atualizado)
+              e de assinatura (desativada). O token da aba Autenticação vai na variável
+              HUBLA_WEBHOOK_TOKEN do servidor.
             </p>
           </Card>
 
@@ -734,67 +711,6 @@ function AdminPage() {
           <ChamadosSuporte />
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function Distribuicao({
-  titulo,
-  itens,
-  total,
-}: {
-  titulo: string;
-  itens: { label: string; quantidade: number }[];
-  total: number;
-}) {
-  const maior = itens[0]?.quantidade ?? 0;
-  return (
-    <Card className="p-5">
-      <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-        {titulo}
-      </div>
-      <div className="mt-4 space-y-3">
-        {itens.map((item) => (
-          <div key={item.label}>
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm">{item.label}</span>
-              <span className="num text-sm text-muted-foreground">
-                {item.quantidade}
-                {total > 0 && ` · ${Math.round((item.quantidade / total) * 100)}%`}
-              </span>
-            </div>
-            <div className="mt-1.5 h-1.5 w-full rounded-md bg-secondary overflow-hidden">
-              <div
-                className="h-full bg-primary"
-                style={{ width: `${maior > 0 ? (item.quantidade / maior) * 100 : 0}%` }}
-              />
-            </div>
-          </div>
-        ))}
-        {itens.length === 0 && (
-          <p className="text-sm text-muted-foreground">Sem respostas ainda.</p>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-function Metrica({ label, usado, limite }: { label: string; usado: number; limite: number }) {
-  const estourou = limite > 0 && usado >= limite;
-  return (
-    <div>
-      <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-        {label}
-      </div>
-      <div className={`num mt-1 text-sm ${estourou ? "text-destructive" : ""}`}>
-        {usado} / {limite}
-      </div>
-      <div className="mt-2 h-1.5 w-full rounded-md bg-secondary overflow-hidden">
-        <div
-          className={estourou ? "h-full bg-destructive" : "h-full bg-primary"}
-          style={{ width: `${limite > 0 ? Math.min(100, (usado / limite) * 100) : 0}%` }}
-        />
-      </div>
     </div>
   );
 }
