@@ -23,8 +23,8 @@ function Termos() {
       <SecaoLegal titulo="1. Sobre estes termos">
         <p>
           Estes termos regem o uso do diagnóstico de conteúdo e do aplicativo prevIA, operados por{" "}
-          {EMPRESA.razaoSocial}, CNPJ {EMPRESA.cnpj}. Ao responder o diagnóstico ou assinar, você
-          concorda com eles e com a{" "}
+          {EMPRESA.razaoSocial} ({EMPRESA.nomeFantasia}), CNPJ {EMPRESA.cnpj}. Ao responder o
+          diagnóstico ou assinar, você concorda com eles e com a{" "}
           <Link to="/privacidade" className="text-foreground underline underline-offset-4">
             Política de Privacidade
           </Link>

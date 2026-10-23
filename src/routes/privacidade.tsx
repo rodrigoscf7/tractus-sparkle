@@ -24,10 +24,10 @@ function Privacidade() {
     <PaginaLegal titulo="Política de Privacidade">
       <SecaoLegal titulo="Quem somos">
         <p>
-          A prevIA é operada por {EMPRESA.razaoSocial}, inscrita no CNPJ {EMPRESA.cnpj}, com sede em{" "}
-          {EMPRESA.endereco} ("prevIA", "nós"). Somos a controladora dos dados pessoais tratados no
-          diagnóstico de conteúdo e no aplicativo, nos termos da Lei Geral de Proteção de Dados (Lei
-          nº 13.709/2018, "LGPD").
+          A prevIA é operada por {EMPRESA.razaoSocial} ({EMPRESA.nomeFantasia}), inscrita no CNPJ{" "}
+          {EMPRESA.cnpj}, com sede em {EMPRESA.endereco} ("prevIA", "nós"). Somos a controladora dos
+          dados pessoais tratados no diagnóstico de conteúdo e no aplicativo, nos termos da Lei
+          Geral de Proteção de Dados (Lei nº 13.709/2018, "LGPD").
         </p>
       </SecaoLegal>
 
