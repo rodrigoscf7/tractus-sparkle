@@ -40,6 +40,7 @@ import { Route as AuthenticatedAgentesAgenteRouteImport } from './routes/_authen
 import { Route as AuthenticatedAprovacaoPautaIdRouteImport } from './routes/_authenticated/aprovacao.$pautaId'
 import { Route as AuthenticatedMateriaisIndexRouteImport } from './routes/_authenticated/materiais.index'
 import { Route as AuthenticatedMateriaisCodigoRouteImport } from './routes/_authenticated/materiais.$codigo'
+import { Route as ApiPublicCheckoutCliqueRouteImport } from './routes/api/public/checkout-clique'
 import { Route as ApiPublicWebhooksHublaRouteImport } from './routes/api/public/webhooks/hubla'
 
 const IndexRoute = IndexRouteImport.update({
@@ -202,6 +203,11 @@ const AuthenticatedMateriaisCodigoRoute =
     path: '/materiais/$codigo',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicCheckoutCliqueRoute = ApiPublicCheckoutCliqueRouteImport.update({
+  id: '/api/public/checkout-clique',
+  path: '/api/public/checkout-clique',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksHublaRoute = ApiPublicWebhooksHublaRouteImport.update({
   id: '/api/public/webhooks/hubla',
   path: '/api/public/webhooks/hubla',
@@ -237,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/materiais/$codigo': typeof AuthenticatedMateriaisCodigoRoute
+  '/api/public/checkout-clique': typeof ApiPublicCheckoutCliqueRoute
   '/agentes/': typeof AuthenticatedAgentesIndexRoute
   '/materiais/': typeof AuthenticatedMateriaisIndexRoute
   '/api/public/webhooks/hubla': typeof ApiPublicWebhooksHublaRoute
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/materiais/$codigo': typeof AuthenticatedMateriaisCodigoRoute
+  '/api/public/checkout-clique': typeof ApiPublicCheckoutCliqueRoute
   '/agentes': typeof AuthenticatedAgentesIndexRoute
   '/materiais': typeof AuthenticatedMateriaisIndexRoute
   '/api/public/webhooks/hubla': typeof ApiPublicWebhooksHublaRoute
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/_authenticated/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/_authenticated/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
   '/_authenticated/materiais/$codigo': typeof AuthenticatedMateriaisCodigoRoute
+  '/api/public/checkout-clique': typeof ApiPublicCheckoutCliqueRoute
   '/_authenticated/agentes/': typeof AuthenticatedAgentesIndexRoute
   '/_authenticated/materiais/': typeof AuthenticatedMateriaisIndexRoute
   '/api/public/webhooks/hubla': typeof ApiPublicWebhooksHublaRoute
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
     | '/materiais/$codigo'
+    | '/api/public/checkout-clique'
     | '/agentes/'
     | '/materiais/'
     | '/api/public/webhooks/hubla'
@@ -369,6 +379,7 @@ export interface FileRouteTypes {
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
     | '/materiais/$codigo'
+    | '/api/public/checkout-clique'
     | '/agentes'
     | '/materiais'
     | '/api/public/webhooks/hubla'
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agentes/$agente'
     | '/_authenticated/aprovacao/$pautaId'
     | '/_authenticated/materiais/$codigo'
+    | '/api/public/checkout-clique'
     | '/_authenticated/agentes/'
     | '/_authenticated/materiais/'
     | '/api/public/webhooks/hubla'
@@ -421,6 +433,7 @@ export interface RootRouteChildren {
   ConviteCodigoRoute: typeof ConviteCodigoRoute
   DnaViralTokenRoute: typeof DnaViralTokenRoute
   OfertaProcessandoRoute: typeof OfertaProcessandoRoute
+  ApiPublicCheckoutCliqueRoute: typeof ApiPublicCheckoutCliqueRoute
   ApiPublicWebhooksHublaRoute: typeof ApiPublicWebhooksHublaRoute
 }
 
@@ -643,6 +656,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMateriaisCodigoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/checkout-clique': {
+      id: '/api/public/checkout-clique'
+      path: '/api/public/checkout-clique'
+      fullPath: '/api/public/checkout-clique'
+      preLoaderRoute: typeof ApiPublicCheckoutCliqueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/hubla': {
       id: '/api/public/webhooks/hubla'
       path: '/api/public/webhooks/hubla'
@@ -732,6 +752,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConviteCodigoRoute: ConviteCodigoRoute,
   DnaViralTokenRoute: DnaViralTokenRoute,
   OfertaProcessandoRoute: OfertaProcessandoRoute,
+  ApiPublicCheckoutCliqueRoute: ApiPublicCheckoutCliqueRoute,
   ApiPublicWebhooksHublaRoute: ApiPublicWebhooksHublaRoute,
 }
 export const routeTree = rootRouteImport

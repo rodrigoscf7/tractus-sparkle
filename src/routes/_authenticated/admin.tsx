@@ -30,6 +30,7 @@ import { enviarNotificacaoTeste } from "@/lib/notificacoes.functions";
 import { ChamadosSuporte } from "@/components/suporte/ChamadosSuporte";
 import { Distribuicao, Kpi, Metrica } from "@/components/painel/metricas";
 import { GerirConvites } from "@/components/convites/GerirConvites";
+import { Campanhas } from "@/components/painel/Campanhas";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -106,6 +107,7 @@ function AdminPage() {
       <Tabs defaultValue="financeiro">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+          <TabsTrigger value="campanhas">Campanhas</TabsTrigger>
           <TabsTrigger value="contas">Contas</TabsTrigger>
           <TabsTrigger value="planos">Planos</TabsTrigger>
           <TabsTrigger value="custos">Custos</TabsTrigger>
@@ -263,6 +265,10 @@ function AdminPage() {
         </TabsContent>
 
         {/* ---------------- CONTAS ---------------- */}
+        <TabsContent value="campanhas" className="mt-5">
+          <Campanhas />
+        </TabsContent>
+
         <TabsContent value="contas" className="space-y-3 mt-5">
           <ConvidarConta planos={data?.planos ?? []} aoCriar={refetch} />
           <GerirConvites />

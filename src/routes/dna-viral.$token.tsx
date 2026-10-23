@@ -550,7 +550,7 @@ function BotaoCheckout({
   return (
     <a
       href={href ?? oferta.checkoutUrl}
-      onClick={() =>
+      onClick={() => {
         rastrear(
           "InitiateCheckout",
           {
@@ -559,8 +559,17 @@ function BotaoCheckout({
             ...(oferta.precoCentavos != null ? { value: oferta.precoCentavos / 100 } : {}),
           },
           obterLeadId(),
-        )
-      }
+        );
+        // O painel de campanhas mede quem chegou ao checkout e não pagou.
+        try {
+          navigator.sendBeacon?.(
+            "/api/public/checkout-clique",
+            JSON.stringify({ leadId: obterLeadId() }),
+          );
+        } catch {
+          // Medição nunca segura o clique.
+        }
+      }}
       data-print-hide
       className={`inline-flex items-center gap-2 rounded-md bg-primary font-medium text-primary-foreground
         transition hover:bg-primary/90 ${compacto ? "min-h-11 shrink-0 px-4 py-2.5 text-sm" : "min-h-12 w-full justify-center px-6 py-3.5 text-base sm:w-auto sm:px-8"}
