@@ -273,8 +273,18 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
       const i = indiceDia.get(diaLocal(l.relatorio_gerado_em));
       if (i !== undefined) dias[i]!.diagnosticos++;
     }
-    for (const v of vendas) {
-      if (!v.temPlano) continue;
+    // Uma compra por conta: quem aceita o upsell anual paga duas faturas do plano.
+    const vistas = new Set<string>();
+    const comprasDoPlano = vendas
+      .filter((v) => v.temPlano)
+      .sort((a, b) => a.dia.localeCompare(b.dia))
+      .filter((v) => {
+        if (!v.contaId) return true;
+        if (vistas.has(v.contaId)) return false;
+        vistas.add(v.contaId);
+        return true;
+      });
+    for (const v of comprasDoPlano) {
       const i = indiceDia.get(v.dia);
       if (i !== undefined) dias[i]!.compras++;
     }
@@ -295,7 +305,7 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
         .filter(Boolean),
     );
     const oferta = {
-      vendas: vendasPlano.length,
+      vendas: comprasDoPlano.length,
       receitaCentavos: vendas.reduce((s, v) => s + v.centavos, 0),
       anual: contasAnuais.size,
       compradores: contasDoPlano.size,
@@ -326,8 +336,8 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
       comPixel: listaLeads.filter((l) => l.meta_fbp).length,
       diagnosticosComEmail: comEmail.length,
       leadsEnviados: comEmail.filter((l) => l.meta_lead_enviado_em).length,
-      vendas: vendasPlano.length,
-      vendasComOrigem: vendasPlano.filter(
+      vendas: comprasDoPlano.length,
+      vendasComOrigem: comprasDoPlano.filter(
         (v) => v.leadId && campanhaDe((porId.get(v.leadId)?.origem ?? {}) as Origem) !== SEM_ORIGEM,
       ).length,
       pixel: !!(process.env["META_PIXEL_ID"] ?? process.env["VITE_META_PIXEL_ID"])?.trim(),
