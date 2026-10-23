@@ -16,4 +16,4 @@ export const EMPRESA = {
 } as const;
 
 /** Data da última revisão dos documentos. Atualizar a cada mudança de texto. */
-export const ATUALIZADO_EM = "22 de outubro de 2026";
+export const ATUALIZADO_EM = "23 de outubro de 2026";

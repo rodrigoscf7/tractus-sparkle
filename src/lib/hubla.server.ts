@@ -496,6 +496,7 @@ export async function aplicarEventoHubla(admin: AnyClient, evento: HublaEventoRo
   await aplicarMateriais(admin, evento, tipo, contaId, materiais);
   if (soMaterial) {
     await marcar(admin, evento, true, null, contaId);
+    medirCompra(admin, evento, tipo, contaId, materiais);
     return { ok: true, contaId, materiais };
   }
 
@@ -606,7 +607,27 @@ export async function aplicarEventoHubla(admin: AnyClient, evento: HublaEventoRo
   }
 
   await marcar(admin, evento, true, null, contaId, planoCodigo);
+  medirCompra(admin, evento, tipo, contaId, [
+    ...(planoCodigo
+      ? [`${planoCodigo}_${(plano?.cicloMeses ?? 1) >= 12 ? "anual" : "mensal"}`]
+      : []),
+    ...materiais,
+  ]);
   return { ok: true, contaId, planoCodigo, situacao: String(patch["situacao"] ?? "") };
+}
+
+/** Purchase para o Meta (API de Conversões), sem segurar a resposta do webhook. */
+function medirCompra(
+  admin: AnyClient,
+  evento: HublaEventoRow,
+  tipo: string,
+  contaId: string,
+  conteudos: string[],
+) {
+  if (!APROVA.has(tipo)) return;
+  void import("@/lib/meta-capi.server")
+    .then(({ enviarCompraDaHubla }) => enviarCompraDaHubla(admin, evento, contaId, conteudos))
+    .catch((e) => console.error("hubla: falha ao medir a compra", e));
 }
 
 async function marcar(

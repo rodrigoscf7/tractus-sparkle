@@ -746,6 +746,10 @@ export type Database = {
           id: string
           importado_em: string | null
           ip_hash: string | null
+          meta_fbc: string | null
+          meta_fbp: string | null
+          meta_lead_enviado_em: string | null
+          meta_user_agent: string | null
           nome: string | null
           origem: Json
           pedido_id: string | null
@@ -767,6 +771,10 @@ export type Database = {
           id: string
           importado_em?: string | null
           ip_hash?: string | null
+          meta_fbc?: string | null
+          meta_fbp?: string | null
+          meta_lead_enviado_em?: string | null
+          meta_user_agent?: string | null
           nome?: string | null
           origem?: Json
           pedido_id?: string | null
@@ -788,6 +796,10 @@ export type Database = {
           id?: string
           importado_em?: string | null
           ip_hash?: string | null
+          meta_fbc?: string | null
+          meta_fbp?: string | null
+          meta_lead_enviado_em?: string | null
+          meta_user_agent?: string | null
           nome?: string | null
           origem?: Json
           pedido_id?: string | null

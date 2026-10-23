@@ -70,8 +70,8 @@ export function registrarPageView(caminhoComBusca: string) {
 }
 
 /**
- * Evento padrão do Meta. `eventId` deduplica contra um envio de servidor
- * (Conversions API) se ele um dia existir; usar o id do lead.
+ * Evento padrão do Meta. `eventId` deduplica contra o envio do servidor
+ * (API de Conversões, src/lib/meta-capi.server.ts): para o Lead, o id do lead.
  */
 export function rastrear(
   evento: "Lead" | "ViewContent" | "InitiateCheckout",
@@ -84,4 +84,21 @@ export function rastrear(
   } catch {
     // Rastreamento nunca pode derrubar a página do funil.
   }
+}
+
+/**
+ * Cookies do Pixel, para a API de Conversões ligar o evento do servidor ao
+ * mesmo navegador e ao clique do anúncio. Sem o cookie _fbc (Pixel bloqueado
+ * ou ainda carregando), monta o valor a partir do fbclid guardado da visita.
+ */
+export function identificadoresMeta(fbclid?: string): { fbp?: string; fbc?: string } {
+  if (typeof document === "undefined") return {};
+  const cookie = (nome: string) =>
+    document.cookie
+      .split("; ")
+      .find((c) => c.startsWith(`${nome}=`))
+      ?.slice(nome.length + 1);
+  const fbp = cookie("_fbp");
+  const fbc = cookie("_fbc") ?? (fbclid ? `fb.1.${Date.now()}.${fbclid}` : undefined);
+  return { ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}) };
 }

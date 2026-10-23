@@ -29,7 +29,7 @@ import {
 } from "@/lib/dna-viral";
 import { calcularScore } from "@/lib/dna-viral-score";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { hashDaOrigem } from "@/lib/origem.server";
+import { hashDaOrigem, ipDaRequisicao, userAgentDaRequisicao } from "@/lib/origem.server";
 import {
   PERGUNTAS,
   digitosWhatsapp,
@@ -98,6 +98,54 @@ function colunasDeContato(respostas: Respostas): {
   return out;
 }
 
+/** Cookies do Pixel vindos do navegador, com teto de tamanho. */
+function colunasDoMeta(meta: { fbp?: unknown; fbc?: unknown } | undefined) {
+  const limpo = (v: unknown) =>
+    typeof v === "string" && /^fb\.\d\.\d+\.[\w.-]+$/.test(v) && v.length <= 300 ? v : null;
+  const fbp = limpo(meta?.fbp);
+  const fbc = limpo(meta?.fbc);
+  const userAgent = userAgentDaRequisicao();
+  return {
+    ...(fbp ? { meta_fbp: fbp } : {}),
+    ...(fbc ? { meta_fbc: fbc } : {}),
+    ...(userAgent ? { meta_user_agent: userAgent } : {}),
+  };
+}
+
+/**
+ * Lead para a API de Conversões quando o quiz fecha com contato. Uma vez por
+ * lead: o carimbo é reservado antes de enviar. O event_id é o id do lead, o
+ * mesmo do Lead do navegador, e o Meta conta um só.
+ */
+async function medirLead(db: Db, leadId: string, respostas: Respostas) {
+  const contato = colunasDeContato(respostas);
+  if (!quizCompleto(respostas) || !contato.email) return;
+  const { data: reservado } = await db
+    .from("oferta_leads")
+    .update({ meta_lead_enviado_em: new Date().toISOString() })
+    .eq("id", leadId)
+    .is("meta_lead_enviado_em", null)
+    .select("id, meta_fbp, meta_fbc, meta_user_agent")
+    .maybeSingle();
+  if (!reservado) return;
+
+  const { enviarEventoMeta } = await import("@/lib/meta-capi.server");
+  void enviarEventoMeta({
+    nome: "Lead",
+    eventId: leadId,
+    usuario: {
+      email: contato.email,
+      telefone: contato.whatsapp ?? null,
+      externalId: leadId,
+      fbp: reservado.meta_fbp,
+      fbc: reservado.meta_fbc,
+      ip: ipDaRequisicao(),
+      userAgent: reservado.meta_user_agent,
+    },
+    dados: { content_name: "quiz_dna_viral" },
+  });
+}
+
 /**
  * Grava o progresso do quiz. Chamada a cada resposta.
  *
@@ -107,7 +155,12 @@ function colunasDeContato(respostas: Respostas): {
  */
 export const salvarQuiz = createServerFn({ method: "POST" })
   .inputValidator(
-    (data: { leadId: string; respostas: Respostas; origem?: Record<string, string> }) => data,
+    (data: {
+      leadId: string;
+      respostas: Respostas;
+      origem?: Record<string, string>;
+      meta?: { fbp?: string; fbc?: string };
+    }) => data,
   )
   .handler(async ({ data }) => {
     if (!/^[0-9a-f-]{36}$/i.test(data.leadId)) throw new Error("Identificação inválida.");
@@ -116,6 +169,7 @@ export const salvarQuiz = createServerFn({ method: "POST" })
     const db = await admin();
     const agora = new Date().toISOString();
     const contato = colunasDeContato(data.respostas);
+    const meta = colunasDoMeta(data.meta);
 
     const { data: existente } = await db
       .from("oferta_leads")
@@ -130,8 +184,10 @@ export const salvarQuiz = createServerFn({ method: "POST" })
           respostas: data.respostas,
           atualizado_em: agora,
           ...contato,
+          ...meta,
         })
         .eq("id", data.leadId);
+      await medirLead(db, data.leadId, data.respostas);
       return { token: existente.token as string };
     }
 
@@ -145,8 +201,10 @@ export const salvarQuiz = createServerFn({ method: "POST" })
       criado_em: agora,
       atualizado_em: agora,
       ...contato,
+      ...meta,
     });
     if (error) throw new Error("Não foi possível salvar suas respostas.");
+    await medirLead(db, data.leadId, data.respostas);
 
     return { token };
   });

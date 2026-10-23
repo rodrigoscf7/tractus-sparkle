@@ -48,9 +48,9 @@ function Privacidade() {
           </li>
           <li>
             <strong className="text-foreground">Navegação:</strong> parâmetros de campanha (UTM),
-            identificadores de clique de anúncio e eventos de navegação registrados pelo Meta Pixel
-            nas páginas do diagnóstico. Para limitar abuso, guardamos um código derivado do seu
-            endereço IP, nunca o IP em si.
+            identificadores de clique de anúncio e do Meta Pixel, o navegador usado e os eventos de
+            navegação registrados pelo Pixel nas páginas do diagnóstico. Para limitar abuso,
+            guardamos um código derivado do seu endereço IP, nunca o IP em si.
           </li>
         </ul>
       </SecaoLegal>
@@ -91,7 +91,10 @@ function Privacidade() {
             diagnóstico e do conteúdo a partir das suas respostas.
           </li>
           <li>Apify: leitura de publicações públicas dos perfis de referência que você indica.</li>
-          <li>Meta Platforms: medição de anúncios pelo Meta Pixel.</li>
+          <li>
+            Meta Platforms: medição de anúncios pelo Meta Pixel e pela API de Conversões (veja
+            Cookies e rastreamento).
+          </li>
         </ul>
         <p>
           Alguns desses fornecedores processam dados fora do Brasil. Nesses casos, a transferência
@@ -123,6 +126,13 @@ function Privacidade() {
           cadastros e compras. Você pode bloquear esse rastreamento nas configurações do seu
           navegador ou nas preferências de anúncios da sua conta Meta. O aplicativo, depois do
           login, não usa o Pixel.
+        </p>
+        <p>
+          Quando você conclui o diagnóstico e quando uma compra é aprovada, também avisamos o Meta
+          pelo nosso servidor (API de Conversões). Esse aviso leva o seu e-mail e o seu WhatsApp
+          criptografados (em hash, que o Meta usa só para comparar com as contas dele), os
+          identificadores do Pixel, o navegador usado e o valor da compra. Na conclusão do
+          diagnóstico, leva também o endereço IP daquele momento, que não guardamos.
         </p>
       </SecaoLegal>
 

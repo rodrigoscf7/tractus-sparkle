@@ -42,8 +42,13 @@ import {
 import { gravarRespostas, lerRespostas } from "@/lib/quiz-oferta.estado";
 import { salvarQuiz } from "@/lib/quiz-oferta.functions";
 import { capturarOrigem, obterLeadId } from "@/lib/oferta-variante";
-import { rastrear } from "@/lib/pixel";
+import { identificadoresMeta, rastrear } from "@/lib/pixel";
 import { LinksLegais } from "@/components/legal/PaginaLegal";
+
+/** Cookies do Pixel e o fbclid da visita, para a API de Conversões. */
+function metaDaVisita() {
+  return identificadoresMeta(capturarOrigem().fbclid);
+}
 
 export function QuizOferta({ passo }: { passo: number }) {
   const navigate = useNavigate();
@@ -72,11 +77,7 @@ export function QuizOferta({ passo }: { passo: number }) {
    * Grava o campo e, se a pergunta tem `derivar`, aplica os campos derivados
    * no mesmo update (percepção → atributos + estilo; "tudo" exclusivo).
    */
-  function definir<K extends keyof Respostas>(
-    chave: K,
-    valor: Respostas[K],
-    pergunta?: Pergunta,
-  ) {
+  function definir<K extends keyof Respostas>(chave: K, valor: Respostas[K], pergunta?: Pergunta) {
     setRespostas((r) => {
       let proximo: Respostas = { ...r, [chave]: valor };
       if (pergunta?.derivar) {
@@ -100,12 +101,17 @@ export function QuizOferta({ passo }: { passo: number }) {
    * é a última, que leva o objeto inteiro e é aguardada.
    */
   function salvarEmSegundoPlano(atual: Respostas) {
-    salvar({ data: { leadId: obterLeadId(), respostas: atual, origem: capturarOrigem() } }).catch(
-      () => {
-        // Silêncio proposital: perder uma gravação parcial não muda nada para
-        // quem está respondendo, e um toast aqui só atrapalharia.
+    salvar({
+      data: {
+        leadId: obterLeadId(),
+        respostas: atual,
+        origem: capturarOrigem(),
+        meta: metaDaVisita(),
       },
-    );
+    }).catch(() => {
+      // Silêncio proposital: perder uma gravação parcial não muda nada para
+      // quem está respondendo, e um toast aqui só atrapalharia.
+    });
   }
 
   async function avancar() {
@@ -125,7 +131,7 @@ export function QuizOferta({ passo }: { passo: number }) {
     setEnviando(true);
     try {
       await salvar({
-        data: { leadId: obterLeadId(), respostas, origem: capturarOrigem() },
+        data: { leadId: obterLeadId(), respostas, origem: capturarOrigem(), meta: metaDaVisita() },
       });
       // A última pergunta é a de contato: aqui o visitante vira lead.
       rastrear("Lead", { content_name: "quiz_dna_viral" }, obterLeadId());
@@ -244,11 +250,7 @@ function Campo({
 }: {
   pergunta: Pergunta;
   respostas: Respostas;
-  definir: <K extends keyof Respostas>(
-    chave: K,
-    valor: Respostas[K],
-    pergunta?: Pergunta,
-  ) => void;
+  definir: <K extends keyof Respostas>(chave: K, valor: Respostas[K], pergunta?: Pergunta) => void;
 }) {
   const extra = pergunta.extra?.quando(respostas) ? pergunta.extra : null;
 
@@ -346,10 +348,7 @@ function Campo({
       {pergunta.tipo === "contato" && (
         <div className="space-y-4">
           <div>
-            <label
-              htmlFor="quiz-email"
-              className="mb-1.5 block text-sm text-muted-foreground"
-            >
+            <label htmlFor="quiz-email" className="mb-1.5 block text-sm text-muted-foreground">
               Seu melhor e-mail
             </label>
             <Input
@@ -364,10 +363,7 @@ function Campo({
             />
           </div>
           <div>
-            <label
-              htmlFor="quiz-whatsapp"
-              className="mb-1.5 block text-sm text-muted-foreground"
-            >
+            <label htmlFor="quiz-whatsapp" className="mb-1.5 block text-sm text-muted-foreground">
               WhatsApp
             </label>
             <Input
@@ -382,8 +378,8 @@ function Campo({
             />
           </div>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Ao continuar, você concorda em receber o diagnóstico e comunicações
-            relacionadas a ele, conforme a{" "}
+            Ao continuar, você concorda em receber o diagnóstico e comunicações relacionadas a ele,
+            conforme a{" "}
             <a
               href="/privacidade"
               target="_blank"
@@ -461,8 +457,8 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
               Seus 3 pilares de autoridade: o que você precisa fortalecer no posicionamento
             </li>
             <li className="flex gap-2.5">
-              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              3 roteiros prontos para você gravar ainda hoje
+              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />3
+              roteiros prontos para você gravar ainda hoje
             </li>
           </ul>
         </div>
