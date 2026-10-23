@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BoasVindasRouteImport } from './routes/boas-vindas'
+import { Route as EquipeRouteImport } from './routes/equipe'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
@@ -56,6 +57,11 @@ const AuthRoute = AuthRouteImport.update({
 const BoasVindasRoute = BoasVindasRouteImport.update({
   id: '/boas-vindas',
   path: '/boas-vindas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EquipeRoute = EquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/boas-vindas': typeof BoasVindasRoute
+  '/equipe': typeof EquipeRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/boas-vindas': typeof BoasVindasRoute
+  '/equipe': typeof EquipeRoute
   '/privacidade': typeof PrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/boas-vindas': typeof BoasVindasRoute
+  '/equipe': typeof EquipeRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/boas-vindas'
+    | '/equipe'
     | '/onboarding'
     | '/privacidade'
     | '/redefinir-senha'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/boas-vindas'
+    | '/equipe'
     | '/privacidade'
     | '/redefinir-senha'
     | '/termos'
@@ -343,6 +354,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/boas-vindas'
+    | '/equipe'
     | '/onboarding'
     | '/privacidade'
     | '/redefinir-senha'
@@ -375,6 +387,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   BoasVindasRoute: typeof BoasVindasRoute
+  EquipeRoute: typeof EquipeRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   PrivacidadeRoute: typeof PrivacidadeRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
@@ -413,6 +426,13 @@ declare module '@tanstack/react-router' {
       path: '/boas-vindas'
       fullPath: '/boas-vindas'
       preLoaderRoute: typeof BoasVindasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/equipe': {
+      id: '/equipe'
+      path: '/equipe'
+      fullPath: '/equipe'
+      preLoaderRoute: typeof EquipeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -660,6 +680,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   BoasVindasRoute: BoasVindasRoute,
+  EquipeRoute: EquipeRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   PrivacidadeRoute: PrivacidadeRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,

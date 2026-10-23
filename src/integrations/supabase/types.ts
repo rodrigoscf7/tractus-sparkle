@@ -1722,7 +1722,7 @@ export type Database = {
       revisar_next_pauta_pronta: { Args: never; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "member"
+      app_role: "admin" | "member" | "comercial"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1853,7 +1853,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      app_role: ["admin", "member"],
+      app_role: ["admin", "member", "comercial"],
     },
   },
 } as const

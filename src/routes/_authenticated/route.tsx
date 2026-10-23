@@ -13,6 +13,7 @@ import {
   Settings,
   Shield,
   Sun,
+  Users,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTheme } from "@/hooks/use-theme";
@@ -63,7 +64,16 @@ export const Route = createFileRoute("/_authenticated")({
       .limit(1)
       .maybeSingle();
 
-    if (!membro?.conta_id) throw redirect({ to: "/onboarding" });
+    if (!membro?.conta_id) {
+      // Equipe de social selling não é cliente: sem conta, o lugar dela é a
+      // área da equipe, não o wizard de onboarding.
+      const { data: comercial } = await supabase.rpc("has_role", {
+        _user_id: data.user.id,
+        _role: "comercial",
+      });
+      if (comercial) throw redirect({ to: "/equipe" });
+      throw redirect({ to: "/onboarding" });
+    }
 
     const { data: onboarding } = await supabase
       .from("onboarding_respostas")
@@ -148,6 +158,9 @@ function AuthenticatedLayout() {
             <div className={ROTULO_GRUPO}>Equipe prevIA</div>
             <NavLink to="/admin" icon={<Shield className="w-4 h-4" />}>
               Administração
+            </NavLink>
+            <NavLink to="/equipe" icon={<Users className="w-4 h-4" />}>
+              Leads e contas
             </NavLink>
             {/* A esteira por dentro: útil para a equipe, não é tarefa do cliente. */}
             <NavLink to="/agentes" icon={<Activity className="w-4 h-4" />}>
