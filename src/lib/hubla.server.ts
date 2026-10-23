@@ -181,6 +181,16 @@ async function aplicarMateriais(
   if (!codigos.length) return;
   const agora = new Date().toISOString();
   if (APROVA.has(tipo)) {
+    // Só os que a conta ainda não tinha ganham o e-mail de entrega: reprocessar
+    // o aviso não manda de novo.
+    const { data: jaTinha } = await admin
+      .from("conta_materiais")
+      .select("material_codigo")
+      .eq("conta_id", contaId)
+      .is("revogado_em", null)
+      .in("material_codigo", codigos);
+    const novos = codigos.filter((c) => !(jaTinha ?? []).some((j: any) => j.material_codigo === c));
+
     await admin.from("conta_materiais").upsert(
       codigos.map((codigo) => ({
         conta_id: contaId,
@@ -191,6 +201,11 @@ async function aplicarMateriais(
       })),
       { onConflict: "conta_id,material_codigo" },
     );
+
+    if (novos.length) {
+      const { enviarEmailEmSegundoPlano } = await import("@/lib/agentes.server");
+      enviarEmailEmSegundoPlano({ tipo: "material_liberado", conta_id: contaId, materiais: novos });
+    }
   } else if (tipo === "invoice.refunded" || tipo === "invoice.chargeback") {
     await admin
       .from("conta_materiais")

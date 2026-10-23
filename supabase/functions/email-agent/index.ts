@@ -1,6 +1,6 @@
 // email-agent: e-mails de marca do funil, enviados pela API do Resend.
 //
-// Três tipos, todos montados aqui a partir do banco — quem chama passa só
+// Quatro tipos, todos montados aqui a partir do banco — quem chama passa só
 // identificadores, nunca o texto, para esta função não virar um relay de
 // e-mail arbitrário:
 //   - dna_viral:   { tipo, lead_id }         link permanente do relatório.
@@ -11,6 +11,9 @@
 //                  mensal ativa na Hubla, e a Hubla não cancela por API. Vai
 //                  sempre para a caixa da equipe (EMAIL_EQUIPE, ou
 //                  EMAIL_RESPONDER_PARA), nunca para um endereço do pedido.
+//   - material_liberado: { tipo, conta_id, materiais } entrega do order bump:
+//                  avisa o dono da conta (e-mail lido do Auth) que o material
+//                  está em Materiais.
 //
 // E-mail de infraestrutura (esqueci minha senha) não passa por aqui: sai do
 // Supabase Auth pelo SMTP do Resend.
@@ -24,7 +27,8 @@ import {
 type Pedido =
   | { tipo: "dna_viral"; lead_id: string }
   | { tipo: "boas_vindas"; email: string; lead_id?: string | null }
-  | { tipo: "cancelar_assinatura"; conta_id: string; assinatura_id: string; reembolsar?: boolean };
+  | { tipo: "cancelar_assinatura"; conta_id: string; assinatura_id: string; reembolsar?: boolean }
+  | { tipo: "material_liberado"; conta_id: string; materiais: string[] };
 
 type Lead = {
   id: string;
@@ -366,6 +370,97 @@ async function enviarCancelarAssinatura(
   return json({ ok: true, enviado: true, id });
 }
 
+// ---------------------------------------------------------------------------
+// material_liberado
+// ---------------------------------------------------------------------------
+
+const RESUMO_MATERIAL: Record<string, string> = {
+  ganchos_previdenciario:
+    "115 frases de abertura por tema do previdenciário, com busca e botão de copiar.",
+  gravando_celular:
+    "Luz, áudio, enquadramento e como ler o roteiro sem parecer que está lendo, com checklist.",
+};
+
+async function enviarMaterialLiberado(contaId: string, codigos: string[]) {
+  if (!UUID.test(contaId)) return json({ ok: false, error: "conta_id inválido" }, 400);
+  const pedidos = [...new Set(codigos.map(String))].filter((c) => /^[a-z_]{1,60}$/.test(c));
+  if (!pedidos.length) return json({ ok: false, error: "materiais inválidos" }, 400);
+
+  const supabase = getServiceClient();
+  const [{ data: membro }, { data: materiais }] = await Promise.all([
+    supabase
+      .from("conta_membros")
+      .select("user_id")
+      .eq("conta_id", contaId)
+      .order("criado_em")
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("materiais").select("codigo, nome").in("codigo", pedidos),
+  ]);
+  if (!membro?.user_id || !materiais?.length) {
+    return json({ ok: false, error: "conta ou material não encontrado" }, 404);
+  }
+  const { data: usuario } = await supabase.auth.admin.getUserById(membro.user_id);
+  const para = usuario?.user?.email;
+  if (!para) return json({ ok: false, error: "conta sem e-mail" }, 404);
+
+  const site = siteUrl();
+  const um = materiais.length === 1;
+  const assunto = um
+    ? `Seu material está liberado: ${materiais[0]!.nome}`
+    : "Seus materiais estão liberados na prevIA";
+
+  const itensHtml = materiais
+    .map(
+      (m) =>
+        `<strong>${escapar(m.nome)}</strong>${RESUMO_MATERIAL[m.codigo] ? `: ${escapar(RESUMO_MATERIAL[m.codigo]!)}` : ""}`,
+    )
+    .join("<br><br>");
+
+  const html = moldura(
+    paragrafo("Oi.") +
+      paragrafo(
+        um
+          ? "A compra foi aprovada e o material já está na sua conta da prevIA, em Materiais:"
+          : "A compra foi aprovada e os materiais já estão na sua conta da prevIA, em Materiais:",
+      ) +
+      paragrafo(itensHtml) +
+      botao(`${site}/materiais`, um ? "Abrir o material" : "Abrir meus materiais") +
+      paragrafo(
+        `Para entrar, use o e-mail desta compra. Se ainda não criou a sua senha, o link está no e-mail de boas-vindas; se ele tiver expirado, use "Esqueci minha senha" na <a href="${site}/auth" style="color:#1F1F1F">tela de entrar</a>.`,
+      ) +
+      paragrafo(
+        um
+          ? "O material é seu mesmo se você cancelar a assinatura."
+          : "Os materiais são seus mesmo se você cancelar a assinatura.",
+      ),
+    site,
+  );
+  const texto = [
+    "Oi.",
+    um
+      ? "A compra foi aprovada e o material já está na sua conta da prevIA, em Materiais:"
+      : "A compra foi aprovada e os materiais já estão na sua conta da prevIA, em Materiais:",
+    ...materiais.map(
+      (m) => `- ${m.nome}${RESUMO_MATERIAL[m.codigo] ? `: ${RESUMO_MATERIAL[m.codigo]}` : ""}`,
+    ),
+    `Abrir: ${site}/materiais`,
+    'Para entrar, use o e-mail desta compra. Se ainda não criou a senha, o link está no e-mail de boas-vindas; se expirou, use "Esqueci minha senha".',
+  ].join("\n\n");
+
+  const id = await enviar({
+    para,
+    assunto,
+    html,
+    texto,
+    idempotencia: `material/${contaId}/${materiais
+      .map((m) => m.codigo)
+      .sort()
+      .join("+")}`,
+  });
+  return json({ ok: true, enviado: true, id });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -377,6 +472,12 @@ Deno.serve(async (req) => {
     if (pedido?.tipo === "dna_viral") return await enviarDnaViral(String(pedido.lead_id ?? ""));
     if (pedido?.tipo === "boas_vindas") {
       return await enviarBoasVindas(String(pedido.email ?? ""), pedido.lead_id ?? null);
+    }
+    if (pedido?.tipo === "material_liberado") {
+      return await enviarMaterialLiberado(
+        String(pedido.conta_id ?? ""),
+        Array.isArray(pedido.materiais) ? pedido.materiais : [],
+      );
     }
     if (pedido?.tipo === "cancelar_assinatura") {
       return await enviarCancelarAssinatura(

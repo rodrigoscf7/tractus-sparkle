@@ -163,7 +163,8 @@ export type PedidoEmail =
       assinatura_id: string;
       /** A assinatura antiga já cobrou uma renovação: além de cancelar, reembolsar. */
       reembolsar: boolean;
-    };
+    }
+  | { tipo: "material_liberado"; conta_id: string; materiais: string[] };
 
 /**
  * Envia um e-mail do funil sem segurar quem chamou.
