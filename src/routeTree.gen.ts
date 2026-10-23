@@ -38,6 +38,8 @@ import { Route as OnboardingProcessandoRouteImport } from './routes/onboarding.p
 import { Route as AuthenticatedAgentesIndexRouteImport } from './routes/_authenticated/agentes.index'
 import { Route as AuthenticatedAgentesAgenteRouteImport } from './routes/_authenticated/agentes.$agente'
 import { Route as AuthenticatedAprovacaoPautaIdRouteImport } from './routes/_authenticated/aprovacao.$pautaId'
+import { Route as AuthenticatedMateriaisIndexRouteImport } from './routes/_authenticated/materiais.index'
+import { Route as AuthenticatedMateriaisCodigoRouteImport } from './routes/_authenticated/materiais.$codigo'
 import { Route as ApiPublicWebhooksHublaRouteImport } from './routes/api/public/webhooks/hubla'
 
 const IndexRoute = IndexRouteImport.update({
@@ -188,6 +190,18 @@ const AuthenticatedAprovacaoPautaIdRoute =
     path: '/aprovacao/$pautaId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMateriaisIndexRoute =
+  AuthenticatedMateriaisIndexRouteImport.update({
+    id: '/materiais/',
+    path: '/materiais/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMateriaisCodigoRoute =
+  AuthenticatedMateriaisCodigoRouteImport.update({
+    id: '/materiais/$codigo',
+    path: '/materiais/$codigo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicWebhooksHublaRoute = ApiPublicWebhooksHublaRouteImport.update({
   id: '/api/public/webhooks/hubla',
   path: '/api/public/webhooks/hubla',
@@ -222,7 +236,9 @@ export interface FileRoutesByFullPath {
   '/onboarding/': typeof OnboardingIndexRoute
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
+  '/materiais/$codigo': typeof AuthenticatedMateriaisCodigoRoute
   '/agentes/': typeof AuthenticatedAgentesIndexRoute
+  '/materiais/': typeof AuthenticatedMateriaisIndexRoute
   '/api/public/webhooks/hubla': typeof ApiPublicWebhooksHublaRoute
 }
 export interface FileRoutesByTo {
@@ -251,7 +267,9 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingIndexRoute
   '/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
+  '/materiais/$codigo': typeof AuthenticatedMateriaisCodigoRoute
   '/agentes': typeof AuthenticatedAgentesIndexRoute
+  '/materiais': typeof AuthenticatedMateriaisIndexRoute
   '/api/public/webhooks/hubla': typeof ApiPublicWebhooksHublaRoute
 }
 export interface FileRoutesById {
@@ -284,7 +302,9 @@ export interface FileRoutesById {
   '/onboarding/': typeof OnboardingIndexRoute
   '/_authenticated/agentes/$agente': typeof AuthenticatedAgentesAgenteRoute
   '/_authenticated/aprovacao/$pautaId': typeof AuthenticatedAprovacaoPautaIdRoute
+  '/_authenticated/materiais/$codigo': typeof AuthenticatedMateriaisCodigoRoute
   '/_authenticated/agentes/': typeof AuthenticatedAgentesIndexRoute
+  '/_authenticated/materiais/': typeof AuthenticatedMateriaisIndexRoute
   '/api/public/webhooks/hubla': typeof ApiPublicWebhooksHublaRoute
 }
 export interface FileRouteTypes {
@@ -317,7 +337,9 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
+    | '/materiais/$codigo'
     | '/agentes/'
+    | '/materiais/'
     | '/api/public/webhooks/hubla'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -346,7 +368,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/agentes/$agente'
     | '/aprovacao/$pautaId'
+    | '/materiais/$codigo'
     | '/agentes'
+    | '/materiais'
     | '/api/public/webhooks/hubla'
   id:
     | '__root__'
@@ -378,7 +402,9 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/_authenticated/agentes/$agente'
     | '/_authenticated/aprovacao/$pautaId'
+    | '/_authenticated/materiais/$codigo'
     | '/_authenticated/agentes/'
+    | '/_authenticated/materiais/'
     | '/api/public/webhooks/hubla'
   fileRoutesById: FileRoutesById
 }
@@ -603,6 +629,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAprovacaoPautaIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/materiais/': {
+      id: '/_authenticated/materiais/'
+      path: '/materiais'
+      fullPath: '/materiais/'
+      preLoaderRoute: typeof AuthenticatedMateriaisIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/materiais/$codigo': {
+      id: '/_authenticated/materiais/$codigo'
+      path: '/materiais/$codigo'
+      fullPath: '/materiais/$codigo'
+      preLoaderRoute: typeof AuthenticatedMateriaisCodigoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/webhooks/hubla': {
       id: '/api/public/webhooks/hubla'
       path: '/api/public/webhooks/hubla'
@@ -640,6 +680,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlanoRoute: typeof AuthenticatedPlanoRoute
   AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
   AuthenticatedAprovacaoPautaIdRoute: typeof AuthenticatedAprovacaoPautaIdRoute
+  AuthenticatedMateriaisCodigoRoute: typeof AuthenticatedMateriaisCodigoRoute
+  AuthenticatedMateriaisIndexRoute: typeof AuthenticatedMateriaisIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -656,6 +698,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlanoRoute: AuthenticatedPlanoRoute,
   AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
   AuthenticatedAprovacaoPautaIdRoute: AuthenticatedAprovacaoPautaIdRoute,
+  AuthenticatedMateriaisCodigoRoute: AuthenticatedMateriaisCodigoRoute,
+  AuthenticatedMateriaisIndexRoute: AuthenticatedMateriaisIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

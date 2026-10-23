@@ -26,6 +26,11 @@ export type HublaEventoRow = {
   /** Lead do quiz da oferta (sck=<uuid>). */
   lead_id: string | null;
   oferta_id: string | null;
+  /** Todos os produtos e ofertas do aviso: com order bump, vem mais de um. */
+  produto_ids: string[];
+  oferta_ids: string[];
+  /** Meses por ciclo da assinatura recorrente do aviso (1 mensal, 12 anual). */
+  ciclo_meses: number | null;
   valor_centavos: number | null;
   payload: Record<string, any>;
 };
@@ -71,7 +76,10 @@ export function normalizarEventoHubla(
   const ev = payload?.event ?? {};
   const fatura = ev.invoice ?? ev.subscription?.lastInvoice ?? null;
   const sessao =
-    fatura?.paymentSession ?? fatura?.firstPaymentSession ?? ev.subscription?.firstPaymentSession ?? null;
+    fatura?.paymentSession ??
+    fatura?.firstPaymentSession ??
+    ev.subscription?.firstPaymentSession ??
+    null;
   const sck = sckDa(sessao)?.trim() ?? "";
   const contaSck = sck.toLowerCase().startsWith("c-") ? sck.slice(2) : "";
 
@@ -79,34 +87,118 @@ export function normalizarEventoHubla(
   const email = ev.user?.email ?? fatura?.payer?.email ?? null;
   const centavos = Number(fatura?.amount?.totalCents);
 
+  const produtos = [ev.product, ...(Array.isArray(ev.products) ? ev.products : [])].filter(Boolean);
+  const ids = (lista: unknown[]) => [
+    ...new Set(lista.filter((v): v is string => typeof v === "string" && v.length > 0)),
+  ];
+
+  // Material de order bump chega como assinatura "one_time": a do plano é a recorrente.
+  const assinaturas = [
+    ev.subscription,
+    ...(Array.isArray(ev.subscriptions) ? ev.subscriptions : []),
+  ].filter(Boolean);
+  const recorrente = assinaturas.find((s: any) => s?.type !== "one_time") ?? null;
+  const ciclo = Number(recorrente?.billingCycleMonths);
+
   return {
     evento: String(payload?.type ?? "desconhecido"),
     idempotencia,
     fatura_id: fatura?.id ?? null,
     assinatura_externa_id:
-      fatura?.subscriptionId ?? ev.subscription?.id ?? ev.subscriptions?.[0]?.id ?? null,
+      recorrente?.id ??
+      fatura?.subscriptionId ??
+      ev.subscription?.id ??
+      ev.subscriptions?.[0]?.id ??
+      null,
     comprador_email: email ? String(email).trim().toLowerCase() : null,
     comprador_nome: nome || null,
     conta_id: UUID.test(contaSck) ? contaSck : null,
     lead_id: UUID.test(sck) ? sck : null,
     oferta_id: ev.products?.[0]?.offers?.[0]?.id ?? null,
+    produto_ids: ids(produtos.map((p: any) => p?.id)),
+    oferta_ids: ids(
+      produtos.flatMap((p: any) =>
+        (Array.isArray(p?.offers) ? p.offers : []).map((o: any) => o?.id),
+      ),
+    ),
+    ciclo_meses: Number.isInteger(ciclo) && ciclo > 0 ? ciclo : null,
     valor_centavos: Number.isFinite(centavos) && centavos > 0 ? Math.round(centavos) : null,
     payload,
   };
 }
 
-async function resolverPlano(admin: AnyClient, evento: HublaEventoRow): Promise<string | null> {
+/** O plano do aviso e o ciclo de cobrança (a oferta anual é do mesmo produto). */
+async function resolverPlano(
+  admin: AnyClient,
+  evento: HublaEventoRow,
+): Promise<{ codigo: string; cicloMeses: number; precoAnualCentavos: number | null } | null> {
   const { data: planos } = await admin
     .from("planos")
-    .select("codigo, hubla_oferta_id, hubla_produto_id")
+    .select(
+      "codigo, hubla_oferta_id, hubla_oferta_anual_id, hubla_produto_id, preco_anual_centavos",
+    )
     .eq("ativo", true);
-  const produtoId = evento.payload?.event?.product?.id ?? null;
+  const temOferta = (id: string | null) => !!id && evento.oferta_ids.includes(id);
   const match = (planos ?? []).find(
     (p: any) =>
-      (evento.oferta_id && p.hubla_oferta_id === evento.oferta_id) ||
-      (produtoId && p.hubla_produto_id === produtoId),
+      temOferta(p.hubla_oferta_id) ||
+      temOferta(p.hubla_oferta_anual_id) ||
+      (!!p.hubla_produto_id && evento.produto_ids.includes(p.hubla_produto_id)),
   );
-  return match?.codigo ?? null;
+  if (!match) return null;
+  return {
+    codigo: match.codigo,
+    cicloMeses: evento.ciclo_meses ?? (temOferta(match.hubla_oferta_anual_id) ? 12 : 1),
+    precoAnualCentavos: match.preco_anual_centavos ?? null,
+  };
+}
+
+/** Materiais (order bumps) que vieram no aviso. */
+async function resolverMateriais(admin: AnyClient, evento: HublaEventoRow): Promise<string[]> {
+  const { data: materiais } = await admin
+    .from("materiais")
+    .select("codigo, hubla_produto_id, hubla_oferta_id");
+  return (materiais ?? [])
+    .filter(
+      (m: any) =>
+        (!!m.hubla_oferta_id && evento.oferta_ids.includes(m.hubla_oferta_id)) ||
+        (!!m.hubla_produto_id && evento.produto_ids.includes(m.hubla_produto_id)),
+    )
+    .map((m: any) => String(m.codigo));
+}
+
+/**
+ * Libera os materiais na fatura paga e revoga no reembolso ou chargeback.
+ * A assinatura desativada não mexe neles: material é pagamento único.
+ */
+async function aplicarMateriais(
+  admin: AnyClient,
+  evento: HublaEventoRow,
+  tipo: string,
+  contaId: string,
+  codigos: string[],
+) {
+  if (!codigos.length) return;
+  const agora = new Date().toISOString();
+  if (APROVA.has(tipo)) {
+    await admin.from("conta_materiais").upsert(
+      codigos.map((codigo) => ({
+        conta_id: contaId,
+        material_codigo: codigo,
+        origem: "hubla",
+        hubla_fatura_id: evento.fatura_id,
+        revogado_em: null,
+      })),
+      { onConflict: "conta_id,material_codigo" },
+    );
+  } else if (tipo === "invoice.refunded" || tipo === "invoice.chargeback") {
+    await admin
+      .from("conta_materiais")
+      .update({ revogado_em: agora })
+      .eq("conta_id", contaId)
+      .eq("origem", "hubla")
+      .in("material_codigo", codigos);
+  }
 }
 
 /**
@@ -116,7 +208,11 @@ async function resolverPlano(admin: AnyClient, evento: HublaEventoRow): Promise<
 async function acharLead(admin: AnyClient, evento: HublaEventoRow) {
   const colunas = "id, respostas, importado_em, comprou_em, conta_id";
   if (evento.lead_id) {
-    const { data } = await admin.from("oferta_leads").select(colunas).eq("id", evento.lead_id).maybeSingle();
+    const { data } = await admin
+      .from("oferta_leads")
+      .select(colunas)
+      .eq("id", evento.lead_id)
+      .maybeSingle();
     if (data) return data;
   }
   if (evento.comprador_email) {
@@ -292,7 +388,11 @@ async function prepararAcesso(
  * a conta não nasce aqui, então o lead é ligado à existente e nasce com a
  * senha já definida, para a tela de boas-vindas mandar direto para o login.
  */
-async function vincularLeadAContaExistente(admin: AnyClient, evento: HublaEventoRow, contaId: string) {
+async function vincularLeadAContaExistente(
+  admin: AnyClient,
+  evento: HublaEventoRow,
+  contaId: string,
+) {
   if (!APROVA.has(tipoEfetivo(evento))) return;
   try {
     const lead = await acharLead(admin, evento);
@@ -300,7 +400,12 @@ async function vincularLeadAContaExistente(admin: AnyClient, evento: HublaEvento
     const agora = new Date().toISOString();
     await admin
       .from("oferta_leads")
-      .update({ conta_id: contaId, conta_criada_em: agora, senha_definida_em: agora, atualizado_em: agora })
+      .update({
+        conta_id: contaId,
+        conta_criada_em: agora,
+        senha_definida_em: agora,
+        atualizado_em: agora,
+      })
       .eq("id", lead.id)
       .is("conta_id", null);
   } catch (e) {
@@ -368,7 +473,13 @@ export async function aplicarEventoHubla(admin: AnyClient, evento: HublaEventoRo
 
   await marcarLeadComprou(admin, evento);
 
-  const planoCodigo = await resolverPlano(admin, evento);
+  const plano = await resolverPlano(admin, evento);
+  const planoCodigo = plano?.codigo ?? null;
+  const materiais = await resolverMateriais(admin, evento);
+  // Order bump que chegou num aviso só dele: libera o material e não toca na
+  // assinatura (a do material é "one_time" e trocaria a do plano).
+  const soMaterial = !plano && materiais.length > 0;
+
   let contaId = await resolverConta(admin, evento);
 
   if (!contaId && APROVA.has(tipo)) {
@@ -382,6 +493,73 @@ export async function aplicarEventoHubla(admin: AnyClient, evento: HublaEventoRo
     return { ok: false, motivo: "conta_nao_identificada" as const };
   }
 
+  await aplicarMateriais(admin, evento, tipo, contaId, materiais);
+  if (soMaterial) {
+    await marcar(admin, evento, true, null, contaId);
+    return { ok: true, contaId, materiais };
+  }
+
+  const { data: existente } = await admin
+    .from("assinaturas")
+    .select("id, situacao, hubla_assinatura_id, ciclo_meses")
+    .eq("conta_id", contaId)
+    .maybeSingle();
+
+  // A conta já tem outra assinatura da Hubla valendo: é quem aceitou o upsell
+  // anual (a mensal segue viva na Hubla até alguém cancelar) ou comprou de novo.
+  const outraAssinatura =
+    !!existente?.hubla_assinatura_id &&
+    !!evento.assinatura_externa_id &&
+    existente.hubla_assinatura_id !== evento.assinatura_externa_id &&
+    (existente.situacao === "ativa" || existente.situacao === "atrasada");
+
+  if (outraAssinatura) {
+    const cicloAtual = Number(existente.ciclo_meses ?? 1);
+    const cicloEvento = plano?.cicloMeses ?? 1;
+
+    if (!APROVA.has(tipo)) {
+      // Atraso ou cancelamento da assinatura que foi trocada: a atual manda.
+      await marcar(
+        admin,
+        evento,
+        true,
+        `Aviso da assinatura ${evento.assinatura_externa_id}, que não é a atual da conta (${existente.hubla_assinatura_id}). Nada alterado.`,
+        contaId,
+        planoCodigo,
+      );
+      return { ok: true, contaId, motivo: "assinatura_substituida" as const };
+    }
+
+    const { enviarEmailEmSegundoPlano } = await import("@/lib/agentes.server");
+    if (cicloEvento < cicloAtual) {
+      // A mensal de quem já está no anual cobrou de novo: o anual segue valendo.
+      const renovacao = String(evento.payload?.event?.invoice?.type ?? "") === "renewal";
+      enviarEmailEmSegundoPlano({
+        tipo: "cancelar_assinatura",
+        conta_id: contaId,
+        assinatura_id: String(evento.assinatura_externa_id),
+        reembolsar: renovacao,
+      });
+      await marcar(
+        admin,
+        evento,
+        true,
+        `A conta está no anual (${existente.hubla_assinatura_id}) e a assinatura ${evento.assinatura_externa_id} cobrou${renovacao ? " uma renovação" : ""}. Cancele${renovacao ? " e reembolse" : ""} na Hubla.`,
+        contaId,
+        planoCodigo,
+      );
+      return { ok: true, contaId, motivo: "assinatura_a_cancelar" as const };
+    }
+
+    // A nova passa a valer; a anterior precisa ser cancelada no painel da Hubla.
+    enviarEmailEmSegundoPlano({
+      tipo: "cancelar_assinatura",
+      conta_id: contaId,
+      assinatura_id: String(existente.hubla_assinatura_id),
+      reembolsar: false,
+    });
+  }
+
   const agora = new Date();
   const patch: Record<string, unknown> = {
     comprador_email: evento.comprador_email,
@@ -391,12 +569,21 @@ export async function aplicarEventoHubla(admin: AnyClient, evento: HublaEventoRo
   };
 
   if (APROVA.has(tipo)) {
+    const ciclo = plano?.cicloMeses ?? 1;
     const proxima = new Date(agora);
-    proxima.setMonth(proxima.getMonth() + 1);
+    proxima.setMonth(proxima.getMonth() + ciclo);
     patch["situacao"] = "ativa";
     patch["cancelada_em"] = null;
     patch["proxima_renovacao"] = proxima.toISOString();
-    if (evento.valor_centavos) patch["valor_centavos"] = evento.valor_centavos;
+    patch["ciclo_meses"] = ciclo;
+    // valor_centavos é receita por mês (MRR no painel): o anual entra como 1/12
+    // do preço de tabela, porque o total da fatura traz os juros do parcelamento.
+    // Com order bump na mesma fatura, o total inclui o material.
+    if (ciclo >= 12 && plano?.precoAnualCentavos) {
+      patch["valor_centavos"] = Math.round(plano.precoAnualCentavos / 12);
+    } else if (evento.valor_centavos && !materiais.length) {
+      patch["valor_centavos"] = evento.valor_centavos;
+    }
     if (planoCodigo) patch["plano_codigo"] = planoCodigo;
     await admin
       .from("contas")
@@ -410,16 +597,12 @@ export async function aplicarEventoHubla(admin: AnyClient, evento: HublaEventoRo
     await admin.from("contas").update({ plano_codigo: "free" }).eq("id", contaId);
   }
 
-  const { data: existente } = await admin
-    .from("assinaturas")
-    .select("id")
-    .eq("conta_id", contaId)
-    .maybeSingle();
-
   if (existente) {
     await admin.from("assinaturas").update(patch).eq("conta_id", contaId);
   } else {
-    await admin.from("assinaturas").insert({ conta_id: contaId, plano_codigo: planoCodigo ?? "free", ...patch });
+    await admin
+      .from("assinaturas")
+      .insert({ conta_id: contaId, plano_codigo: planoCodigo ?? "free", ...patch });
   }
 
   await marcar(admin, evento, true, null, contaId, planoCodigo);

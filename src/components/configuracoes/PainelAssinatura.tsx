@@ -95,6 +95,7 @@ export function PainelAssinatura() {
 
   const plano = data.plano;
   const assinatura = billing?.assinatura ?? null;
+  const anual = (assinatura?.ciclo_meses ?? 1) >= 12 && !!plano?.preco_anual_centavos;
   const situacao = SITUACAO[assinatura?.situacao ?? "ativa"] ?? SITUACAO["ativa"]!;
   const diasTrial = assinatura?.trial_fim
     ? Math.max(0, Math.ceil((new Date(assinatura.trial_fim).getTime() - Date.now()) / 86400000))
@@ -126,7 +127,9 @@ export function PainelAssinatura() {
             <div className="num text-sm text-muted-foreground mt-1">
               {(plano?.preco_mensal_centavos ?? 0) === 0
                 ? "Sem custo"
-                : `${brl(plano?.preco_mensal_centavos ?? 0)} / mês`}
+                : anual
+                  ? `${brl(plano?.preco_anual_centavos ?? 0)} / ano`
+                  : `${brl(plano?.preco_mensal_centavos ?? 0)} / mês`}
             </div>
           </div>
           <div className="text-right">

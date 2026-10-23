@@ -1,11 +1,16 @@
 // email-agent: e-mails de marca do funil, enviados pela API do Resend.
 //
-// Dois tipos, os dois montados aqui a partir do banco — quem chama passa só
+// Três tipos, todos montados aqui a partir do banco — quem chama passa só
 // identificadores, nunca o texto, para esta função não virar um relay de
 // e-mail arbitrário:
 //   - dna_viral:   { tipo, lead_id }         link permanente do relatório.
 //   - boas_vindas: { tipo, email, lead_id? } pós-compra, com link para criar
 //                  a senha (link de recuperação gerado pelo Auth).
+//   - cancelar_assinatura: { tipo, conta_id, assinatura_id, reembolsar }
+//                  aviso interno: quem aceitou o upsell anual ainda tem a
+//                  mensal ativa na Hubla, e a Hubla não cancela por API. Vai
+//                  sempre para a caixa da equipe (EMAIL_EQUIPE, ou
+//                  EMAIL_RESPONDER_PARA), nunca para um endereço do pedido.
 //
 // E-mail de infraestrutura (esqueci minha senha) não passa por aqui: sai do
 // Supabase Auth pelo SMTP do Resend.
@@ -18,7 +23,8 @@ import {
 
 type Pedido =
   | { tipo: "dna_viral"; lead_id: string }
-  | { tipo: "boas_vindas"; email: string; lead_id?: string | null };
+  | { tipo: "boas_vindas"; email: string; lead_id?: string | null }
+  | { tipo: "cancelar_assinatura"; conta_id: string; assinatura_id: string; reembolsar?: boolean };
 
 type Lead = {
   id: string;
@@ -52,7 +58,11 @@ function escapar(texto: string): string {
 }
 
 function primeiroNome(nome: string | null | undefined): string {
-  return String(nome ?? "").trim().split(/\s+/)[0] ?? "";
+  return (
+    String(nome ?? "")
+      .trim()
+      .split(/\s+/)[0] ?? ""
+  );
 }
 
 function arquetipoDe(lead: Lead | null): string | null {
@@ -187,7 +197,9 @@ async function enviarDnaViral(leadId: string) {
         paragrafo(
           "Lá estão os gargalos que travam o seu perfil, os seus pilares de autoridade e os 3 roteiros prontos para gravar hoje. Dá para baixar em PDF.",
         ) +
-        paragrafo("Grave o primeiro ainda esta semana. A estrutura já está montada; falta a sua voz."),
+        paragrafo(
+          "Grave o primeiro ainda esta semana. A estrutura já está montada; falta a sua voz.",
+        ),
       site,
     );
 
@@ -296,6 +308,64 @@ async function enviarBoasVindas(email: string, leadId: string | null | undefined
   return json({ ok: true, enviado: true, id });
 }
 
+// ---------------------------------------------------------------------------
+// cancelar_assinatura (interno)
+// ---------------------------------------------------------------------------
+
+async function enviarCancelarAssinatura(
+  contaId: string,
+  assinaturaId: string,
+  reembolsar: boolean,
+) {
+  if (!UUID.test(contaId)) return json({ ok: false, error: "conta_id inválido" }, 400);
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(assinaturaId)) {
+    return json({ ok: false, error: "assinatura_id inválido" }, 400);
+  }
+  const para = Deno.env.get("EMAIL_EQUIPE") ?? Deno.env.get("EMAIL_RESPONDER_PARA");
+  if (!para)
+    throw new Error("EMAIL_EQUIPE ou EMAIL_RESPONDER_PARA ausente nos secrets das Edge Functions.");
+
+  const supabase = getServiceClient();
+  const [{ data: conta }, { data: assinatura }] = await Promise.all([
+    supabase.from("contas").select("nome").eq("id", contaId).maybeSingle(),
+    supabase.from("assinaturas").select("comprador_email").eq("conta_id", contaId).maybeSingle(),
+  ]);
+  if (!conta) return json({ ok: false, error: "conta não encontrada" }, 404);
+
+  const email = assinatura?.comprador_email ?? "(sem e-mail na assinatura)";
+  const acao = reembolsar ? "Cancelar e reembolsar" : "Cancelar";
+  const assunto = `${acao} a mensal de ${conta.nome} na Hubla`;
+  const passos = [
+    `No painel da Hubla, abra Assinaturas e busque por ${email}.`,
+    `Cancele a assinatura ${assinaturaId}${reembolsar ? " e reembolse a renovação que ela acabou de cobrar" : ""}.`,
+    "Não mexa na assinatura anual da mesma pessoa: é ela que vale para a conta.",
+  ];
+
+  const html = moldura(
+    paragrafo(
+      reembolsar
+        ? `<strong>${escapar(conta.nome)}</strong> está no plano anual, mas a mensal ainda cobrou uma renovação.`
+        : `<strong>${escapar(conta.nome)}</strong> aceitou o upsell do plano anual. A mensal continua ativa na Hubla e vai cobrar de novo no mês que vem se ninguém cancelar.`,
+    ) + paragrafo(passos.map((p, i) => `${i + 1}. ${escapar(p)}`).join("<br>")),
+    siteUrl(),
+  );
+  const texto = [
+    reembolsar
+      ? `${conta.nome} está no plano anual, mas a mensal ainda cobrou uma renovação.`
+      : `${conta.nome} aceitou o upsell do plano anual. A mensal continua ativa na Hubla.`,
+    ...passos.map((p, i) => `${i + 1}. ${p}`),
+  ].join("\n\n");
+
+  const id = await enviar({
+    para,
+    assunto,
+    html,
+    texto,
+    idempotencia: `cancelar-assinatura/${assinaturaId}/${reembolsar ? "reembolso" : "troca"}`,
+  });
+  return json({ ok: true, enviado: true, id });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -307,6 +377,13 @@ Deno.serve(async (req) => {
     if (pedido?.tipo === "dna_viral") return await enviarDnaViral(String(pedido.lead_id ?? ""));
     if (pedido?.tipo === "boas_vindas") {
       return await enviarBoasVindas(String(pedido.email ?? ""), pedido.lead_id ?? null);
+    }
+    if (pedido?.tipo === "cancelar_assinatura") {
+      return await enviarCancelarAssinatura(
+        String(pedido.conta_id ?? ""),
+        String(pedido.assinatura_id ?? ""),
+        pedido.reembolsar === true,
+      );
     }
     return json({ ok: false, error: "tipo desconhecido" }, 400);
   } catch (e) {

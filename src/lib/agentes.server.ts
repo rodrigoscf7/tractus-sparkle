@@ -54,9 +54,11 @@ function headersInternos(): Promise<Record<string, string>> {
   if (headersCache) return headersCache;
 
   headersCache = (async () => {
-    const { data, error } = await (supabaseAdmin as unknown as {
-      rpc: (fn: string) => Promise<{ data: unknown; error: { message: string } | null }>;
-    }).rpc("agent_internal_headers");
+    const { data, error } = await (
+      supabaseAdmin as unknown as {
+        rpc: (fn: string) => Promise<{ data: unknown; error: { message: string } | null }>;
+      }
+    ).rpc("agent_internal_headers");
 
     if (error) throw new Error(`Falha ao ler os segredos dos agentes: ${error.message}`);
     if (!data || typeof data !== "object") {
@@ -154,7 +156,14 @@ export function dispararCuradoria(referenciaIds: string[]): void {
 
 export type PedidoEmail =
   | { tipo: "dna_viral"; lead_id: string }
-  | { tipo: "boas_vindas"; email: string; lead_id?: string | null };
+  | { tipo: "boas_vindas"; email: string; lead_id?: string | null }
+  | {
+      tipo: "cancelar_assinatura";
+      conta_id: string;
+      assinatura_id: string;
+      /** A assinatura antiga já cobrou uma renovação: além de cancelar, reembolsar. */
+      reembolsar: boolean;
+    };
 
 /**
  * Envia um e-mail do funil sem segurar quem chamou.

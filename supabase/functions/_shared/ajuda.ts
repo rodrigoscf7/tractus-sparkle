@@ -10,6 +10,7 @@ export const ROTAS_ATALHO: Record<string, string> = {
   "/roteiros": "Roteiros",
   "/carrosseis": "Carrosséis",
   "/dna": "DNA viral",
+  "/materiais": "Materiais",
   "/configuracoes": "Configurações",
   "/assinatura": "Assinatura",
 };
@@ -19,14 +20,15 @@ export const MANUAL_DO_APP = `# prevIA: manual de uso
 A prevIA produz conteúdo para advogados: toda semana ela analisa os posts que mais performaram nos perfis de referência da pessoa e entrega um plano de vídeos (Reels falados) para os dias em que ela se comprometeu a postar, com roteiro pronto e, se quiser, carrossel.
 
 ## Menu
-No computador, o menu fica na lateral, em dois grupos. Produção: Hoje, Plano da semana, Roteiros e Carrosséis. Marca: DNA viral. No rodapé do menu: o sininho de notificações (só aparece se ainda não estiverem ativas), Configurações, tema claro/escuro e Sair.
-No celular, a barra embaixo tem Hoje, Plano, Roteiros, Carrosséis e Mais. "Mais" abre o menu completo (DNA viral, Configurações, notificações, tema e Sair).
+No computador, o menu fica na lateral, em dois grupos. Produção: Hoje, Plano da semana, Roteiros e Carrosséis. Marca: DNA viral e Materiais. No rodapé do menu: o sininho de notificações (só aparece se ainda não estiverem ativas), Configurações, tema claro/escuro e Sair.
+No celular, a barra embaixo tem Hoje, Plano, Roteiros, Carrosséis e Mais. "Mais" abre o menu completo (DNA viral, Materiais, Configurações, notificações, tema e Sair).
 O número ao lado de Roteiros é quantos roteiros estão esperando leitura. A bolinha em Plano aparece quando o plano da semana chegou e espera aprovação.
 - Hoje (/hoje): a próxima ação do dia e a semana do ritmo.
 - Plano da semana (/plano): os vídeos da semana para aprovar.
 - Roteiros (/roteiros): todos os roteiros e em que etapa está cada um.
 - Carrosséis (/carrosseis): os carrosséis prontos e os roteiros que ainda podem virar carrossel.
 - DNA viral (/dna): posicionamento, voz, público, pilares e fórmulas de gancho.
+- Materiais (/materiais): materiais de apoio comprados à parte (Banco de Ganchos e Gravando com o Celular).
 - Configurações (/configuracoes), em abas: Perfil e voz, Referências, Carrossel, Dias de postar, Notificações e Assinatura.
 "Acompanhar" agora se chama Roteiros, "Minha marca" agora se chama Configurações e "Manual de marca" agora se chama DNA viral. A Assinatura agora é uma aba de Configurações (o endereço /assinatura leva para ela). A tela "Bastidores" não existe mais para clientes.
 
@@ -110,6 +112,13 @@ Campos: tom de voz, como você fecha seus posts (CTA padrão), o que buscar nas 
 ## DNA viral (/dna)
 Documento com posicionamento, como você soa, público (dores e objeções), pilares, fórmulas de gancho, bordões, lista proibida e as primeiras quatro semanas. É gerado no fim do onboarding. Há "Baixar PDF" e o botão para gerar de novo a partir das respostas do onboarding.
 
+## Materiais (/materiais)
+- Dois materiais vendidos à parte, por pagamento único: "Banco de Ganchos · Direito Previdenciário" (R$ 27) e "Gravando com o Celular" (R$ 17). Os dois aparecem como opção no checkout da assinatura.
+- Quem comprou vê o material liberado em Materiais. O Banco de Ganchos tem busca, filtro por tema (aposentadoria, especial, BPC, incapacidade, pensão, maternidade, CNIS e revisão, planejamento, rural, pessoa com deficiência) e um botão para copiar cada gancho. O guia Gravando com o Celular traz luz, enquadramento, áudio, configurações do celular, como ler o roteiro, voz, edição, cuidados da advocacia e um checklist "Antes de apertar o REC". Os dois têm "Baixar PDF".
+- Material que a pessoa não tem aparece com cadeado e o botão "Liberar por R$ …", que abre o checkout da Hubla. Libera sozinho depois que o pagamento é aprovado (Pix pode levar alguns minutos).
+- O material é da pessoa mesmo se ela cancelar a assinatura. Só é retirado em caso de reembolso ou chargeback do próprio material.
+- Comprou e não apareceu: confirmar que o pagamento foi aprovado e que foi feito no mesmo e-mail da conta. Se não resolver, suporte humano.
+
 ## Ritmo (dias de postar)
 - Definido no onboarding (padrão: segunda, quarta e sexta). O plano da semana tem um vídeo para cada dia do ritmo.
 - Para mudar: Configurações → aba Dias de postar. Os sete dias aparecem como botões (de segunda a domingo); marcar ou desmarcar e clicar em "Salvar dias". É preciso ao menos um dia. Vale a partir do próximo plano. O assistente também pode mudar, com confirmação.
@@ -124,6 +133,7 @@ Documento com posicionamento, como você soa, público (dores e objeções), pil
 
 ## Assinatura (Configurações → aba Assinatura)
 - Plano prevIA VIRAL: R$ 47,90 por mês (de R$ 197), no cartão ou no Pix, com até 5 referências, 30 roteiros e 30 carrosséis por mês. O consumo zera no dia 1 de cada mês. Cancelamento a qualquer momento, sem multa, e reembolso integral em até 7 dias após a primeira compra.
+- Plano anual: R$ 247 por ano (até 12x no cartão, ou Pix), com os mesmos limites por mês do mensal. É oferecido logo depois da compra da mensal, na página de obrigado. Quem aceita fica no anual a partir dali: a equipe cancela a mensal na Hubla antes da próxima cobrança, e o mês já pago não é devolvido. Na aba Assinatura, o anual aparece como "R$ 247 / ano" com a data de renovação.
 - A cobrança é feita pela Hubla. Cancelamento, troca de cartão, nota fiscal e reembolso são tratados pelo suporte humano.
 - "Em teste" mostra quantos dias de teste restam. Quando o teste acaba sem assinatura, os planos semanais param.
 - Sem assinatura ativa (teste vencido, cancelamento, reembolso ou chargeback), a conta vai para o plano Gratuito, que não gera nada: nem plano da semana, nem roteiro, nem carrossel, nem imagem. Login e tudo o que já foi produzido continuam acessíveis. Uma faixa no topo do app avisa "Sua assinatura não está ativa" com o link "Assinar". Para voltar, assinar o prevIA VIRAL pelo botão "Assinar" em Configurações → Assinatura; libera sozinho depois que a Hubla aprova o pagamento.

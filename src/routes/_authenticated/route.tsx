@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/re
 import { supabase } from "@/integrations/supabase/client";
 import {
   Activity,
+  BookOpen,
   CalendarDays,
   CalendarRange,
   Dna,
@@ -151,6 +152,9 @@ function AuthenticatedLayout() {
         <div className={ROTULO_GRUPO}>Marca</div>
         <NavLink to="/dna" icon={<Dna className="w-4 h-4" />}>
           DNA viral
+        </NavLink>
+        <NavLink to="/materiais" icon={<BookOpen className="w-4 h-4" />}>
+          Materiais
         </NavLink>
 
         {isAdmin && (
