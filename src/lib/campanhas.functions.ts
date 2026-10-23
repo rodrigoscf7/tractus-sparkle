@@ -9,7 +9,9 @@ import { assertAdmin } from "@/lib/billing.functions";
  * visita. O funil é por coorte: leads que começaram no período e o que eles
  * fizeram depois, inclusive comprar fora do período. Receita é o que a Hubla
  * aprovou em vendas (renovação fica de fora), sem os juros do parcelamento.
- * O investimento é lançado à mão em campanha_investimentos.
+ * O investimento é o gasto lido da conta de anúncios do Meta
+ * (meta_anuncios_diario, ligado pelo nome da campanha e do anúncio) somado ao
+ * que foi lançado à mão em campanha_investimentos (gasto fora do Meta).
  */
 
 type AnyClient = any;
@@ -44,6 +46,9 @@ export type LinhaFunil = {
   compras: number;
   receitaCentavos: number;
   investimentoCentavos: number;
+  /** Do relatório do Meta: zero para o que não veio de anúncio. */
+  impressoes: number;
+  cliquesLink: number;
 };
 
 function linhaVazia(nome: string): LinhaFunil {
@@ -55,24 +60,34 @@ function linhaVazia(nome: string): LinhaFunil {
     compras: 0,
     receitaCentavos: 0,
     investimentoCentavos: 0,
+    impressoes: 0,
+    cliquesLink: 0,
   };
 }
+
+/** Nome de campanha e de anúncio comparados sem caixa nem espaço nas pontas. */
+const chave = (nome: string) => nome.trim().toLowerCase();
 
 export type Alerta = { nivel: "atencao" | "info" | "bom"; texto: string };
 
 export const getPainelCampanhas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { dias?: number }) => ({
+  .inputValidator((data: { dias?: number; atualizar?: boolean }) => ({
     dias: [7, 14, 30, 90].includes(Number(data?.dias)) ? Number(data.dias) : 30,
+    atualizar: data?.atualizar === true,
   }))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as any, context.userId);
     const db = await admin();
     const { normalizarEventoHubla } = await import("@/lib/hubla.server");
+    const { garantirGastoMeta } = await import("@/lib/meta-ads.server");
 
     const desde = new Date(Date.now() - data.dias * 86_400_000);
     const desdeIso = desde.toISOString();
     const desdeDia = diaLocal(desdeIso);
+
+    // Relê a conta de anúncios se a última leitura tiver mais de uma hora.
+    const metaAds = await garantirGastoMeta(db, data.dias + 1, data.atualizar);
 
     const [
       { data: leads },
@@ -81,6 +96,7 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
       { data: investimentos },
       { data: planos },
       { data: materiais },
+      { data: gastoMeta },
     ] = await Promise.all([
       db
         .from("oferta_leads")
@@ -110,6 +126,11 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
         .order("dia", { ascending: false }),
       db.from("planos").select("codigo, hubla_oferta_anual_id"),
       db.from("materiais").select("codigo, nome, hubla_produto_id, hubla_oferta_id"),
+      db
+        .from("meta_anuncios_diario")
+        .select("dia, campanha, anuncio, gasto_centavos, impressoes, cliques_link")
+        .gte("dia", desdeDia)
+        .limit(20000),
     ]);
 
     const listaLeads = (leads ?? []) as any[];
@@ -191,16 +212,38 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
       }
     }
 
-    const investimentoPorCampanha = new Map<string, number>();
-    for (const i of (investimentos ?? []) as any[]) {
-      investimentoPorCampanha.set(
-        i.campanha,
-        (investimentoPorCampanha.get(i.campanha) ?? 0) + Number(i.valor_centavos),
-      );
+    // A campanha do anúncio é achada pelo nome, como chega na UTM.
+    const nomePorChave = new Map([...campanhas.keys()].map((n) => [chave(n), n]));
+    const campanhaPorNome = (nome: string) => {
+      const existente = nomePorChave.get(chave(nome));
+      if (existente) return campanhas.get(existente)!;
+      campanhas.set(nome, { ...linhaVazia(nome), criativos: new Map() });
+      nomePorChave.set(chave(nome), nome);
+      return campanhas.get(nome)!;
+    };
+
+    for (const g of (gastoMeta ?? []) as any[]) {
+      const c = campanhaPorNome(String(g.campanha ?? "Campanha sem nome"));
+      const nomeAnuncio = String(g.anuncio ?? "Anúncio sem nome");
+      let cr = [...c.criativos.values()].find((x) => chave(x.nome) === chave(nomeAnuncio));
+      if (!cr) {
+        cr = linhaVazia(nomeAnuncio);
+        c.criativos.set(nomeAnuncio, cr);
+      }
+      const gasto = Number(g.gasto_centavos) || 0;
+      const impressoes = Number(g.impressoes) || 0;
+      const cliques = Number(g.cliques_link) || 0;
+      for (const alvo of [total, c, cr]) {
+        alvo.investimentoCentavos += gasto;
+        alvo.impressoes += impressoes;
+        alvo.cliquesLink += cliques;
+      }
     }
-    for (const [nome, valor] of investimentoPorCampanha) {
-      if (!campanhas.has(nome)) campanhas.set(nome, { ...linhaVazia(nome), criativos: new Map() });
-      campanhas.get(nome)!.investimentoCentavos = valor;
+
+    // Lançado à mão: gasto fora do Meta, por campanha.
+    for (const i of (investimentos ?? []) as any[]) {
+      const valor = Number(i.valor_centavos) || 0;
+      campanhaPorNome(String(i.campanha)).investimentoCentavos += valor;
       total.investimentoCentavos += valor;
     }
 
@@ -215,12 +258,13 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
       );
 
     // ---------- por dia ----------
-    const dias: { dia: string; diagnosticos: number; compras: number }[] = [];
+    const dias: { dia: string; diagnosticos: number; compras: number; investimento: number }[] = [];
     for (let i = data.dias - 1; i >= 0; i--) {
       dias.push({
         dia: diaLocal(new Date(Date.now() - i * 86_400_000).toISOString()),
         diagnosticos: 0,
         compras: 0,
+        investimento: 0,
       });
     }
     const indiceDia = new Map(dias.map((d, i) => [d.dia, i]));
@@ -233,6 +277,12 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
       if (!v.temPlano) continue;
       const i = indiceDia.get(v.dia);
       if (i !== undefined) dias[i]!.compras++;
+    }
+    // Em reais, para o gráfico.
+    for (const g of [...((gastoMeta ?? []) as any[]), ...((investimentos ?? []) as any[])]) {
+      const i = indiceDia.get(String(g.dia));
+      if (i !== undefined)
+        dias[i]!.investimento += (Number(g.gasto_centavos ?? g.valor_centavos) || 0) / 100;
     }
 
     // ---------- oferta ----------
@@ -343,6 +393,12 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
         nivel: "atencao",
         texto: "VITE_META_PIXEL_ID não está configurado: o Pixel não carrega no funil.",
       });
+    if (metaAds.erro) {
+      alertas.push({
+        nivel: "atencao",
+        texto: `Não consegui ler a conta de anúncios: ${metaAds.erro}. O gasto mostrado é o da última leitura.`,
+      });
+    }
     if (rastreio.leads >= 5 && rastreio.comCampanha / rastreio.leads < 0.7) {
       alertas.push({
         nivel: "atencao",
@@ -352,6 +408,12 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
     const conversaoMedia = total.diagnosticos ? total.compras / total.diagnosticos : 0;
     for (const c of linhasCampanha) {
       if (c.nome === SEM_ORIGEM) continue;
+      if (c.investimentoCentavos >= 5_000 && c.leads === 0) {
+        alertas.push({
+          nivel: "atencao",
+          texto: `${c.nome}: gastou ${brl(c.investimentoCentavos)} e nenhum lead chegou com essa campanha. Confira os parâmetros de URL dos anúncios dela.`,
+        });
+      }
       if (c.diagnosticos >= 20 && c.compras === 0) {
         alertas.push({
           nivel: "atencao",
@@ -402,6 +464,7 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
       rastreio,
       recuperar,
       alertas,
+      metaAds,
       investimentos: ((investimentos ?? []) as any[]).map((i) => ({
         id: i.id as string,
         dia: i.dia as string,

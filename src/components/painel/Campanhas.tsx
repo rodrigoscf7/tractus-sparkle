@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Fragment, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -9,6 +9,7 @@ import {
   Copy,
   Info,
   MessageCircle,
+  RefreshCw,
   ThumbsUp,
   Trash2,
 } from "lucide-react";
@@ -48,6 +49,8 @@ const brl = (centavos: number) =>
 const pct = (parte: number, todo: number) =>
   todo > 0 ? `${Math.round((parte / todo) * 100)}%` : "—";
 const razao = (a: number, b: number) => (b > 0 ? (a / b).toFixed(2).replace(".", ",") : "—");
+const ctr = (cliques: number, impressoes: number) =>
+  impressoes > 0 ? `${((cliques / impressoes) * 100).toFixed(2).replace(".", ",")}%` : "—";
 const porUnidade = (centavos: number, n: number) =>
   n > 0 && centavos > 0 ? brl(Math.round(centavos / n)) : "—";
 
@@ -57,11 +60,28 @@ function hojeLocal() {
 
 export function Campanhas() {
   const [dias, setDias] = useState<number>(30);
+  const [relendo, setRelendo] = useState(false);
   const carregar = useServerFn(getPainelCampanhas);
+  const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-campanhas", dias],
     queryFn: () => carregar({ data: { dias } }),
   });
+
+  /** Relê a conta de anúncios agora, sem esperar a hora de intervalo. */
+  async function atualizarMeta() {
+    setRelendo(true);
+    try {
+      const novo = await carregar({ data: { dias, atualizar: true } });
+      queryClient.setQueryData(["admin-campanhas", dias], novo);
+      if (novo.metaAds.erro) toast.error("O Meta recusou a leitura. Veja o aviso no topo.");
+      else toast.success("Gasto do Meta atualizado.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao atualizar.");
+    } finally {
+      setRelendo(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -93,12 +113,29 @@ export function Campanhas() {
       {isError && (
         <EstadoErro titulo="Não consegui carregar as campanhas" onTentarDeNovo={() => refetch()} />
       )}
-      {data && <Painel data={data} recarregar={() => refetch()} />}
+      {data && (
+        <Painel
+          data={data}
+          recarregar={() => refetch()}
+          atualizarMeta={atualizarMeta}
+          relendo={relendo}
+        />
+      )}
     </div>
   );
 }
 
-function Painel({ data, recarregar }: { data: PainelCampanhas; recarregar: () => void }) {
+function Painel({
+  data,
+  recarregar,
+  atualizarMeta,
+  relendo,
+}: {
+  data: PainelCampanhas;
+  recarregar: () => void;
+  atualizarMeta: () => void;
+  relendo: boolean;
+}) {
   const t = data.total;
   return (
     <>
@@ -128,7 +165,16 @@ function Painel({ data, recarregar }: { data: PainelCampanhas; recarregar: () =>
       )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-5">
-        <Kpi label="Começaram o quiz" valor={String(t.leads)} />
+        <Kpi
+          label="Cliques no anúncio"
+          valor={t.cliquesLink ? t.cliquesLink.toLocaleString("pt-BR") : "—"}
+          detalhe={t.impressoes ? `CTR ${ctr(t.cliquesLink, t.impressoes)}` : "sem dados do Meta"}
+        />
+        <Kpi
+          label="Começaram o quiz"
+          valor={String(t.leads)}
+          detalhe={t.cliquesLink ? `${pct(t.leads, t.cliquesLink)} dos cliques` : undefined}
+        />
         <Kpi
           label="Diagnósticos"
           valor={String(t.diagnosticos)}
@@ -152,7 +198,7 @@ function Painel({ data, recarregar }: { data: PainelCampanhas; recarregar: () =>
         <Kpi
           label="Investimento"
           valor={t.investimentoCentavos ? brl(t.investimentoCentavos) : "—"}
-          detalhe="lançado à mão"
+          detalhe={data.metaAds.configurado ? "Meta + lançado à mão" : "lançado à mão"}
         />
         <Kpi
           label="Custo por diagnóstico"
@@ -167,7 +213,8 @@ function Painel({ data, recarregar }: { data: PainelCampanhas; recarregar: () =>
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <GraficoDia titulo="Investimento por dia" dados={data.porDia} chave="investimento" />
         <GraficoDia titulo="Diagnósticos por dia" dados={data.porDia} chave="diagnosticos" />
         <GraficoDia titulo="Compras por dia" dados={data.porDia} chave="compras" />
       </div>
@@ -176,7 +223,12 @@ function Painel({ data, recarregar }: { data: PainelCampanhas; recarregar: () =>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Oferta oferta={data.oferta} />
-        <Rastreio r={data.rastreio} />
+        <Rastreio
+          r={data.rastreio}
+          metaAds={data.metaAds}
+          atualizarMeta={atualizarMeta}
+          relendo={relendo}
+        />
       </div>
 
       <Card className="p-5">
@@ -218,15 +270,18 @@ function GraficoDia({
 }: {
   titulo: string;
   dados: PainelCampanhas["porDia"];
-  chave: "diagnosticos" | "compras";
+  chave: "diagnosticos" | "compras" | "investimento";
 }) {
   const total = dados.reduce((s, d) => s + d[chave], 0);
+  const dinheiro = chave === "investimento";
+  const formatar = (v: number) =>
+    dinheiro ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : String(v);
   const rotuloDia = (dia: string) => `${dia.slice(8, 10)}/${dia.slice(5, 7)}`;
   return (
     <Card className="p-5">
       <div className="flex items-baseline justify-between gap-3">
         <div className={ROTULO}>{titulo}</div>
-        <div className="num text-sm text-muted-foreground">{total} no período</div>
+        <div className="num text-sm text-muted-foreground">{formatar(total)} no período</div>
       </div>
       <div className="mt-4 h-44">
         <ResponsiveContainer width="100%" height="100%">
@@ -245,7 +300,7 @@ function GraficoDia({
               minTickGap={24}
             />
             <YAxis
-              allowDecimals={false}
+              allowDecimals={dinheiro}
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               tickLine={false}
               axisLine={false}
@@ -258,8 +313,12 @@ function GraficoDia({
                   <div className="rounded-md border border-border bg-background px-3 py-2 text-xs shadow-sm">
                     <div className="text-muted-foreground">{rotuloDia(String(label))}</div>
                     <div className="num mt-0.5 font-medium">
-                      {String(payload[0]?.value ?? 0)}{" "}
-                      {chave === "compras" ? "compra(s)" : "diagnóstico(s)"}
+                      {formatar(Number(payload[0]?.value ?? 0))}
+                      {chave === "compras"
+                        ? " compra(s)"
+                        : chave === "diagnosticos"
+                          ? " diagnóstico(s)"
+                          : ""}
                     </div>
                   </div>
                 ) : null
@@ -276,6 +335,13 @@ function GraficoDia({
 function Celulas({ l }: { l: LinhaFunil }) {
   return (
     <>
+      <td className="num px-3 py-2 text-right">
+        {l.impressoes ? l.impressoes.toLocaleString("pt-BR") : "—"}
+      </td>
+      <td className="num px-3 py-2 text-right">
+        {l.cliquesLink ? l.cliquesLink.toLocaleString("pt-BR") : "—"}
+      </td>
+      <td className="num px-3 py-2 text-right">{ctr(l.cliquesLink, l.impressoes)}</td>
       <td className="num px-3 py-2 text-right">{l.leads}</td>
       <td className="num px-3 py-2 text-right">{l.diagnosticos}</td>
       <td className="num px-3 py-2 text-right">{l.checkouts}</td>
@@ -312,17 +378,21 @@ function TabelaCampanhas({ campanhas }: { campanhas: PainelCampanhas["campanhas"
       <div className="px-5 pt-5">
         <div className={ROTULO}>Campanhas e criativos</div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Clique numa campanha para ver os criativos (utm_content). Investimento é por campanha.
+          Clique numa campanha para ver os anúncios. Impressões, cliques no link e gasto vêm do
+          Meta; o resto, do funil. A ligação é pelo nome da campanha e do anúncio.
         </p>
       </div>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[920px] text-sm">
+        <table className="w-full min-w-[1240px] text-sm">
           <thead>
             <tr className="border-y border-border text-left text-xs text-muted-foreground">
               <th className="px-5 py-2 font-medium">Campanha</th>
+              <th className="px-3 py-2 text-right font-medium">Impressões</th>
+              <th className="px-3 py-2 text-right font-medium">Cliques</th>
+              <th className="px-3 py-2 text-right font-medium">CTR</th>
               <th className="px-3 py-2 text-right font-medium">Leads</th>
               <th className="px-3 py-2 text-right font-medium">Diagnósticos</th>
-              <th className="px-3 py-2 text-right font-medium">Cliques</th>
+              <th className="px-3 py-2 text-right font-medium">Clic. comprar</th>
               <th className="px-3 py-2 text-right font-medium">Compras</th>
               <th className="px-3 py-2 text-right font-medium">Conversão</th>
               <th className="px-3 py-2 text-right font-medium">Receita</th>
@@ -335,7 +405,7 @@ function TabelaCampanhas({ campanhas }: { campanhas: PainelCampanhas["campanhas"
           <tbody>
             {campanhas.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-5 py-6 text-center text-muted-foreground">
+                <td colSpan={14} className="px-5 py-6 text-center text-muted-foreground">
                   Nenhum lead no período.
                 </td>
               </tr>
@@ -403,7 +473,24 @@ function Oferta({ oferta }: { oferta: PainelCampanhas["oferta"] }) {
   );
 }
 
-function Rastreio({ r }: { r: PainelCampanhas["rastreio"] }) {
+function Rastreio({
+  r,
+  metaAds,
+  atualizarMeta,
+  relendo,
+}: {
+  r: PainelCampanhas["rastreio"];
+  metaAds: PainelCampanhas["metaAds"];
+  atualizarMeta: () => void;
+  relendo: boolean;
+}) {
+  const hora = (iso: string) =>
+    new Date(iso).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   const status = (ok: boolean, rotulo: string) => (
     <Badge variant={ok ? "secondary" : "destructive"}>{rotulo}</Badge>
   );
@@ -414,7 +501,28 @@ function Rastreio({ r }: { r: PainelCampanhas["rastreio"] }) {
         {status(r.pixel, r.pixel ? "Pixel configurado" : "Pixel ausente")}
         {status(r.capi, r.capi ? "API de Conversões ligada" : "API de Conversões desligada")}
         {r.modoTeste && <Badge variant="destructive">Modo de teste</Badge>}
+        {status(
+          metaAds.configurado && !metaAds.erro,
+          !metaAds.configurado
+            ? "Conta de anúncios não conectada"
+            : metaAds.erro
+              ? "Conta de anúncios com erro"
+              : "Conta de anúncios conectada",
+        )}
       </div>
+      {metaAds.configurado && (
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <span>
+            Gasto do Meta{" "}
+            {metaAds.ultimaEm ? `lido em ${hora(metaAds.ultimaEm)}` : "ainda não lido"} · relê
+            sozinho a cada hora
+          </span>
+          <Button variant="outline" size="sm" onClick={atualizarMeta} disabled={relendo}>
+            <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", relendo && "animate-spin")} /> Atualizar
+            agora
+          </Button>
+        </div>
+      )}
       <div className="mt-4 space-y-4">
         <Metrica label="Leads com campanha (UTM)" usado={r.comCampanha} limite={r.leads} />
         <Metrica label="Leads vindos de clique em anúncio" usado={r.comClique} limite={r.leads} />
@@ -465,8 +573,9 @@ function Investimentos({ data, recarregar }: { data: PainelCampanhas; recarregar
     <Card className="p-5">
       <div className={ROTULO}>Investimento</div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Lance o gasto de cada campanha por dia (o mesmo dia e campanha substitui o valor). O nome
-        precisa ser igual ao da campanha no Meta, que é o que chega na UTM.
+        {data.metaAds.configurado
+          ? "O gasto do Meta entra sozinho. Lance aqui só o que não passa pela conta de anúncios (outro canal, influenciador), por dia e campanha; o mesmo dia e campanha substitui o valor."
+          : "Lance o gasto de cada campanha por dia (o mesmo dia e campanha substitui o valor). O nome precisa ser igual ao da campanha no Meta, que é o que chega na UTM."}
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-[150px_1fr_140px_auto] sm:items-end">
         <div>
