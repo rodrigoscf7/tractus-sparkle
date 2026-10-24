@@ -454,10 +454,10 @@ function Oferta({ oferta }: { oferta: PainelCampanhas["oferta"] }) {
     <Card className="p-5">
       <div className={ROTULO}>Oferta</div>
       <p className="mt-1 text-sm text-muted-foreground">
-        {oferta.vendas} venda(s) do plano · {brl(oferta.receitaCentavos)} com upsell e order bumps
+        {oferta.vendas} venda(s) do plano · {brl(oferta.receitaCentavos)} com plano anual e order bumps
       </p>
       <div className="mt-4 space-y-4">
-        <Metrica label="Upsell anual aceito" usado={oferta.anual} limite={oferta.compradores} />
+        <Metrica label="Plano anual" usado={oferta.anual} limite={oferta.compradores} />
         {oferta.materiais.map((m) => (
           <Metrica
             key={m.codigo}

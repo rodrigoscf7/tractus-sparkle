@@ -11,7 +11,7 @@ import {
 } from "../_shared/agent-utils.ts";
 
 // ---------------------------------------------------------------------------
-// admin_venda: { tipo, evento_id } aviso aos admins de venda, upsell, material
+// admin_venda: { tipo, evento_id } aviso aos admins de venda, plano anual, material
 // e reembolso. Montado aqui a partir de hubla_eventos (quem chama passa só o
 // id), uma vez por evento.
 // ---------------------------------------------------------------------------
@@ -83,7 +83,7 @@ async function avisarVenda(eventoId: string): Promise<number> {
 
   let titulo: string;
   if (!aprovada) titulo = `${chargeback ? "Chargeback" : "Reembolso"} · ${brl(centavos)}`;
-  else if (plano && anual) titulo = `Upsell anual · ${brl(centavos)}`;
+  else if (plano && anual) titulo = `Plano anual · ${brl(centavos)}`;
   else if (plano) titulo = `Nova venda · ${brl(centavos)}`;
   else titulo = `Material vendido · ${brl(centavos)}`;
 

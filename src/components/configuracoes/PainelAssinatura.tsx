@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, ExternalLink } from "lucide-react";
+import { CalendarRange, Check, ExternalLink } from "lucide-react";
 import { useConta, TIPOS_USO } from "@/hooks/use-conta";
 import { getMinhaAssinatura } from "@/lib/assinatura.functions";
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "@/components/estados";
@@ -97,13 +97,21 @@ export function PainelAssinatura() {
   const assinatura = billing?.assinatura ?? null;
   const anual = (assinatura?.ciclo_meses ?? 1) >= 12 && !!plano?.preco_anual_centavos;
   const situacao = SITUACAO[assinatura?.situacao ?? "ativa"] ?? SITUACAO["ativa"]!;
+  const planoAnual = (billing?.planos ?? []).find(
+    (p: any) => p.hubla_oferta_anual_id && p.preco_anual_centavos > 0,
+  ) as Record<string, any> | undefined;
   const diasTrial = assinatura?.trial_fim
     ? Math.max(0, Math.ceil((new Date(assinatura.trial_fim).getTime() - Date.now()) / 86400000))
     : null;
 
-  function checkout(p: Record<string, any>) {
-    if (!p.checkout_url) return null;
-    const url = new URL(String(p.checkout_url));
+  function checkout(p: Record<string, any>, ofertaAnual = false) {
+    const base = ofertaAnual
+      ? p.hubla_oferta_anual_id
+        ? `https://pay.hub.la/${p.hubla_oferta_anual_id}`
+        : null
+      : p.checkout_url;
+    if (!base) return null;
+    const url = new URL(String(base));
     if (billing?.email) url.searchParams.set("email", billing.email);
     // `c-<conta>` no sck: o webhook da Hubla libera esta conta mesmo que o
     // e-mail do pagamento seja outro.
@@ -189,10 +197,25 @@ export function PainelAssinatura() {
         </Card>
       </div>
 
+      {planoAnual && !anual && (
+        <TrocaAnual
+          plano={planoAnual}
+          mensalAtiva={
+            assinatura?.situacao === "ativa" && data.conta.plano_codigo === planoAnual.codigo
+          }
+          renovaEm={assinatura?.proxima_renovacao ?? null}
+          link={checkout(planoAnual, true)}
+        />
+      )}
+
       <h3 className="font-display text-xl font-semibold mt-8 mb-3">Planos</h3>
       <div className="grid gap-4 md:grid-cols-3">
         {(billing?.planos ?? []).map((p: any) => {
-          const atual = p.codigo === data.conta.plano_codigo;
+          // Em teste (cortesia ou trial) o plano é o mesmo, mas ainda não foi pago:
+          // o botão de assinar continua aparecendo.
+          const atual =
+            p.codigo === data.conta.plano_codigo &&
+            (assinatura?.situacao === "ativa" || assinatura?.situacao === "atrasada");
           const link = checkout(p);
           return (
             <Card
@@ -250,5 +273,86 @@ export function PainelAssinatura() {
         processado pela Hubla e o plano é liberado automaticamente após a aprovação.
       </p>
     </div>
+  );
+}
+
+/**
+ * Oferta do plano anual dentro do app, para quem já usa: explica a conta e,
+ * para quem está na mensal, como a troca funciona (a Hubla não converte uma
+ * assinatura na outra; a equipe cancela a mensal quando o anual é aprovado).
+ */
+function TrocaAnual({
+  plano,
+  mensalAtiva,
+  renovaEm,
+  link,
+}: {
+  plano: Record<string, any>;
+  mensalAtiva: boolean;
+  renovaEm: string | null;
+  link: string | null;
+}) {
+  const mensal = Number(plano.preco_mensal_centavos) || 0;
+  const anual = Number(plano.preco_anual_centavos) || 0;
+  const dozeMeses = mensal * 12;
+  const economia = dozeMeses - anual;
+  if (!link || economia <= 0) return null;
+  const renova = renovaEm ? new Date(renovaEm).toLocaleDateString("pt-BR") : null;
+
+  return (
+    <Card className="mt-4 p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-xl">
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
+            <CalendarRange className="h-4 w-4" /> Plano anual
+          </div>
+          <div className="font-display text-xl font-semibold mt-2">
+            {mensalAtiva ? "Troque a mensalidade pelo plano anual" : "Assine por um ano"}
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            No mensal, 12 meses custam <span className="num">{brl(dozeMeses)}</span>. No anual,{" "}
+            <span className="num">{brl(anual)}</span>: <span className="num">{brl(economia)}</span>{" "}
+            a menos, com os mesmos limites por mês.
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="num font-display text-2xl">{brl(anual)}</div>
+          <div className="text-xs text-muted-foreground">por ano · até 12x no cartão ou Pix</div>
+          <div className="num text-xs text-muted-foreground mt-1">
+            à vista, sai por {brl(Math.round(anual / 12))} por mês
+          </div>
+        </div>
+      </div>
+
+      {mensalAtiva && (
+        <div className="mt-5 rounded-md border border-border bg-surface p-4 text-sm">
+          <div className="font-medium">Como funciona a troca</div>
+          <ol className="mt-2 space-y-1.5 text-muted-foreground list-decimal pl-5">
+            <li>Você paga o anual pelo botão abaixo.</li>
+            <li>Assim que o pagamento é aprovado, a sua conta passa para o anual.</li>
+            <li>
+              A nossa equipe cancela a sua mensalidade na Hubla antes da próxima cobrança. Você não
+              precisa fazer nada.
+            </li>
+          </ol>
+          <p className="mt-3 text-muted-foreground">
+            Os 12 meses começam no dia do pagamento, e o mês da mensalidade que já foi pago não é
+            devolvido.
+            {renova
+              ? ` Por isso, o melhor momento para trocar é perto da renovação, em ${renova}.`
+              : ""}
+          </p>
+        </div>
+      )}
+
+      <div className="mt-5">
+        <Button asChild>
+          <a href={link} target="_blank" rel="noreferrer">
+            {mensalAtiva ? "Trocar para o anual" : "Assinar o anual"}{" "}
+            <ExternalLink className="h-4 w-4 ml-1" />
+          </a>
+        </Button>
+      </div>
+    </Card>
   );
 }

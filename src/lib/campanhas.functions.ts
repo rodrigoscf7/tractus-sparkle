@@ -290,7 +290,7 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
       const i = indiceDia.get(diaLocal(l.relatorio_gerado_em));
       if (i !== undefined) dias[i]!.diagnosticos++;
     }
-    // Uma compra por conta: quem aceita o upsell anual paga duas faturas do plano.
+    // Uma compra por conta: quem troca para o anual paga duas faturas do plano.
     const vistas = new Set<string>();
     const comprasDoPlano = vendas
       .filter((v) => v.temPlano)

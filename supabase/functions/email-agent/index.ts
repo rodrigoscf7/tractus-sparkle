@@ -7,7 +7,7 @@
 //   - boas_vindas: { tipo, email, lead_id? } pós-compra, com link para criar
 //                  a senha (link de recuperação gerado pelo Auth).
 //   - cancelar_assinatura: { tipo, conta_id, assinatura_id, reembolsar }
-//                  aviso interno: quem aceitou o upsell anual ainda tem a
+//                  aviso interno: quem trocou para o anual ainda tem a
 //                  mensal ativa na Hubla, e a Hubla não cancela por API. Vai
 //                  sempre para a caixa da equipe (EMAIL_EQUIPE, ou
 //                  EMAIL_RESPONDER_PARA), nunca para um endereço do pedido.
@@ -349,14 +349,14 @@ async function enviarCancelarAssinatura(
     paragrafo(
       reembolsar
         ? `<strong>${escapar(conta.nome)}</strong> está no plano anual, mas a mensal ainda cobrou uma renovação.`
-        : `<strong>${escapar(conta.nome)}</strong> aceitou o upsell do plano anual. A mensal continua ativa na Hubla e vai cobrar de novo no mês que vem se ninguém cancelar.`,
+        : `<strong>${escapar(conta.nome)}</strong> trocou para o plano anual. A mensal continua ativa na Hubla e vai cobrar de novo no mês que vem se ninguém cancelar.`,
     ) + paragrafo(passos.map((p, i) => `${i + 1}. ${escapar(p)}`).join("<br>")),
     siteUrl(),
   );
   const texto = [
     reembolsar
       ? `${conta.nome} está no plano anual, mas a mensal ainda cobrou uma renovação.`
-      : `${conta.nome} aceitou o upsell do plano anual. A mensal continua ativa na Hubla.`,
+      : `${conta.nome} trocou para o plano anual. A mensal continua ativa na Hubla.`,
     ...passos.map((p, i) => `${i + 1}. ${p}`),
   ].join("\n\n");
 
