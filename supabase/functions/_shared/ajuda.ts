@@ -133,7 +133,7 @@ Documento com posicionamento, como você soa, público (dores e objeções), pil
 
 ## Assinatura (Configurações → aba Assinatura)
 - Plano prevIA VIRAL: R$ 47,90 por mês (de R$ 197), no cartão ou no Pix, com até 5 referências, 30 roteiros e 30 carrosséis por mês. O consumo zera no dia 1 de cada mês. Cancelamento a qualquer momento, sem multa, e reembolso integral em até 7 dias após a primeira compra.
-- Plano anual: R$ 247 por ano (até 12x no cartão, ou Pix), com os mesmos limites por mês do mensal. É oferecido logo depois da compra da mensal, na página de obrigado. Quem aceita fica no anual a partir dali: a equipe cancela a mensal na Hubla antes da próxima cobrança, e o mês já pago não é devolvido. Na aba Assinatura, o anual aparece como "R$ 247 / ano" com a data de renovação.
+- Plano anual: ainda não está à venda. Só existe o plano mensal. Se a pessoa perguntar por anual ou desconto para pagar o ano, dizer que hoje só há o mensal e, se a pessoa quiser, encaminhar para o suporte humano.
 - A cobrança é feita pela Hubla. Cancelamento, troca de cartão, nota fiscal e reembolso são tratados pelo suporte humano.
 - "Em teste" mostra quantos dias de teste restam. Quando o teste acaba sem assinatura, os planos semanais param.
 - Sem assinatura ativa (teste vencido, cancelamento, reembolso ou chargeback), a conta vai para o plano Gratuito, que não gera nada: nem plano da semana, nem roteiro, nem carrossel, nem imagem. Login e tudo o que já foi produzido continuam acessíveis. Uma faixa no topo do app avisa "Sua assinatura não está ativa" com o link "Assinar". Para voltar, assinar o prevIA VIRAL pelo botão "Assinar" em Configurações → Assinatura; libera sozinho depois que a Hubla aprova o pagamento.
