@@ -65,6 +65,55 @@ function linhaVazia(nome: string): LinhaFunil {
   };
 }
 
+/** Início da medição (painel_config.campanhas_inicio). */
+async function inicioDaMedicao(db: AnyClient): Promise<Date | null> {
+  const { data } = await db
+    .from("painel_config")
+    .select("valor")
+    .eq("chave", "campanhas_inicio")
+    .maybeSingle();
+  const d = typeof data?.valor === "string" ? new Date(data.valor) : null;
+  return d && !Number.isNaN(d.getTime()) ? d : null;
+}
+
+/** E-mails de quem tem papel admin ou comercial: testes da equipe. */
+async function emailsDaEquipeInterna(db: AnyClient): Promise<Set<string>> {
+  const { data: papeis } = await db
+    .from("user_roles")
+    .select("user_id")
+    .in("role", ["admin", "comercial"]);
+  const ids = [...new Set(((papeis ?? []) as any[]).map((p) => String(p.user_id)))];
+  const usuarios = await Promise.all(ids.map((id) => db.auth.admin.getUserById(id)));
+  return new Set(
+    usuarios
+      .map((u: any) => u?.data?.user?.email)
+      .filter(Boolean)
+      .map((e: string) => e.toLowerCase()),
+  );
+}
+
+export const salvarInicioCampanhas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { inicio: string }) => ({ inicio: String(data?.inicio ?? "") }))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase as any, context.userId);
+    const d = new Date(data.inicio);
+    if (Number.isNaN(d.getTime())) throw new Error("Data inválida.");
+    if (d.getTime() > Date.now()) throw new Error("A data de início não pode estar no futuro.");
+    const db = await admin();
+    const { error } = await db.from("painel_config").upsert(
+      {
+        chave: "campanhas_inicio",
+        valor: d.toISOString(),
+        atualizado_em: new Date().toISOString(),
+        atualizado_por: context.userId,
+      },
+      { onConflict: "chave" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 /** Nome de campanha e de anúncio comparados sem caixa nem espaço nas pontas. */
 const chave = (nome: string) => nome.trim().toLowerCase();
 
@@ -73,7 +122,8 @@ export type Alerta = { nivel: "atencao" | "info" | "bom"; texto: string };
 export const getPainelCampanhas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { dias?: number; atualizar?: boolean }) => ({
-    dias: [7, 14, 30, 90].includes(Number(data?.dias)) ? Number(data.dias) : 30,
+    // 0 = desde o início da medição.
+    dias: [0, 7, 14, 30, 90].includes(Number(data?.dias)) ? Number(data.dias) : 0,
     atualizar: data?.atualizar === true,
   }))
   .handler(async ({ data, context }) => {
@@ -82,12 +132,26 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
     const { normalizarEventoHubla } = await import("@/lib/hubla.server");
     const { garantirGastoMeta } = await import("@/lib/meta-ads.server");
 
-    const desde = new Date(Date.now() - data.dias * 86_400_000);
+    // Nada antes do início da medição entra no painel (testes e cortesias
+    // anteriores à primeira campanha paga).
+    const inicio = await inicioDaMedicao(db);
+    const recorte = data.dias ? Date.now() - data.dias * 86_400_000 : 0;
+    const desde = new Date(
+      Math.max(recorte, inicio?.getTime() ?? 0, Date.now() - 365 * 86_400_000),
+    );
     const desdeIso = desde.toISOString();
     const desdeDia = diaLocal(desdeIso);
+    const diasNoPeriodo = Math.min(
+      366,
+      Math.max(1, Math.round((Date.now() - desde.getTime()) / 86_400_000) + 1),
+    );
+
+    // Contas da própria equipe (admins e comercial) nunca entram: os testes
+    // de compra e de quiz delas não são campanha.
+    const emailsDaEquipe = await emailsDaEquipeInterna(db);
 
     // Relê a conta de anúncios se a última leitura tiver mais de uma hora.
-    const metaAds = await garantirGastoMeta(db, data.dias + 1, data.atualizar);
+    const metaAds = await garantirGastoMeta(db, diasNoPeriodo + 1, data.atualizar);
 
     const [
       { data: leads },
@@ -115,7 +179,7 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
         .limit(5000),
       db
         .from("hubla_eventos")
-        .select("evento, fatura_id, criado_em, payload")
+        .select("evento, fatura_id, comprador_email, criado_em, payload")
         .in("evento", ["invoice.refunded", "invoice.status_updated"])
         .gte("criado_em", desdeIso)
         .limit(2000),
@@ -135,7 +199,9 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
         .limit(20000),
     ]);
 
-    const listaLeads = (leads ?? []) as any[];
+    const daEquipe = (email: unknown) =>
+      typeof email === "string" && emailsDaEquipe.has(email.trim().toLowerCase());
+    const listaLeads = ((leads ?? []) as any[]).filter((l) => !daEquipe(l.email));
 
     // O nome que vai na UTM fica travado no da publicação; o Meta mostra o
     // atual. Com utm_id e ad_id na URL, o lead entra com o nome de hoje e
@@ -175,6 +241,7 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
       const fatura = p.payload?.event?.invoice ?? {};
       if (String(p.fatura_id ?? "").endsWith("-tester")) continue;
       if (String(fatura.type ?? "sell") === "renewal") continue;
+      if (daEquipe(p.comprador_email)) continue;
       const n = normalizarEventoHubla(p.payload ?? {}, null);
       const subtotal = Number(fatura.amount?.subtotalCents);
       const desconto = Number(fatura.amount?.discountCents) || 0;
@@ -276,7 +343,7 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
 
     // ---------- por dia ----------
     const dias: { dia: string; diagnosticos: number; compras: number; investimento: number }[] = [];
-    for (let i = data.dias - 1; i >= 0; i--) {
+    for (let i = diasNoPeriodo - 1; i >= 0; i--) {
       dias.push({
         dia: diaLocal(new Date(Date.now() - i * 86_400_000).toISOString()),
         diagnosticos: 0,
@@ -339,6 +406,7 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
         }),
       ),
       reembolsos: ((estornos ?? []) as any[]).filter((e) => {
+        if (daEquipe(e.comprador_email)) return false;
         if (e.evento === "invoice.refunded") return true;
         return String(e.payload?.event?.invoice?.status ?? "").toLowerCase() === "chargeback";
       }).length,
@@ -484,6 +552,7 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
 
     return {
       dias: data.dias,
+      inicio: inicio?.toISOString() ?? null,
       total,
       campanhas: linhasCampanha,
       porDia: dias,

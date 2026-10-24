@@ -24,6 +24,7 @@ import { EstadoCarregando, EstadoErro } from "@/components/estados";
 import {
   getPainelCampanhas,
   removerInvestimento,
+  salvarInicioCampanhas,
   salvarInvestimento,
   type LinhaFunil,
   type PainelCampanhas,
@@ -36,7 +37,8 @@ import { cn } from "@/lib/utils";
  * investimento, recuperar quem parou no checkout).
  */
 
-const PERIODOS = [7, 14, 30, 90] as const;
+/** 0 = desde o início da medição. */
+const PERIODOS = [0, 7, 14, 30, 90] as const;
 
 /** Parâmetros de URL do Meta: cada anúncio leva o nome da campanha, conjunto e anúncio. */
 const PARAMETROS_URL =
@@ -59,9 +61,12 @@ function hojeLocal() {
 }
 
 export function Campanhas() {
-  const [dias, setDias] = useState<number>(30);
+  const [dias, setDias] = useState<number>(0);
   const [relendo, setRelendo] = useState(false);
   const carregar = useServerFn(getPainelCampanhas);
+  const gravarInicio = useServerFn(salvarInicioCampanhas);
+  const [editandoInicio, setEditandoInicio] = useState(false);
+  const [novoInicio, setNovoInicio] = useState("");
   const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-campanhas", dias],
@@ -83,12 +88,35 @@ export function Campanhas() {
     }
   }
 
+  async function salvarInicio() {
+    try {
+      // datetime-local vem sem fuso: é o horário de Brasília de quem preenche.
+      await gravarInicio({ data: { inicio: `${novoInicio}:00-03:00` } });
+      toast.success("Início da medição atualizado.");
+      setEditandoInicio(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-campanhas"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
+    }
+  }
+
+  const inicioLocal = data?.inicio
+    ? new Date(data.inicio).toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground max-w-2xl">
           Leads que começaram o quiz no período e o que fizeram depois. Receita é a venda aprovada
-          na Hubla (sem renovação e sem juros do parcelamento).
+          na Hubla (sem renovação e sem juros do parcelamento). Contas da equipe não entram.
         </p>
         <div className="flex gap-1 rounded-md border border-border p-1">
           {PERIODOS.map((p) => (
@@ -103,10 +131,50 @@ export function Campanhas() {
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {p} dias
+              {p === 0 ? "Desde o início" : `${p} dias`}
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+        {editandoInicio ? (
+          <>
+            <span>Medir a partir de</span>
+            <Input
+              type="datetime-local"
+              value={novoInicio}
+              onChange={(e) => setNovoInicio(e.target.value)}
+              className="h-9 w-auto"
+            />
+            <Button size="sm" onClick={salvarInicio} disabled={!novoInicio}>
+              Salvar
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditandoInicio(false)}>
+              Cancelar
+            </Button>
+          </>
+        ) : (
+          <>
+            <span>
+              {inicioLocal
+                ? `Medindo desde ${inicioLocal}. Nada antes disso entra no painel.`
+                : "Sem data de início: o painel mostra todo o histórico."}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const base = data?.inicio ? new Date(data.inicio) : new Date();
+                // Valor do campo no horário de Brasília (UTC-3).
+                setNovoInicio(new Date(base.getTime() - 3 * 3_600_000).toISOString().slice(0, 16));
+                setEditandoInicio(true);
+              }}
+            >
+              Alterar
+            </Button>
+          </>
+        )}
       </div>
 
       {isLoading && <EstadoCarregando linhas={4} rotulo="Carregando as campanhas" />}
@@ -454,7 +522,8 @@ function Oferta({ oferta }: { oferta: PainelCampanhas["oferta"] }) {
     <Card className="p-5">
       <div className={ROTULO}>Oferta</div>
       <p className="mt-1 text-sm text-muted-foreground">
-        {oferta.vendas} venda(s) do plano · {brl(oferta.receitaCentavos)} com plano anual e order bumps
+        {oferta.vendas} venda(s) do plano · {brl(oferta.receitaCentavos)} com plano anual e order
+        bumps
       </p>
       <div className="mt-4 space-y-4">
         <Metrica label="Plano anual" usado={oferta.anual} limite={oferta.compradores} />
