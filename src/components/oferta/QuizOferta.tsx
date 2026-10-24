@@ -424,8 +424,8 @@ function Campo({
  */
 function Abertura({ onComecar }: { onComecar: () => void }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-5 py-16 sm:px-8">
-      <div className="w-full max-w-xl space-y-8">
+    <div className="flex min-h-screen flex-col items-center justify-start px-5 py-8 sm:justify-center sm:px-8 sm:py-16">
+      <div className="w-full max-w-xl space-y-6 sm:space-y-8">
         <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-8 w-auto" />
 
         <div className="space-y-5">
@@ -436,14 +436,28 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
             Descubra o que está impedindo seu conteúdo de viralizar e atrair mais clientes.
           </h1>
 
-          <img
-            src="/gif.gif"
-            alt="Advogado perdido em frente ao computador: o meme de quem trava na hora de gravar"
-            className="w-full max-w-md rounded-lg border border-border"
-            width={480}
-            height={480}
-          />
+          {/* No celular, quem chega do anúncio precisa ver o botão sem rolar. */}
+          <BotaoComecar onComecar={onComecar} />
+        </div>
 
+        {/* Vídeo em loop no lugar do GIF original (8 MB): mesma cena, ~150 KB. */}
+        <video
+          className="w-full max-w-md rounded-lg border border-border"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          poster="/abertura-poster.jpg"
+          width={444}
+          height={250}
+          aria-label="Advogado perdido em frente ao computador: o meme de quem trava na hora de gravar"
+        >
+          <source src="/abertura.webm" type="video/webm" />
+          <source src="/abertura.mp4" type="video/mp4" />
+        </video>
+
+        <div className="space-y-5">
           <p className="text-lg leading-relaxed text-muted-foreground">
             Em 11 perguntas rápidas, você recebe um diagnóstico personalizado com:
           </p>
@@ -463,23 +477,29 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
           </ul>
         </div>
 
-        <div className="space-y-4">
-          <button
-            onClick={onComecar}
-            className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-8 py-3.5 text-base
-              font-medium text-primary-foreground transition hover:bg-primary/90
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-              focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            Fazer meu diagnóstico gratuito <ArrowRight className="h-4 w-4" />
-          </button>
-          <p className="num text-sm text-muted-foreground">
-            Leva menos de 2 minutos · Resultado na hora, sem esperar e-mail
-          </p>
-        </div>
+        <BotaoComecar onComecar={onComecar} />
 
         <LinksLegais />
       </div>
+    </div>
+  );
+}
+
+function BotaoComecar({ onComecar }: { onComecar: () => void }) {
+  return (
+    <div className="space-y-3">
+      <button
+        onClick={onComecar}
+        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-8 py-3.5
+          text-base font-medium text-primary-foreground transition hover:bg-primary/90 sm:w-auto
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+          focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        Fazer meu diagnóstico gratuito <ArrowRight className="h-4 w-4" />
+      </button>
+      <p className="num text-sm text-muted-foreground">
+        Leva menos de 2 minutos · Resultado na hora, sem esperar e-mail
+      </p>
     </div>
   );
 }
