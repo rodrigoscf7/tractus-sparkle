@@ -8,6 +8,12 @@ import { timingSafeEqual } from "crypto";
  * em x-hubla-idempotency. Não garante ordem nem entrega única: o id deduplica
  * reenvios, e as regras em hubla.server.ts são idempotentes.
  */
+const AVISA_ADMIN = new Set([
+  "invoice.payment_succeeded",
+  "invoice.refunded",
+  "invoice.status_updated",
+]);
+
 export const Route = createFileRoute("/api/public/webhooks/hubla")({
   server: {
     handlers: {
@@ -87,6 +93,18 @@ export const Route = createFileRoute("/api/public/webhooks/hubla")({
 
         try {
           await aplicarEventoHubla(admin, { ...normalizado, id: gravado?.id });
+          // Push para os admins (venda, upsell, material, reembolso). O
+          // push-agent lê o evento gravado, decide se vale aviso e não repete.
+          if (gravado?.id && AVISA_ADMIN.has(normalizado.evento)) {
+            const { invocarAgente } = await import("@/lib/agentes.server");
+            void invocarAgente(
+              "push-agent",
+              { tipo: "admin_venda", evento_id: gravado.id },
+              { timeoutMs: 20_000 },
+            ).then((r) => {
+              if (!r.ok) console.error("hubla: push de venda falhou", r.erro);
+            });
+          }
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           console.error("hubla: falha ao aplicar evento", msg);

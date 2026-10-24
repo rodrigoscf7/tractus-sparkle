@@ -103,9 +103,27 @@ function diaSaoPaulo(): string {
  * chamado anterior do mesmo dia.
  */
 export async function alertarAdminFalha(agente: string, mensagem: string, chaveUnica?: string) {
+  await enviarPushAdmins(
+    {
+      title: "prevIA · falha",
+      body: `${agente}: ${mensagem}`.slice(0, 180),
+      url: "/agentes",
+    },
+    chaveUnica ?? chaveAlertaAdmin(agente, mensagem),
+  );
+}
+
+/**
+ * Push para todos os admins com inscrição PWA, uma vez por chave por dia
+ * (admin_alertas_push). Devolve quantos aparelhos receberam. Não lança.
+ */
+export async function enviarPushAdmins(
+  mensagem: { title: string; body: string; url: string },
+  chave: string,
+): Promise<number> {
+  let enviadas = 0;
   try {
     const supabase = getServiceClient();
-    const chave = chaveUnica ?? chaveAlertaAdmin(agente, mensagem);
     const dia = diaSaoPaulo();
 
     const { error: dedupeError } = await supabase
@@ -113,17 +131,17 @@ export async function alertarAdminFalha(agente: string, mensagem: string, chaveU
       .insert({ chave, dia });
     if (dedupeError) {
       // unique_violation = já alertamos hoje nesta chave
-      if ((dedupeError as { code?: string }).code === "23505") return;
-      console.error("alertarAdminFalha dedupe", dedupeError);
-      return;
+      if ((dedupeError as { code?: string }).code === "23505") return 0;
+      console.error("enviarPushAdmins dedupe", dedupeError);
+      return 0;
     }
 
     const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
     const vapidSubject = Deno.env.get("VAPID_SUBJECT");
     if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
-      console.error("alertarAdminFalha: VAPID ausente");
-      return;
+      console.error("enviarPushAdmins: VAPID ausente");
+      return 0;
     }
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
@@ -132,8 +150,8 @@ export async function alertarAdminFalha(agente: string, mensagem: string, chaveU
       .select("user_id")
       .eq("role", "admin");
     if (adminsError || !admins?.length) {
-      if (adminsError) console.error("alertarAdminFalha admins", adminsError);
-      return;
+      if (adminsError) console.error("enviarPushAdmins admins", adminsError);
+      return 0;
     }
 
     const userIds = admins.map((a) => a.user_id);
@@ -142,12 +160,7 @@ export async function alertarAdminFalha(agente: string, mensagem: string, chaveU
       .select("id, endpoint, p256dh, auth_key")
       .in("user_id", userIds);
 
-    const corpo = `${agente}: ${mensagem}`.slice(0, 180);
-    const payload = JSON.stringify({
-      title: "prevIA · falha",
-      body: corpo,
-      url: "/agentes",
-    });
+    const payload = JSON.stringify(mensagem);
 
     for (const inscricao of inscricoes ?? []) {
       try {
@@ -158,6 +171,7 @@ export async function alertarAdminFalha(agente: string, mensagem: string, chaveU
           },
           payload,
         );
+        enviadas++;
         await supabase
           .from("push_subscriptions")
           .update({ ultimo_uso_em: new Date().toISOString() })
@@ -167,13 +181,14 @@ export async function alertarAdminFalha(agente: string, mensagem: string, chaveU
         if (status === 404 || status === 410) {
           await supabase.from("push_subscriptions").delete().eq("id", inscricao.id);
         } else {
-          console.error("alertarAdminFalha push", inscricao.id, e);
+          console.error("enviarPushAdmins push", inscricao.id, e);
         }
       }
     }
   } catch (e) {
-    console.error("alertarAdminFalha", e);
+    console.error("enviarPushAdmins", e);
   }
+  return enviadas;
 }
 
 export async function setStatus(
