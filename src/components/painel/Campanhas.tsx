@@ -40,7 +40,7 @@ const PERIODOS = [7, 14, 30, 90] as const;
 
 /** Parâmetros de URL do Meta: cada anúncio leva o nome da campanha, conjunto e anúncio. */
 const PARAMETROS_URL =
-  "utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.name}}&utm_term={{adset.name}}&utm_content={{ad.name}}";
+  "utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_term={{adset.name}}&utm_content={{ad.name}}&utm_id={{campaign.id}}&ad_id={{ad.id}}";
 
 const ROTULO = "text-xs font-mono uppercase tracking-widest text-muted-foreground";
 
@@ -235,8 +235,10 @@ function Painel({
         <div className={ROTULO}>Parâmetros de URL dos anúncios</div>
         <p className="mt-2 text-sm text-muted-foreground">
           Sem isto o painel não separa campanha nem criativo. No Gerenciador de Anúncios, em cada
-          anúncio: Rastreamento → Parâmetros de URL → cole o texto abaixo. O Meta troca os nomes
-          entre chaves pelo nome real da campanha, do conjunto e do anúncio.
+          anúncio: Rastreamento → Parâmetros de URL → cole o texto abaixo. O Meta troca o que está
+          entre chaves pelo nome e pelo ID da campanha, do conjunto e do anúncio. Os nomes ficam
+          travados no da publicação; os IDs (utm_id e ad_id) mantêm o lead ligado ao gasto mesmo se
+          alguém renomear depois.
         </p>
         <div className="mt-3 flex items-start gap-2">
           <code className="min-w-0 flex-1 break-all rounded-md border border-border bg-surface px-3 py-2 text-xs">

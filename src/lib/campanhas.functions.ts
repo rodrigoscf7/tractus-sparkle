@@ -128,12 +128,29 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
       db.from("materiais").select("codigo, nome, hubla_produto_id, hubla_oferta_id"),
       db
         .from("meta_anuncios_diario")
-        .select("dia, campanha, anuncio, gasto_centavos, impressoes, cliques_link")
+        .select(
+          "dia, campanha_id, campanha, anuncio_id, anuncio, gasto_centavos, impressoes, cliques_link",
+        )
         .gte("dia", desdeDia)
         .limit(20000),
     ]);
 
     const listaLeads = (leads ?? []) as any[];
+
+    // O nome que vai na UTM fica travado no da publicação; o Meta mostra o
+    // atual. Com utm_id e ad_id na URL, o lead entra com o nome de hoje e
+    // casa com o gasto mesmo depois de uma renomeação.
+    const nomeCampanhaPorId = new Map<string, string>();
+    const nomeAnuncioPorId = new Map<string, string>();
+    for (const g of (gastoMeta ?? []) as any[]) {
+      if (g.campanha_id && g.campanha)
+        nomeCampanhaPorId.set(String(g.campanha_id), String(g.campanha));
+      if (g.anuncio_id && g.anuncio) nomeAnuncioPorId.set(String(g.anuncio_id), String(g.anuncio));
+    }
+    const campanhaDoLead = (origem: Origem) =>
+      (origem.utm_id && nomeCampanhaPorId.get(origem.utm_id)) || campanhaDe(origem);
+    const criativoDoLead = (origem: Origem) =>
+      (origem.ad_id && nomeAnuncioPorId.get(origem.ad_id)) || criativoDe(origem);
     const porId = new Map(listaLeads.map((l) => [l.id, l]));
     const porConta = new Map(listaLeads.filter((l) => l.conta_id).map((l) => [l.conta_id, l]));
     const porEmail = new Map(
@@ -196,8 +213,8 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
     const total = linhaVazia("Total");
     for (const l of listaLeads) {
       const origem = (l.origem ?? {}) as Origem;
-      const nomeCampanha = campanhaDe(origem);
-      const nomeCriativo = criativoDe(origem);
+      const nomeCampanha = campanhaDoLead(origem);
+      const nomeCriativo = criativoDoLead(origem);
       if (!campanhas.has(nomeCampanha))
         campanhas.set(nomeCampanha, { ...linhaVazia(nomeCampanha), criativos: new Map() });
       const c = campanhas.get(nomeCampanha)!;
@@ -379,7 +396,7 @@ export const getPainelCampanhas = createServerFn({ method: "GET" })
         email: (l.email as string | null) ?? null,
         whatsapp: (l.whatsapp as string | null) ?? null,
         token: l.token as string,
-        campanha: campanhaDe((l.origem ?? {}) as Origem),
+        campanha: campanhaDoLead((l.origem ?? {}) as Origem),
         diagnosticoEm: l.relatorio_gerado_em as string,
         checkoutEm: (l.checkout_clicado_em as string | null) ?? null,
       }));

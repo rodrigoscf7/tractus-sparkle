@@ -24,6 +24,10 @@ const CHAVES_ORIGEM = [
   "utm_campaign",
   "utm_content",
   "utm_term",
+  // IDs da campanha e do anúncio no Meta ({{campaign.id}} e {{ad.id}}): não
+  // mudam quando alguém renomeia, e ligam o lead ao gasto no painel.
+  "utm_id",
+  "ad_id",
   "fbclid",
   "gclid",
 ] as const;
