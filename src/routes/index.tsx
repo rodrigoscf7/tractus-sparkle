@@ -29,14 +29,14 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Descubra o que está impedindo seu conteúdo de viralizar. Em 11 perguntas rápidas: " +
-          "seu gargalo, 3 pilares de autoridade e 3 roteiros prontos para gravar. Leva 2 minutos.",
+          "Você sabe que precisa postar. Descubra o quê: em 11 perguntas rápidas, 3 roteiros " +
+          "prontos para a sua área e o ponto que está travando o seu conteúdo. Leva 2 minutos.",
       },
       { property: "og:title", content: "Diagnóstico de Conteúdo · Advocacia" },
       {
         property: "og:description",
         content:
-          "Em 11 perguntas rápidas, um diagnóstico personalizado: gargalo, pilares e roteiros prontos.",
+          "Você sabe que precisa postar. Descubra o quê, em 2 minutos, com 3 roteiros prontos para gravar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

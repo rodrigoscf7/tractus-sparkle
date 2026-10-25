@@ -433,7 +433,7 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
             Diagnóstico de Conteúdo · Advocacia
           </div>
           <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight sm:text-[2.75rem]">
-            Descubra o que está impedindo seu conteúdo de viralizar e atrair mais clientes.
+            Você sabe que precisa postar. Descubra o quê, em 2 minutos.
           </h1>
 
           {/* No celular, quem chega do anúncio precisa ver o botão sem rolar. */}
