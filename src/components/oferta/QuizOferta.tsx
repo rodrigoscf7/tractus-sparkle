@@ -458,21 +458,25 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
         </video>
 
         <div className="space-y-5">
+          <p className="text-lg leading-relaxed text-foreground">
+            Você senta para gravar e não sabe por onde começar. Ou grava, posta, e o vídeo não chega
+            em quem poderia virar cliente.
+          </p>
           <p className="text-lg leading-relaxed text-muted-foreground">
-            Em 11 perguntas rápidas, você recebe um diagnóstico personalizado com:
+            Responda 11 perguntas rápidas sobre o seu escritório e receba na hora:
           </p>
           <ul className="space-y-2.5 text-base leading-relaxed text-muted-foreground">
             <li className="flex gap-2.5">
-              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              Seu principal gargalo: o que está travando sua produção de conteúdo
-            </li>
-            <li className="flex gap-2.5">
-              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              Seus 3 pilares de autoridade: o que você precisa fortalecer no posicionamento
-            </li>
-            <li className="flex gap-2.5">
               <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />3
-              roteiros prontos para você gravar ainda hoje
+              roteiros prontos para gravar hoje, escritos para a sua área e o seu cliente
+            </li>
+            <li className="flex gap-2.5">
+              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />O
+              ponto exato que está travando o seu conteúdo
+            </li>
+            <li className="flex gap-2.5">
+              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              Os 3 assuntos em que você deve se posicionar como referência
             </li>
           </ul>
         </div>
@@ -497,7 +501,8 @@ function BotaoComecar({ onComecar }: { onComecar: () => void }) {
       >
         Fazer meu diagnóstico gratuito <ArrowRight className="h-4 w-4" />
       </button>
-      <p className="num text-sm text-muted-foreground">
+      {/* Sem `num`: a fonte de números espaçava o hífen de "e-mail". */}
+      <p className="text-sm text-muted-foreground">
         Leva menos de 2 minutos · Resultado na hora, sem esperar e-mail
       </p>
     </div>
