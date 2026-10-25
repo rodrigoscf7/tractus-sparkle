@@ -503,7 +503,7 @@ function BotaoComecar({ onComecar }: { onComecar: () => void }) {
       </button>
       {/* Sem `num`: a fonte de números espaçava o hífen de "e-mail". */}
       <p className="text-sm text-muted-foreground">
-        Leva menos de 2 minutos · Resultado na hora, sem esperar e-mail
+        Grátis · Resultado na hora, sem esperar e-mail
       </p>
     </div>
   );
