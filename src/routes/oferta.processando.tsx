@@ -5,6 +5,7 @@ import { Check, Loader2 } from "lucide-react";
 import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { gerarDnaViral } from "@/lib/quiz-oferta.functions";
 import { obterLeadId } from "@/lib/oferta-variante";
+import { marcarViewContentPendente } from "@/lib/pixel";
 
 /**
  * A ponte entre a última resposta e o relatório.
@@ -79,8 +80,13 @@ function Processando() {
     (async () => {
       const comecou = Date.now();
       try {
-        const { token } = await gerar({ data: { leadId: obterLeadId() } });
+        const resultado = await gerar({ data: { leadId: obterLeadId() } });
+        const { token } = resultado;
         if (cancelado) return;
+        // O relatório acabou de nascer: a abertura que vem agora conta como
+        // ViewContent (com o event_id que o servidor já mandou). Voltas pelo
+        // e-mail e aberturas pela equipe não passam por aqui.
+        if ("novo" in resultado && resultado.novo) marcarViewContentPendente(token, obterLeadId());
 
         const restante = DURACAO_MINIMA_MS - (Date.now() - comecou);
         if (restante > 0) await new Promise((r) => setTimeout(r, restante));

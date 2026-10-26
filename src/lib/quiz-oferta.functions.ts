@@ -224,7 +224,7 @@ export const gerarDnaViral = createServerFn({ method: "POST" })
     const db = await admin();
     const { data: lead } = await db
       .from("oferta_leads")
-      .select("id, token, respostas, relatorio, ip_hash")
+      .select("id, token, respostas, relatorio, ip_hash, meta_fbp, meta_fbc, meta_user_agent")
       .eq("id", data.leadId)
       .maybeSingle();
 
@@ -259,7 +259,27 @@ export const gerarDnaViral = createServerFn({ method: "POST" })
       enviarEmailEmSegundoPlano({ tipo: "dna_viral", lead_id: data.leadId });
     }
 
-    return { token: lead.token as string };
+    // ViewContent = diagnóstico entregue, uma vez por lead (só a primeira
+    // geração passa daqui). É o evento que a campanha de Vendas pode otimizar
+    // no lugar do Lead. O navegador manda o mesmo event_id ao abrir o relatório.
+    const { enviarEventoMeta } = await import("@/lib/meta-capi.server");
+    void enviarEventoMeta({
+      nome: "ViewContent",
+      eventId: `vc-${data.leadId}`,
+      urlOrigem: `${process.env["SITE_URL"] ?? "https://previaviral.tractusoficial.com"}/dna-viral/${lead.token}`,
+      usuario: {
+        email: contato.email ?? null,
+        telefone: contato.whatsapp ?? null,
+        externalId: data.leadId,
+        fbp: lead.meta_fbp,
+        fbc: lead.meta_fbc,
+        ip: ipDaRequisicao(),
+        userAgent: lead.meta_user_agent ?? userAgentDaRequisicao(),
+      },
+      dados: { content_name: "relatorio_dna_viral" },
+    });
+
+    return { token: lead.token as string, novo: true };
   });
 
 async function gerarComFallback(

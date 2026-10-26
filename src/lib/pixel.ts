@@ -102,3 +102,35 @@ export function identificadoresMeta(fbclid?: string): { fbp?: string; fbc?: stri
   const fbc = cookie("_fbc") ?? (fbclid ? `fb.1.${Date.now()}.${fbclid}` : undefined);
   return { ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}) };
 }
+
+const CHAVE_VIEW_CONTENT = "previa.vc.";
+
+/**
+ * Autoriza o ViewContent da próxima abertura deste relatório. Chamado só por
+ * quem acabou de gerar o relatório (oferta/processando); o servidor manda o
+ * mesmo evento com o mesmo event_id, e o Meta conta um só.
+ */
+export function marcarViewContentPendente(token: string, leadId: string) {
+  try {
+    sessionStorage.setItem(`${CHAVE_VIEW_CONTENT}${token}`, leadId);
+  } catch {
+    // Sem sessionStorage, fica só o envio do servidor.
+  }
+}
+
+/**
+ * ViewContent do relatório, uma vez por lead: só se a abertura veio da
+ * geração. Voltas pelo e-mail, recarregar a página e aberturas pela equipe não
+ * contam, para o evento valer como "diagnóstico entregue" na otimização.
+ */
+export function rastrearRelatorioNovo(token: string) {
+  let leadId: string | null = null;
+  try {
+    leadId = sessionStorage.getItem(`${CHAVE_VIEW_CONTENT}${token}`);
+    if (leadId) sessionStorage.removeItem(`${CHAVE_VIEW_CONTENT}${token}`);
+  } catch {
+    leadId = null;
+  }
+  if (!leadId) return;
+  rastrear("ViewContent", { content_name: "relatorio_dna_viral" }, `vc-${leadId}`);
+}

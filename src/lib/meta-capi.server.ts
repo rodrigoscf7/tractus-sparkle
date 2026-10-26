@@ -34,7 +34,7 @@ export type DadosDoUsuario = {
 };
 
 export type EventoMeta = {
-  nome: "Lead" | "Purchase";
+  nome: "Lead" | "ViewContent" | "Purchase";
   eventId: string;
   urlOrigem?: string | null;
   usuario: DadosDoUsuario;

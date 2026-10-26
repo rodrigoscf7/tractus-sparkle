@@ -4,7 +4,7 @@ import { ArrowRight, Check, Download, Mail } from "lucide-react";
 import { LOGO_FUNDO_CLARO, MARCA_ALT } from "@/lib/marca";
 import { getDnaViral, getOfertaPublica } from "@/lib/quiz-oferta.functions";
 import { capturarOrigem, obterLeadId } from "@/lib/oferta-variante";
-import { rastrear } from "@/lib/pixel";
+import { rastrear, rastrearRelatorioNovo } from "@/lib/pixel";
 import { lerRespostas } from "@/lib/quiz-oferta.estado";
 import { LinksLegais } from "@/components/legal/PaginaLegal";
 import { VslPlayer } from "@/components/oferta/VslPlayer";
@@ -70,8 +70,8 @@ function Relatorio() {
   const score = relatorio.score;
 
   useEffect(() => {
-    rastrear("ViewContent", { content_name: "relatorio_dna_viral" });
-  }, []);
+    rastrearRelatorioNovo(token);
+  }, [token]);
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10 sm:px-10 sm:py-14" data-print-root>
