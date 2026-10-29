@@ -147,10 +147,42 @@ export function QuizOferta({ passo }: { passo: number }) {
     irPara(passo + 1);
   }
 
-  if (passo === 0) return <Abertura onComecar={() => irPara(1)} />;
+  /**
+   * Resposta da pergunta 1 direto na abertura: um toque já começa o quiz.
+   * "Outro" fica na tela para escrever a área antes de seguir.
+   */
+  function responderNaAbertura(area: string) {
+    const proximo: Respostas = { ...respostas, area_atuacao: area as Respostas["area_atuacao"] };
+    if (area !== "outro") delete proximo.area_outro;
+    setRespostas(proximo);
+    gravarRespostas(proximo);
+    if (area === "outro") return;
+    salvarEmSegundoPlano(proximo);
+    irPara(2);
+  }
 
-  const pergunta = PERGUNTAS[passo - 1];
-  if (!pergunta) return <Abertura onComecar={() => irPara(1)} />;
+  function seguirDaAbertura() {
+    const erro = validarPergunta(1, respostas);
+    if (erro) {
+      toast.error(erro);
+      return;
+    }
+    salvarEmSegundoPlano(respostas);
+    irPara(2);
+  }
+
+  if (passo === 0 || !PERGUNTAS[passo - 1]) {
+    return (
+      <Abertura
+        respostas={respostas}
+        onResponder={responderNaAbertura}
+        onOutro={(texto) => definir("area_outro", texto as never)}
+        onSeguir={seguirDaAbertura}
+      />
+    );
+  }
+
+  const pergunta = PERGUNTAS[passo - 1]!;
 
   const faltam = TOTAL_PERGUNTAS - passo;
   const opcional = ehOpcional(passo);
@@ -422,23 +454,95 @@ function Campo({
  * quer o resultado. O que segura a pessoa aqui é saber o que recebe e que isso
  * custa pouco tempo.
  */
-function Abertura({ onComecar }: { onComecar: () => void }) {
+function Abertura({
+  respostas,
+  onResponder,
+  onOutro,
+  onSeguir,
+}: {
+  respostas: Respostas;
+  onResponder: (area: string) => void;
+  onOutro: (texto: string) => void;
+  onSeguir: () => void;
+}) {
+  const primeira = PERGUNTAS[0]!;
+  const escolhida = respostas.area_atuacao as string | undefined;
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-start px-5 py-8 sm:justify-center sm:px-8 sm:py-16">
       <div className="w-full max-w-xl space-y-6 sm:space-y-8">
         <img src={LOGO_FUNDO_CLARO} alt={MARCA_ALT} className="h-8 w-auto" />
 
-        <div className="space-y-5">
+        <div className="space-y-3">
           <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
             Diagnóstico de Conteúdo · Advocacia
           </div>
           <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight sm:text-[2.75rem]">
             Você sabe que precisa postar. Descubra o quê, em 2 minutos.
           </h1>
-
-          {/* No celular, quem chega do anúncio precisa ver o botão sem rolar. */}
-          <BotaoComecar onComecar={onComecar} />
+          <p className="text-base leading-relaxed text-muted-foreground">
+            Responda 11 perguntas rápidas e receba na hora 3 roteiros prontos para gravar.
+          </p>
         </div>
+
+        {/*
+         * A pergunta 1 já está aqui: na primeira campanha, 7% das visitas
+         * clicavam em "Fazer meu diagnóstico", e todas as que começaram
+         * terminaram. Um toque numa área já é o começo do quiz.
+         */}
+        <section id="pergunta-1" className="scroll-mt-6 space-y-3">
+          <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+            Pergunta 1 de {TOTAL_PERGUNTAS}
+          </div>
+          <h2 className="font-display text-xl font-semibold leading-snug tracking-tight">
+            {primeira.titulo}
+          </h2>
+          <div role="radiogroup" className="grid grid-cols-2 gap-2">
+            {(primeira.opcoes ?? []).map((o) => {
+              const ativo = escolhida === o.valor;
+              return (
+                <button
+                  key={o.valor}
+                  type="button"
+                  role="radio"
+                  aria-checked={ativo}
+                  onClick={() => onResponder(o.valor)}
+                  className={`min-h-11 rounded-md border px-3 py-2.5 text-left text-sm leading-snug transition
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                    ${ativo ? "border-foreground bg-surface font-medium" : "border-border bg-background hover:border-foreground/40"}`}
+                >
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {escolhida === "outro" && (
+            <div className="space-y-3 pt-1">
+              <Input
+                autoFocus
+                value={(respostas.area_outro as string | undefined) ?? ""}
+                onChange={(e) => onOutro(e.target.value)}
+                placeholder={primeira.extra?.placeholder ?? "Qual é a sua área?"}
+                className="h-11 text-base"
+              />
+              <button
+                type="button"
+                onClick={onSeguir}
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-6 py-3
+                  text-base font-medium text-primary-foreground transition hover:bg-primary/90 sm:w-auto
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                  focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                Continuar <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          <p className="text-sm text-muted-foreground">
+            Grátis · Resultado na hora, sem esperar e-mail
+          </p>
+        </section>
 
         {/* Vídeo em loop no lugar do GIF original (8 MB): mesma cena, ~150 KB. */}
         <video
@@ -447,7 +551,7 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
           poster="/abertura-poster.jpg"
           width={444}
           height={250}
@@ -481,30 +585,24 @@ function Abertura({ onComecar }: { onComecar: () => void }) {
           </ul>
         </div>
 
-        <BotaoComecar onComecar={onComecar} />
+        <a
+          href="#pergunta-1"
+          onClick={(e) => {
+            e.preventDefault();
+            document
+              .getElementById("pergunta-1")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-8 py-3.5
+            text-base font-medium text-primary-foreground transition hover:bg-primary/90 sm:w-auto
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+            focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          Começar pela primeira pergunta <ArrowRight className="h-4 w-4" />
+        </a>
 
         <LinksLegais />
       </div>
-    </div>
-  );
-}
-
-function BotaoComecar({ onComecar }: { onComecar: () => void }) {
-  return (
-    <div className="space-y-3">
-      <button
-        onClick={onComecar}
-        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-8 py-3.5
-          text-base font-medium text-primary-foreground transition hover:bg-primary/90 sm:w-auto
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-          focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        Fazer meu diagnóstico gratuito <ArrowRight className="h-4 w-4" />
-      </button>
-      {/* Sem `num`: a fonte de números espaçava o hífen de "e-mail". */}
-      <p className="text-sm text-muted-foreground">
-        Grátis · Resultado na hora, sem esperar e-mail
-      </p>
     </div>
   );
 }
